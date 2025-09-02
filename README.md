@@ -4,11 +4,12 @@
 
 ## 🚀 Quick Start
 
-1. **Copy Configuration**
+1. **Set Up Global Configuration (Recommended)**
    ```bash
-   mkdir -p .claude
-   cp CLAUDE_CONFIGURATION_SAMPLE.md .claude/CLAUDE.md
-   # Customize for your project
+   mkdir -p ~/dotfiles/claude/.claude
+   # Copy framework configuration to ~/dotfiles/claude/.claude/CLAUDE.md
+   # See CLAUDE_CONFIGURATION_SAMPLE.md for full content
+   stow -d ~/dotfiles -t ~ claude
    ```
 
 2. **Set Up Quality Gates**

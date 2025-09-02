@@ -1,6 +1,18 @@
 # Sample Claude Configuration (.claude/CLAUDE.md)
 
-Place this file in your project root as `.claude/CLAUDE.md` or in your home directory as `~/.claude/CLAUDE.md` for global configuration.
+This configuration can be used in multiple ways:
+
+1. **Global Configuration (Recommended)**: Using dotfiles/stow approach
+   ```bash
+   # Set up with stow (manages symlinks automatically)
+   mkdir -p ~/dotfiles/claude/.claude
+   # Copy content below to ~/dotfiles/claude/.claude/CLAUDE.md
+   stow -d ~/dotfiles -t ~ claude
+   ```
+
+2. **Project-Specific**: Place in project root as `.claude/CLAUDE.md`
+
+3. **Direct Home**: Place directly in `~/.claude/CLAUDE.md`
 
 ```markdown
 # AI Development Framework Configuration v2.0
@@ -360,17 +372,25 @@ Remember: This framework is about excellence through systematic approach, not ju
 
 ## Usage Instructions
 
-1. **For Project-Specific Configuration:**
+1. **For Global Configuration with Stow (Recommended):**
+   ```bash
+   mkdir -p ~/dotfiles/claude/.claude
+   # Extract the markdown content above to ~/dotfiles/claude/.claude/CLAUDE.md
+   stow -d ~/dotfiles -t ~ claude
+   # This creates ~/.claude/CLAUDE.md as a symlink
+   ```
+
+2. **For Project-Specific Configuration:**
    ```bash
    mkdir -p .claude
-   cp CLAUDE_CONFIGURATION_SAMPLE.md .claude/CLAUDE.md
+   # Extract the markdown content above to .claude/CLAUDE.md
    # Customize for your project
    ```
 
-2. **For Global Configuration:**
+3. **For Direct Global Configuration:**
    ```bash
    mkdir -p ~/.claude
-   cp CLAUDE_CONFIGURATION_SAMPLE.md ~/.claude/CLAUDE.md
+   # Extract the markdown content above to ~/.claude/CLAUDE.md
    # Add personal preferences
    ```
 
