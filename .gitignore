@@ -1,0 +1,22 @@
+# Planning files
+PLAN_*.md
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.bak
+.cache/
+
+# Environment files
+.env
+.env.local
