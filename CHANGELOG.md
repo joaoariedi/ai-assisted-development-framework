@@ -83,6 +83,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 ### Security
 
+## [2.1.0] - 2025-01-09
+
+### Added
+- **Claude Code CLI Optimization**: Streamlined 18-step workflow specifically for Claude Code
+- **TodoWrite Integration**: Mandatory task tracking with specific enforcement triggers
+- **Project Detection**: Automatic tooling discovery for JavaScript/TypeScript, Python, Rust
+- **Quality Command Discovery**: Dynamic detection of lint/test/typecheck commands via project files
+- **Enforcement Triggers**: Clear integration points with Claude Code workflow
+
+### Changed
+- **Simplified Framework**: Removed team-specific requirements (PR templates, CI/CD pipelines)
+- **Individual Development Focus**: Adapted workflow for solo development scenarios
+- **Practical Implementation**: Emphasis on actionable steps over theoretical frameworks
+- **Response Guidelines**: Added conciseness requirements for CLI usage
+- **Git Integration**: Simplified commit process with co-authoring options
+
+### Enhanced
+- **CLAUDE_CONFIGURATION_SAMPLE.md**: Complete rewrite for Claude Code CLI
+  - Focused on practical Claude Code tool integration
+  - Streamlined 18 steps for individual development
+  - Added project-specific tooling detection
+  - Included enforcement triggers and forbidden actions
+- **Quality Standards**: Simplified metrics focusing on tool availability rather than fixed targets
+- **Documentation Guidelines**: Reduced emphasis on extensive documentation, focused on code clarity
+
+### Improved
+- **Task Granularity**: Better guidance on when to use TodoWrite vs direct implementation
+- **Tool Discovery**: Specific patterns for finding configuration files and available commands
+- **Branch Strategy**: Simplified for individual development workflows
+- **Performance Expectations**: Realistic targets based on project tooling availability
+
+### Fixed
+- **Configuration Complexity**: Removed enterprise/team features not relevant to individual use
+- **Tool Integration**: Better alignment with Claude Code's actual capabilities
+- **Workflow Enforcement**: Clear triggers for when to use specific tools and practices
+
 ---
 
 **Notes:**
