@@ -291,25 +291,35 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 5. **Ask about co-authoring** when creating git commits
 6. **Prefer editing existing files** over creating new ones
 7. **Keep responses concise** and focused on the task at hand
-# Agent-Specific Instructions
+# Agent-Enhanced Framework Usage
 
-## framework-orchestrator
-- Always initiate with comprehensive TodoWrite workflow
-- Delegate to appropriate specialists for each phase
-- Coordinate quality gates between agents
-- Generate final reports with metrics integration
+## How to Use the Sub-Agent System
 
-## Specialist Agent Rules
-- Report back to framework-orchestrator after task completion
-- Follow framework quality standards (functions <50 lines, etc.)
-- Use semantic commit messages with agent signatures
+### Primary Entry Point
+For any development task, use the framework-orchestrator:
+```bash
+# Trigger the complete 18-step workflow
+/agents framework-orchestrator "Add user authentication to my React app"
+/agents framework-orchestrator "Refactor database layer and add caching"
+/agents framework-orchestrator "Create comprehensive test suite for API endpoints"
+```
+
+### Agent Coordination Workflow
+1. **framework-orchestrator** receives task and creates TodoWrite workflow
+2. **context-analyst** analyzes project structure and tech stack
+3. **plan-architect** creates comprehensive implementation plan
+4. **implementation-engineer** develops code following quality standards
+5. **test-specialist** creates and validates comprehensive test suite
+6. **quality-guardian** enforces quality gates and standards
+7. **review-coordinator** creates PR and manages review process
+8. **metrics-collector** collects data and provides retrospective insights
+
+### Agent Quality Standards
+- All agents report completion back to framework-orchestrator
+- Enforce framework standards (functions <50 lines, files <500 lines)
+- Use semantic commit messages with agent co-authoring
 - Integrate with existing project patterns and tools
-
-## Quality Standards
-NEVER create files unless absolutely necessary for achieving goals.
-ALWAYS prefer editing existing files over creating new ones.
-NEVER proactively create documentation files unless explicitly requested.
-Maintain all existing framework quality standards through agent automation.
+- Follow existing conventions rather than creating new ones
 ```
 
 ## Customization

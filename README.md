@@ -12,20 +12,26 @@
    stow -d ~/dotfiles -t ~ claude
    ```
 
-2. **Create Claude Code Sub-Agents**
+2. **Use the Pre-Created Claude Code Sub-Agents**
    ```bash
-   # Use Claude Code CLI to create the 8 specialized agents
-   # See AGENTS_PLAN.md for complete setup instructions
+   # All 8 specialized agents are ready to use:
+   /agents framework-orchestrator "Your development task description"
+   # The orchestrator will coordinate all other agents automatically
    ```
 
 3. **Start Your First Agent-Enhanced Feature**
    ```bash
-   # Simply describe your task - the framework-orchestrator will handle the rest
-   # Agents will automatically:
-   # - Analyze project context
-   # - Create comprehensive plans
-   # - Implement with quality checks
-   # - Handle testing and review coordination
+   # Example usage:
+   /agents framework-orchestrator "Add dark mode toggle to the settings page"
+   
+   # The orchestrator automatically coordinates:
+   # - context-analyst: Analyzes project structure
+   # - plan-architect: Creates comprehensive implementation plan
+   # - implementation-engineer: Implements code with quality standards
+   # - test-specialist: Creates comprehensive test suite
+   # - quality-guardian: Enforces quality gates
+   # - review-coordinator: Creates PR and manages reviews
+   # - metrics-collector: Collects metrics and insights
    ```
 
 4. **Follow the automated 18-step workflow** → See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) and [AGENTS_PLAN.md](AGENTS_PLAN.md)
@@ -37,6 +43,7 @@
 | [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete 18-step framework documentation |
 | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Daily-use cheat sheet and visual guides |
 | [AGENTS_PLAN.md](AGENTS_PLAN.md) | Agent-enhanced migration plan and architecture |
+| [agents/](agents/) | Complete Claude Code sub-agent samples and configurations |
 | [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Ready-to-use agent-enhanced AI configuration |
 | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Project context template |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and improvements |
@@ -211,7 +218,7 @@ go vet && go test -cover ./...
 
 ## 🔄 Version History
 
-- **v3.0.0** (2025-09-04): Agent-enhanced framework with Claude Code sub-agent orchestration
+- **v3.0.0** (2025-09-04): Agent-enhanced framework with Claude Code sub-agent orchestration and Go language support
 - **v2.0.0** (2025-09-02): Enhanced 18-step workflow with integrated improvements
 - **v1.0.0** (2025-09-02): Initial framework with 11-step basic workflow
 
