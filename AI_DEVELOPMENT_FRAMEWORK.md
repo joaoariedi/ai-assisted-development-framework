@@ -98,9 +98,10 @@ This framework establishes a systematic approach to AI-assisted software develop
      - Functions < 50 lines
      - Cyclomatic complexity < 10
      - Clear, descriptive naming
-   - Use appropriate AI model for each task:
-     - Claude: Complex logic, architecture
-     - Copilot: Boilerplate, completions
+   - Specialized agent coordination:
+     - implementation-engineer: Complex logic, architecture
+     - test-specialist: Test creation and validation
+     - quality-guardian: Continuous quality monitoring
    - Commit frequently with semantic messages:
      - Format: `<type>(<scope>): <description>`
      - Types: feat, fix, refactor, test, docs, perf
@@ -320,6 +321,6 @@ repos:
 
 ---
 
-*Last Updated: 2025-09-02*
-*Version: 2.0.0*
-*Next Review: 2025-03-02*
+*Last Updated: 2025-09-04*
+*Version: 3.0.0 (Agent-Enhanced)*
+*Next Review: 2025-12-04*

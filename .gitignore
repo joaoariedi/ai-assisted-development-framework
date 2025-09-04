@@ -1,5 +1,6 @@
 # Planning files
 PLAN_*.md
+*PLAN*
 
 # IDE specific files
 .vscode/

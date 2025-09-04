@@ -19,185 +19,307 @@ This configuration optimizes Claude Code for the 18-step AI development framewor
 ## Claude Code Configuration
 
 ```markdown
-# AI Development Framework Configuration v2.1
+# AI Development Framework Configuration v3.0 - Agent-Enhanced
 
-## 18-Step Claude Code Workflow
+## Agent-Based Workflow Requirements (18 Steps - Automated)
 
-### Phase 1: Planning & Context (Steps 1-4)
+## Agent-Based Workflow Activation
 
-#### Step 1: Context Preparation
-- Examine project structure with Glob/Read tools
-- Check `package.json`, `pyproject.toml`, `Cargo.toml` for:
-  - Tech stack and versions
-  - Available scripts (test, lint, build)
-  - Existing patterns and conventions
+### Primary Agent: framework-orchestrator
+- **Trigger**: Any development task requiring >3 steps
+- **Purpose**: Master coordinator for 18-step workflow
+- **Delegation**: Automatically delegates to specialized agents
 
-#### Step 2: TodoWrite Planning
-- **ALWAYS use TodoWrite** for task breakdown
-- Include: objectives, implementation steps, quality checks, testing
-- Use ExitPlanMode for complex features
+### Agent Hierarchy
+1. **framework-orchestrator** (master coordinator)
+2. **context-analyst** (Phase 1: context and project analysis)
+3. **plan-architect** (Phase 1: planning and architecture)
+4. **implementation-engineer** (Phase 2: code implementation)
+5. **test-specialist** (Phase 2: testing and validation)
+6. **quality-guardian** (Phase 2-3: quality assurance)
+7. **review-coordinator** (Phase 3: PR and review management)
+8. **metrics-collector** (Phase 4: metrics and retrospectives)
 
-#### Step 3: Plan Documentation (Complex Tasks Only)
-- For >5 todos: create `PLAN_<NAME>.md`
-- Ensure `PLAN_*.md` in `.gitignore`
+### Agent Coordination Rules
+- Only framework-orchestrator can initiate TodoWrite workflows
+- Each specialist agent reports back to orchestrator
+- Quality gates must be approved by quality-guardian
+- All phases must be completed in sequence
+- Metrics must be collected by metrics-collector
+
+### Phase 1: Planning & Context Setup (Steps 1-4)
+
+#### Step 1: Context Preparation (context-analyst)
+- Automated project structure analysis using Glob/Read tools
+- Auto-detect tech stack from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`
+- Identify existing patterns, conventions, and quality tools
+- Generate comprehensive project context report
+
+#### Step 2: Create Todo List & Plan (plan-architect)
+- **Automated TodoWrite** creation by framework-orchestrator
+- AI-generated comprehensive task breakdown including:
+  - Objective and scope clarity
+  - Step-by-step implementation tasks
+  - Quality validation steps
+  - Testing requirements
+- Uses ExitPlanMode for complex implementations
+
+#### Step 3: Plan Documentation (Optional for Simple Tasks)
+- For complex features (>5 todos), save as `PLAN_<DESCRIPTIVE_NAME>.md`
+- Check if `PLAN_*.md` is in `.gitignore`, add if missing
+- Include acceptance criteria and test scenarios
 - Skip for simple tasks (<3 todos)
 
 #### Step 4: Plan Refinement
-- Iterate todos based on feedback
-- Break large tasks into manageable pieces
+- Iterate todos based on user feedback
+- Break down large tasks into smaller, manageable pieces
 - Clarify ambiguities before implementation
 
-### Phase 2: Implementation (Steps 5-10)
+### Phase 2: Implementation with Quality Gates (Steps 5-10)
 
-#### Step 5: Tool Discovery
-- Use Grep/Glob to find quality tools:
-  - `.pre-commit-config.yaml`
-  - Scripts in `package.json`
-- Identify: lint, format, test commands
+#### Step 5: Pre-Implementation Setup
+- Check for existing quality tools using Grep/Glob:
+  - Look for `.pre-commit-config.yaml`
+  - Find lint/format scripts in `package.json` or similar
+- Identify available commands:
+  - Linting: `npm run lint`, `ruff check`, `cargo clippy`
+  - Formatting: `npm run format`, `black .`, `cargo fmt`
+  - Testing: `npm test`, `pytest`, `cargo test`
 
-#### Step 6: Branch Creation (Git Only)
-- Create feature branches: `feature/<name>`
-- Use: `git checkout -b feature/task-name`
+#### Step 6: Branch Creation (Git Projects Only)
+- If in git repo, create feature branches:
+  - Features: `feature/<descriptive-name>`
+  - Fixes: `fix/<issue-description>`
+  - Use: `git checkout -b feature/task-name`
 - Skip for non-git projects
 
-#### Step 7: Development with TodoWrite
-- **Mark todo "in_progress" before work**
-- Follow limits: functions <50 lines, files <500 lines
-- **Mark "completed" immediately after finishing**
-- Use semantic commits: `<type>: <description>`
+#### Step 7: Incremental Development with TodoWrite
+- **Mark todo as "in_progress" before starting work**
+- Follow code quality limits:
+  - Functions < 50 lines
+  - Files < 500 lines
+  - Clear, descriptive naming
+- **Mark todo as "completed" immediately after finishing**
+- Use semantic commit messages when committing:
+  - Format: `<type>: <description>`
+  - Types: feat, fix, refactor, test, docs
 
-#### Step 8: Documentation
-- Inline docs for complex functions only
-- README updates only if requested
-- Include `file_path:line_number` references
-- Focus on code clarity
+#### Step 8: Documentation During Development
+- Add inline documentation for complex functions
+- Update README.md only if explicitly requested
+- Include `file_path:line_number` references in explanations
+- Focus on code clarity over excessive documentation
 
-#### Step 9: Testing
-- Find test patterns: `**/*test*`, `**/spec/**`
-- Follow existing structure
-- Focus on business logic and edge cases
-- Run available test suite
+#### Step 9: Test Creation & Validation
+- Write tests when test framework exists:
+  - Find existing test patterns using Glob: `**/*test*`, `**/spec/**`
+  - Follow existing test structure and naming
+  - Focus on business logic and edge cases
+- Run test suite if available: `npm test`, `pytest`, `cargo test`
 
 #### Step 10: Quality Checks
-- **ALWAYS run before completion**:
-  - Linting: `npm run lint` / `ruff check` / `cargo clippy`
-  - Type check: `npm run typecheck` / `mypy` / `cargo check`
-  - Tests if available
-- Fix all issues before task completion
+- **ALWAYS run quality checks after implementation**:
+  - Check available scripts in `package.json`, etc.
+  - Run linting: `npm run lint` / `ruff check` / `cargo clippy`
+  - Run type checking: `npm run typecheck` / `mypy` / `cargo check`
+  - Run tests if they exist
+- Fix any issues before considering task complete
 
-### Phase 3: Integration (Steps 11-16)
+### Phase 3: Review & Integration (Steps 11-16) - Simplified
 
 #### Step 11: Local Validation
-- All todos completed
-- All quality tools passing
-- No regressions
+- Ensure all todos are completed
+- Run full test suite if available
+- Verify no regressions in existing functionality
+- Check that all quality tools pass
 
-#### Step 12: Git Integration
-- Stage changes: `git add .`
-- Ask about co-authoring preference
-- Format: `type: description\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>`
+#### Step 12: Git Integration (If Applicable)
+- Stage relevant changes: `git add .`
+- Create semantic commit with co-author option:
+  - Ask user about co-authoring preference
+  - Use format: `type: description\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>`
 
-#### Step 13: Self-Review
-- Security (no hardcoded secrets)
-- Performance implications
-- Code maintainability
-- Pattern adherence
+#### Step 13: Code Review (Self-Review)
+- Review changes for:
+  - Security issues (no hardcoded secrets)
+  - Performance implications
+  - Code maintainability
+  - Adherence to existing patterns
 
 #### Step 14: Issue Resolution
-- Fix quality check failures
+- Address any quality check failures
+- Fix linting/type errors
 - Re-run tests after changes
-- Update todos for new issues
+- Update todos if new issues discovered
 
 #### Step 15: Final Validation
-- Acceptance criteria met
-- No breaking changes
-- All quality tools pass
-- Implementation matches requirements
+- Verify all acceptance criteria met from todos
+- Confirm no breaking changes
+- Ensure all quality tools pass
+- Check that implementation matches user requirements
 
 #### Step 16: Completion
-- All todos marked completed
-- Only commit when explicitly requested
-- Provide change summary
+- Mark all todos as completed
+- Only commit when user explicitly requests it
+- Provide summary of changes made
 
-### Phase 4: Post-Implementation (Steps 17-18)
+### Phase 4: Post-Implementation (Steps 17-18) - Optional
 
-#### Step 17: Learning Capture
-- Note lessons learned
-- Document helpful tools
-- Record discovered patterns
+#### Step 17: Metrics Collection (Optional)
+- Note any lessons learned for future tasks
+- Record which quality tools were most helpful
+- Document any patterns discovered
 
-#### Step 18: Process Improvement
-- Review what worked well
-- Identify future improvements
-- Update approach for project
+#### Step 18: Retrospective (Optional)
+- Review what worked well in the implementation
+- Identify improvements for future tasks
+- Update approach based on project specifics
 
-## Claude Code Integration
+## Code Quality Standards
 
-### TodoWrite Rules
-- **MANDATORY** for >2 step tasks
-- Exactly ONE "in_progress" at a time
-- Mark "completed" immediately
-- Break complex tasks down
+### Complexity Limits
+- Maximum function length: 50 lines
+- Maximum file length: 500 lines  
+- Maximum cyclomatic complexity: 10
+- Clear, descriptive naming always
 
-### Tool Usage
-- **Read**: Understand existing patterns
-- **Grep**: Find implementations
-- **Glob**: Discover project structure
-- **Bash**: Run quality checks
+### Testing Requirements
+- Test existing patterns when framework present
+- Focus on business logic and edge cases
+- Use existing test structure and conventions
+- Aim for reasonable coverage without obsessing over percentages
 
-### Quality Standards
-- Functions < 50 lines
-- Files < 500 lines
-- Clear, descriptive naming
-- No hardcoded secrets
-- Follow existing conventions
+### Documentation Guidelines
+- Inline documentation for complex logic
+- README updates only when explicitly requested
+- Code should be self-documenting through clear naming
+- Include `file_path:line_number` in explanations
 
-### Project Detection
+### Quality Assurance
+- Always run available quality tools before completing
+- Fix linting and type errors immediately
+- No hardcoded secrets or credentials
+- Follow existing project conventions
 
-#### JavaScript/TypeScript
-- Files: `package.json`, `.eslintrc*`, `tsconfig.json`
-- Commands: `npm run lint`, `npm run typecheck`, `npm test`
+## Git Configuration
 
-#### Python
-- Files: `pyproject.toml`, `requirements.txt`
-- Commands: `ruff check`, `mypy`, `pytest`
-
-#### Rust
-- Files: `Cargo.toml`
-- Commands: `cargo clippy`, `cargo test`
-
-### Git Configuration
+### Commit Message Format
 ```
 <type>: <description>
+
+<body (optional)>
 
 🤖 Generated with Claude Code
 
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
-Types: feat, fix, refactor, test, docs, perf
+### Commit Types
+- `feat`: New feature
+- `fix`: Bug fix
+- `refactor`: Code refactoring
+- `test`: Adding tests
+- `docs`: Documentation updates
+- `style`: Code formatting
+- `perf`: Performance improvements
 
-### Enforcement Triggers
-1. **Before implementation**: Create TodoWrite
-2. **During work**: Mark progress
-3. **After changes**: Run quality checks
-4. **Before completion**: All todos completed
-5. **Git projects**: Ask about co-authoring, commit only when requested
+### Branch Naming
+- Features: `feature/descriptive-name`
+- Fixes: `fix/issue-description`
+- Refactoring: `refactor/component-name`
 
-### Forbidden Actions
-- Delete files without permission
-- Create docs unless requested
-- Commit without explicit request
-- Skip quality checks
-- Ignore linting/type errors
+## Claude Code Integration
 
-## Key Reminders
-1. Always use TodoWrite for task tracking
-2. Run quality checks before completion
-3. Follow existing project patterns
-4. Only commit when requested
-5. Ask about co-authoring
-6. Keep responses concise
+### TodoWrite Usage
+- **MANDATORY**: Use TodoWrite for any task with >2 steps
+- Mark exactly ONE todo as "in_progress" at a time
+- Mark todos "completed" immediately after finishing
+- Break down complex tasks into smaller, actionable items
+
+### Quality Command Detection
+- Use Glob to find config files: `**/.eslintrc*`, `**/pyproject.toml`, etc.
+- Check `package.json` scripts section for available commands
+- Look for common patterns: `lint`, `test`, `typecheck`, `format`
+- Always ask user for commands if not obvious
+
+### Tool Integration
+- Use Read tool to understand existing code patterns
+- Use Grep to find similar implementations
+- Use Glob to discover project structure
+- Use Bash to run quality checks and tests
+
+### Agent Enforcement Triggers
+1. **Task received**: framework-orchestrator creates TodoWrite workflow
+2. **Phase transitions**: Agents coordinate through orchestrator
+3. **Quality gates**: quality-guardian validates before progression
+4. **Completion**: metrics-collector records data before closure
+5. **Git integration**: review-coordinator handles commits and PRs
+
+## Project-Specific Adaptations
+
+### JavaScript/TypeScript Projects
+- Look for: `package.json`, `.eslintrc*`, `tsconfig.json`
+- Common commands: `npm run lint`, `npm run typecheck`, `npm test`
+- Check for: Prettier, ESLint, Jest, Vitest
+
+### Python Projects  
+- Look for: `pyproject.toml`, `requirements.txt`, `setup.py`
+- Common tools: `ruff`, `black`, `mypy`, `pytest`
+- Virtual environment detection
+
+### Rust Projects
+- Look for: `Cargo.toml`, `Cargo.lock`
+- Common commands: `cargo clippy`, `cargo fmt`, `cargo test`
+- Check for workspace configuration
+
+### Go Projects
+- Look for: `go.mod`, `go.sum`, `Makefile`
+- Common commands: `go vet`, `go test ./...`, `go fmt`
+- Check for module structure and build tools
+
+### Other Languages
+- Examine project files to understand toolchain
+- Ask user for specific quality commands if unclear
+- Adapt patterns to match existing project structure
+
+# Important Reminders
+
+1. **Always use TodoWrite** for task management and progress tracking
+2. **Run quality checks** before considering any task complete
+3. **Follow existing patterns** rather than imposing new conventions
+4. **Only commit when explicitly requested** by the user
+5. **Ask about co-authoring** when creating git commits
+6. **Prefer editing existing files** over creating new ones
+7. **Keep responses concise** and focused on the task at hand
+# Agent-Enhanced Framework Usage
+
+## How to Use the Sub-Agent System
+
+### Primary Entry Point
+For any development task, use the framework-orchestrator:
+```bash
+# Trigger the complete 18-step workflow
+/agents framework-orchestrator "Add user authentication to my React app"
+/agents framework-orchestrator "Refactor database layer and add caching"
+/agents framework-orchestrator "Create comprehensive test suite for API endpoints"
+```
+
+### Agent Coordination Workflow
+1. **framework-orchestrator** receives task and creates TodoWrite workflow
+2. **context-analyst** analyzes project structure and tech stack
+3. **plan-architect** creates comprehensive implementation plan
+4. **implementation-engineer** develops code following quality standards
+5. **test-specialist** creates and validates comprehensive test suite
+6. **quality-guardian** enforces quality gates and standards
+7. **review-coordinator** creates PR and manages review process
+8. **metrics-collector** collects data and provides retrospective insights
+
+### Agent Quality Standards
+- All agents report completion back to framework-orchestrator
+- Enforce framework standards (functions <50 lines, files <500 lines)
+- Use semantic commit messages with agent co-authoring
+- Integrate with existing project patterns and tools
+- Follow existing conventions rather than creating new ones
 ```
 
 ## Customization
@@ -216,5 +338,5 @@ Types: feat, fix, refactor, test, docs, perf
 ---
 
 *Optimized for Claude Code CLI*
-*Framework Version: 2.1.0*
-*Last Updated: 2025-01-09*
+*Framework Version: 3.0 (Agent-Enhanced)*
+*Last Updated: 2025-09-04*

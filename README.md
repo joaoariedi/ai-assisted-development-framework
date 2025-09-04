@@ -1,6 +1,6 @@
-# AI Development Framework v2.0
+# AI Development Framework v3.0 - Agent-Enhanced
 
-> A systematic approach to AI-assisted software development that optimizes collaboration between human developers and AI models while maintaining excellence in code quality, documentation, and delivery speed.
+> A systematic Claude Code sub-agent orchestrated approach to AI-assisted software development that automates the 18-step workflow while maintaining excellence in code quality, documentation, and delivery speed.
 
 ## 🚀 Quick Start
 
@@ -12,26 +12,29 @@
    stow -d ~/dotfiles -t ~ claude
    ```
 
-2. **Set Up Quality Gates**
+2. **Use the Pre-Created Claude Code Sub-Agents**
    ```bash
-   # Install pre-commit (example for Python/Node projects)
-   pip install pre-commit  # or npm install -g pre-commit
-   pre-commit install
+   # All 8 specialized agents are ready to use:
+   /agents framework-orchestrator "Your development task description"
+   # The orchestrator will coordinate all other agents automatically
    ```
 
-3. **Start Your First Feature**
+3. **Start Your First Agent-Enhanced Feature**
    ```bash
-   # Step 1: Update context
-   vim PROJECT_CONTEXT.md
+   # Example usage:
+   /agents framework-orchestrator "Add dark mode toggle to the settings page"
    
-   # Step 2: Create plan
-   vim PLAN_NEW_FEATURE.md
-   
-   # Step 6: Create branch
-   git checkout -b feature/new-feature
+   # The orchestrator automatically coordinates:
+   # - context-analyst: Analyzes project structure
+   # - plan-architect: Creates comprehensive implementation plan
+   # - implementation-engineer: Implements code with quality standards
+   # - test-specialist: Creates comprehensive test suite
+   # - quality-guardian: Enforces quality gates
+   # - review-coordinator: Creates PR and manages reviews
+   # - metrics-collector: Collects metrics and insights
    ```
 
-4. **Follow the 18-step workflow** → See [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+4. **Follow the automated 18-step workflow** → See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) and [AGENTS_PLAN.md](AGENTS_PLAN.md)
 
 ## 📋 What's Included
 
@@ -39,14 +42,16 @@
 |------|---------|
 | [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete 18-step framework documentation |
 | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Daily-use cheat sheet and visual guides |
-| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Ready-to-use AI configuration template |
+| [AGENTS_PLAN.md](AGENTS_PLAN.md) | Agent-enhanced migration plan and architecture |
+| [agents/](agents/) | Complete Claude Code sub-agent samples and configurations |
+| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Ready-to-use agent-enhanced AI configuration |
 | [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Project context template |
 | [CHANGELOG.md](CHANGELOG.md) | Version history and improvements |
 | [docs/ADRs/](docs/ADRs/) | Architecture Decision Records |
 
 ## 🎯 Framework Overview
 
-### The 18-Step Workflow
+### The Agent-Enhanced 18-Step Workflow
 
 ```mermaid
 graph TB
@@ -82,11 +87,11 @@ graph TB
 
 ### Core Principles
 
-1. **🎯 Plan-First Development**: Comprehensive planning with risk assessment before coding
+1. **🎯 Agent-Orchestrated Planning**: Automated comprehensive planning via specialized agents
 2. **🔄 Isolated Development**: Feature branches with clean merge strategies  
-3. **✅ Test-Driven Validation**: 80% coverage minimum with performance benchmarks
-4. **🤖 Multi-AI Review**: Claude + Copilot + specialized tools for quality
-5. **📈 Continuous Improvement**: Metrics-driven framework evolution
+3. **✅ Automated Test-Driven Validation**: 80% coverage minimum with performance benchmarks
+4. **🤖 Multi-Agent Quality**: 8 specialized Claude Code sub-agents for comprehensive quality
+5. **📈 Continuous Improvement**: Metrics-driven framework evolution with automated collection
 
 ## 🏆 Key Benefits
 
@@ -99,8 +104,9 @@ graph TB
 ## 🛠 Tool Integration
 
 ### Required
+- **Claude Code CLI**: With sub-agent capabilities
 - **Git**: Version control with semantic commits
-- **AI Models**: Claude (planning/implementation) + Copilot (review)
+- **8 Specialized Agents**: framework-orchestrator, context-analyst, plan-architect, implementation-engineer, test-specialist, quality-guardian, review-coordinator, metrics-collector
 
 ### Recommended  
 - **IDE**: Neovim with LazyVim configuration
@@ -127,59 +133,62 @@ graph TB
 
 | Model | Primary Use | Secondary Use |
 |-------|-------------|---------------|
-| **Claude** | Planning, architecture, complex logic | Code generation, problem solving |
-| **Copilot** | Code review, completions | Refactoring suggestions |
-| **Specialized** | Security scanning, performance analysis | Accessibility, compliance |
+| **Claude Code Sub-Agents** | Automated workflow orchestration | All development phases |
+| **framework-orchestrator** | Master workflow coordination | TodoWrite management |
+| **context-analyst** | Project structure analysis | Tech stack detection |
+| **plan-architect** | Comprehensive planning | Architecture design |
+| **implementation-engineer** | Code implementation | Quality adherence |
+| **test-specialist** | Test creation and validation | Coverage verification |
+| **quality-guardian** | Quality assurance | Performance benchmarks |
+| **review-coordinator** | PR management | Review coordination |
+| **metrics-collector** | Data collection | Framework improvement |
 
 ## 📖 Getting Started Guide
 
 ### For Individual Developers
-1. Read [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
-2. Copy `.claude/CLAUDE.md` configuration
-3. Create your first `PLAN_*.md`
-4. Follow the 18-step workflow
+1. Read [AGENTS_PLAN.md](AGENTS_PLAN.md) for agent setup
+2. Copy enhanced `.claude/CLAUDE.md` configuration
+3. Create the 8 specialized sub-agents in Claude Code
+4. Start with agent-orchestrated development
 
 ### For Teams
 1. Review [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md)
-2. Customize configuration for team standards
-3. Set up shared quality gates and CI/CD
-4. Train team on framework usage
-5. Establish metrics dashboard
+2. Set up shared agent configurations
+3. Customize agent behaviors for team standards
+4. Train team on agent-enhanced workflow
+5. Establish automated metrics dashboard
 
 ### For Organizations
 1. Assess current development processes
-2. Plan gradual framework adoption
-3. Customize for organizational standards
-4. Implement team training program
-5. Monitor effectiveness metrics
+2. Plan gradual agent-enhanced adoption
+3. Customize agent configurations for organizational standards
+4. Implement team training on sub-agent workflows
+5. Monitor automated effectiveness metrics
 
 ## 🔧 Configuration Examples
 
 ### JavaScript/TypeScript Project
 ```bash
-# Quality commands
+# Automated by quality-guardian agent
 npm run lint && npm run typecheck && npm test
-
-# Pre-commit hooks
-pre-commit install
 ```
 
 ### Python Project  
 ```bash
-# Quality commands
-ruff check . && mypy . && pytest
-
-# Coverage target
-pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+# Automated by quality-guardian agent
+ruff check . && mypy . && pytest --cov=. --cov-fail-under=80
 ```
 
 ### Rust Project
 ```bash
-# Quality commands
+# Automated by quality-guardian agent
 cargo clippy && cargo test
+```
 
-# Documentation
-cargo doc --no-deps
+### Go Project
+```bash
+# Automated by quality-guardian agent
+go vet && go test -cover ./...
 ```
 
 ## 🤝 Contributing
@@ -209,6 +218,7 @@ cargo doc --no-deps
 
 ## 🔄 Version History
 
+- **v3.0.0** (2025-09-04): Agent-enhanced framework with Claude Code sub-agent orchestration and Go language support
 - **v2.0.0** (2025-09-02): Enhanced 18-step workflow with integrated improvements
 - **v1.0.0** (2025-09-02): Initial framework with 11-step basic workflow
 
@@ -228,8 +238,8 @@ Copyright (c) 2025 João Ariedi
 
 ---
 
-**Framework Version**: 2.0.0  
-**Last Updated**: 2025-09-02  
-**Compatibility**: Claude Code, GitHub Copilot, Universal AI development tools
+**Framework Version**: 3.0.0 (Agent-Enhanced)  
+**Last Updated**: 2025-09-04  
+**Compatibility**: Claude Code Sub-Agents, Universal AI development tools
 
 *Remember: This framework is about systematic excellence, not just following rules. Adapt it to your context while maintaining the core principles.*
