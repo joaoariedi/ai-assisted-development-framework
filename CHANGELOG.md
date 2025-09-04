@@ -5,6 +5,13 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-09-04
+
+### Released
+- **Complete Agent-Enhanced Framework**: All 8 Claude Code sub-agents operational
+- **Production Ready**: Comprehensive documentation and samples included
+- **Performance Validated**: All targets met for automated workflow execution
+
 ## [2.0.0] - 2025-09-02
 
 ### Added
