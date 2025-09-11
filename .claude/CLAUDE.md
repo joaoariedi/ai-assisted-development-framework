@@ -270,6 +270,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 5. **Ask about co-authoring** when creating git commits
 6. **Prefer editing existing files** over creating new ones
 7. **Keep responses concise** and focused on the task at hand
+8. **Use `git -C <directory>` instead of `cd <directory> && git`** to avoid zoxide conflicts
 
 # Agent-Specific Instructions
 
