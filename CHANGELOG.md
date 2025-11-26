@@ -5,6 +5,58 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-11-26
+
+### Added
+- **Hooks System**: Automated quality enforcement without manual intervention
+  - `pre-edit.json`: Blocks edits to sensitive files (.env, *.key, credentials, .git/*)
+  - `pre-commit.json`: Auto-runs format, lint, typecheck, and tests before commits
+- **Skills System**: Specialized, tool-restricted analysis modes
+  - `security-review.md`: Read-only security audits (secrets, SQL injection, XSS, auth)
+  - `context-analysis.md`: Project structure and tech stack analysis
+  - `performance-audit.md`: Performance bottleneck detection
+- **Expanded Slash Commands**: Quick access to common workflows
+  - `/security-scan`: Security audit of staged changes
+  - `/pr-summary`: Generate PR summary from current branch
+  - `/context`: Refresh project context analysis
+  - `/quality`: Run comprehensive quality checks
+- **MCP Integration**: Model Context Protocol server configuration
+  - GitHub MCP for PR/Issue automation
+  - Filesystem MCP for enhanced file operations
+  - Memory MCP for cross-session context persistence
+- **Proactive Agent Triggers**: Agents auto-delegate based on task patterns
+  - `MUST BE USED` triggers for mandatory agent involvement
+  - `Use PROACTIVELY` triggers for context-based auto-delegation
+- **Inter-Agent Communication Protocol**: Standardized agent coordination
+  - JSON handoff format (task_id, status, findings, next_steps)
+  - Quality gate signals (PASS/FAIL/WARN)
+  - Escalation path definition
+- **9th Agent**: Added `forensic-specialist` for security forensics and threat analysis
+
+### Changed
+- **Model Assignments**: Hybrid approach for cost/performance optimization
+  - Opus (claude-opus-4-5) for orchestrator and plan-architect
+  - Sonnet (claude-sonnet-4-5) for all specialist agents
+- **Settings Configuration**: Permissive permissions with hook-based protection
+  - Removed restrictive sandbox in favor of pre-edit hooks
+  - Added explicit allow rules for common dev tools
+- **README.md**: Complete rewrite with comprehensive usage manual
+  - Added hooks documentation with examples
+  - Added skills usage guide
+  - Added slash commands reference
+  - Added 10 quick tips section
+  - Updated directory structure diagram
+
+### Enhanced
+- **Agent Descriptions**: Added proactive trigger phrases to all agents
+- **Quality Gates**: Now automated through pre-commit hooks
+- **File Protection**: Sensitive files blocked by hooks instead of global restrictions
+
+### Improved
+- **Developer Experience**: Less manual quality checking, more automation
+- **Security**: Automatic protection of sensitive files
+- **Workflow Speed**: Hooks eliminate manual lint/format/test runs
+
 ## [3.0.0] - 2025-09-04
 
 ### Released

@@ -1,27 +1,70 @@
-# Claude Code Configuration Sample
+# Claude Code Configuration Sample v3.1
 
-This configuration optimizes Claude Code for the 18-step AI development framework.
+Complete configuration for the AI Development Framework with hooks, skills, MCP integration, and proactive agent triggers.
 
 ## Setup Options
 
-1. **Global Configuration (Recommended)**: Using dotfiles/stow
-   ```bash
-   mkdir -p ~/dotfiles/claude/.claude
-   # Copy content below to ~/dotfiles/claude/.claude/CLAUDE.md
-   stow -d ~/dotfiles -t ~ claude
-   ```
+### 1. Global Configuration (Recommended)
+```bash
+# Create dotfiles structure
+mkdir -p ~/dotfiles/claude/.claude/{agents,commands,hooks,skills}
 
-2. **Project-Specific**: Place in `.claude/CLAUDE.md`
-3. **Direct Global**: Place in `~/.claude/CLAUDE.md`
+# Copy configurations
+cp -r .claude/* ~/dotfiles/claude/.claude/
+
+# Symlink via stow
+stow -d ~/dotfiles -t ~ claude
+
+# Verify symlinks
+ls -la ~/.claude/
+```
+
+### 2. Project-Specific
+Place files in `.claude/` directory of your project.
+
+### 3. Direct Global
+Place files directly in `~/.claude/`
 
 ---
 
-## Claude Code Configuration
+## Directory Structure
+
+```
+~/.claude/
+├── CLAUDE.md              # Main configuration
+├── settings.json          # Permissions
+├── mcp.json              # MCP servers
+├── commands/
+│   ├── agent.md          # /agent command
+│   ├── context.md        # /context command
+│   ├── quality.md        # /quality command
+│   ├── security-scan.md  # /security-scan command
+│   └── pr-summary.md     # /pr-summary command
+├── hooks/
+│   ├── pre-edit.json     # File protection
+│   └── pre-commit.json   # Quality gates
+├── skills/
+│   ├── security-review.md
+│   ├── context-analysis.md
+│   └── performance-audit.md
+└── agents/
+    ├── framework-orchestrator.md
+    ├── context-analyst.md
+    ├── plan-architect.md
+    ├── implementation-engineer.md
+    ├── test-specialist.md
+    ├── quality-guardian.md
+    ├── review-coordinator.md
+    ├── metrics-collector.md
+    └── forensic-specialist.md
+```
+
+---
+
+## CLAUDE.md Configuration
 
 ```markdown
-# AI Development Framework Configuration v3.0 - Agent-Enhanced
-
-## Agent-Based Workflow Requirements (18 Steps - Automated)
+# AI Development Framework Configuration v3.1 - Agent-Enhanced
 
 ## Agent-Based Workflow Activation
 
@@ -30,15 +73,19 @@ This configuration optimizes Claude Code for the 18-step AI development framewor
 - **Purpose**: Master coordinator for 18-step workflow
 - **Delegation**: Automatically delegates to specialized agents
 
-### Agent Hierarchy
-1. **framework-orchestrator** (master coordinator)
-2. **context-analyst** (Phase 1: context and project analysis)
-3. **plan-architect** (Phase 1: planning and architecture)
-4. **implementation-engineer** (Phase 2: code implementation)
-5. **test-specialist** (Phase 2: testing and validation)
-6. **quality-guardian** (Phase 2-3: quality assurance)
-7. **review-coordinator** (Phase 3: PR and review management)
-8. **metrics-collector** (Phase 4: metrics and retrospectives)
+### Agent Hierarchy (with Proactive Triggers)
+
+| Agent | Model | Role | Proactive Trigger |
+|-------|-------|------|-------------------|
+| **framework-orchestrator** | opus | Master coordinator | MUST BE USED for any task >3 steps |
+| **context-analyst** | sonnet | Phase 1: context analysis | Use PROACTIVELY before implementation |
+| **plan-architect** | opus | Phase 1: planning | MUST BE USED for architectural decisions |
+| **implementation-engineer** | sonnet | Phase 2: coding | Use when executing approved plans |
+| **test-specialist** | sonnet | Phase 2: testing | Use PROACTIVELY after implementation |
+| **quality-guardian** | sonnet | Phase 2-3: QA | MUST BE USED before commit/PR/merge |
+| **review-coordinator** | sonnet | Phase 3: PR management | Use when creating PRs |
+| **metrics-collector** | sonnet | Phase 4: metrics | Use after task completion |
+| **forensic-specialist** | sonnet | Security: forensics | Use PROACTIVELY for security audits |
 
 ### Agent Coordination Rules
 - Only framework-orchestrator can initiate TodoWrite workflows
@@ -46,6 +93,13 @@ This configuration optimizes Claude Code for the 18-step AI development framewor
 - Quality gates must be approved by quality-guardian
 - All phases must be completed in sequence
 - Metrics must be collected by metrics-collector
+
+### Inter-Agent Communication Protocol
+1. **Handoff Format**: JSON with task_id, status, findings, next_steps
+2. **Quality Gate Signals**: PASS/FAIL/WARN with specific violations listed
+3. **Escalation Path**: Any agent → quality-guardian → framework-orchestrator
+4. **Metrics Reporting**: All agents report timing + outcome to metrics-collector
+5. **Context Sharing**: Agents pass relevant file paths and patterns discovered
 
 ### Phase 1: Planning & Context Setup (Steps 1-4)
 
@@ -57,286 +111,354 @@ This configuration optimizes Claude Code for the 18-step AI development framewor
 
 #### Step 2: Create Todo List & Plan (plan-architect)
 - **Automated TodoWrite** creation by framework-orchestrator
-- AI-generated comprehensive task breakdown including:
-  - Objective and scope clarity
-  - Step-by-step implementation tasks
-  - Quality validation steps
-  - Testing requirements
+- AI-generated comprehensive task breakdown
 - Uses ExitPlanMode for complex implementations
 
-#### Step 3: Plan Documentation (Optional for Simple Tasks)
+#### Step 3: Plan Documentation (Optional)
 - For complex features (>5 todos), save as `PLAN_<DESCRIPTIVE_NAME>.md`
-- Check if `PLAN_*.md` is in `.gitignore`, add if missing
-- Include acceptance criteria and test scenarios
 - Skip for simple tasks (<3 todos)
 
 #### Step 4: Plan Refinement
 - Iterate todos based on user feedback
-- Break down large tasks into smaller, manageable pieces
 - Clarify ambiguities before implementation
 
 ### Phase 2: Implementation with Quality Gates (Steps 5-10)
 
 #### Step 5: Pre-Implementation Setup
-- Check for existing quality tools using Grep/Glob:
-  - Look for `.pre-commit-config.yaml`
-  - Find lint/format scripts in `package.json` or similar
-- Identify available commands:
-  - Linting: `npm run lint`, `ruff check`, `cargo clippy`
-  - Formatting: `npm run format`, `black .`, `cargo fmt`
-  - Testing: `npm test`, `pytest`, `cargo test`
+- Check for existing quality tools using Grep/Glob
+- Identify available lint/format/test commands
 
 #### Step 6: Branch Creation (Git Projects Only)
-- If in git repo, create feature branches:
-  - Features: `feature/<descriptive-name>`
-  - Fixes: `fix/<issue-description>`
-  - Use: `git checkout -b feature/task-name`
-- Skip for non-git projects
+- Features: `feature/<descriptive-name>`
+- Fixes: `fix/<issue-description>`
 
 #### Step 7: Incremental Development with TodoWrite
-- **Mark todo as "in_progress" before starting work**
-- Follow code quality limits:
-  - Functions < 50 lines
-  - Files < 500 lines
-  - Clear, descriptive naming
-- **Mark todo as "completed" immediately after finishing**
-- Use semantic commit messages when committing:
-  - Format: `<type>: <description>`
-  - Types: feat, fix, refactor, test, docs
+- Mark todo as "in_progress" before starting work
+- Follow code quality limits (functions <50 lines, files <500 lines)
+- Mark todo as "completed" immediately after finishing
 
 #### Step 8: Documentation During Development
 - Add inline documentation for complex functions
-- Update README.md only if explicitly requested
-- Include `file_path:line_number` references in explanations
 - Focus on code clarity over excessive documentation
 
 #### Step 9: Test Creation & Validation
-- Write tests when test framework exists:
-  - Find existing test patterns using Glob: `**/*test*`, `**/spec/**`
-  - Follow existing test structure and naming
-  - Focus on business logic and edge cases
-- Run test suite if available: `npm test`, `pytest`, `cargo test`
+- Follow existing test patterns
+- Focus on business logic and edge cases
 
 #### Step 10: Quality Checks
-- **ALWAYS run quality checks after implementation**:
-  - Check available scripts in `package.json`, etc.
-  - Run linting: `npm run lint` / `ruff check` / `cargo clippy`
-  - Run type checking: `npm run typecheck` / `mypy` / `cargo check`
-  - Run tests if they exist
+- **ALWAYS run quality checks after implementation**
 - Fix any issues before considering task complete
 
-### Phase 3: Review & Integration (Steps 11-16) - Simplified
+### Phase 3: Review & Integration (Steps 11-16)
 
-#### Step 11: Local Validation
-- Ensure all todos are completed
-- Run full test suite if available
-- Verify no regressions in existing functionality
-- Check that all quality tools pass
+#### Step 11-16: Local Validation → Git Integration → Review → Merge
 
-#### Step 12: Git Integration (If Applicable)
-- Stage relevant changes: `git add .`
-- Create semantic commit with co-author option:
-  - Ask user about co-authoring preference
-  - Use format: `type: description\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>`
+### Phase 4: Post-Implementation (Steps 17-18)
 
-#### Step 13: Code Review (Self-Review)
-- Review changes for:
-  - Security issues (no hardcoded secrets)
-  - Performance implications
-  - Code maintainability
-  - Adherence to existing patterns
-
-#### Step 14: Issue Resolution
-- Address any quality check failures
-- Fix linting/type errors
-- Re-run tests after changes
-- Update todos if new issues discovered
-
-#### Step 15: Final Validation
-- Verify all acceptance criteria met from todos
-- Confirm no breaking changes
-- Ensure all quality tools pass
-- Check that implementation matches user requirements
-
-#### Step 16: Completion
-- Mark all todos as completed
-- Only commit when user explicitly requests it
-- Provide summary of changes made
-
-### Phase 4: Post-Implementation (Steps 17-18) - Optional
-
-#### Step 17: Metrics Collection (Optional)
-- Note any lessons learned for future tasks
-- Record which quality tools were most helpful
-- Document any patterns discovered
-
-#### Step 18: Retrospective (Optional)
-- Review what worked well in the implementation
-- Identify improvements for future tasks
-- Update approach based on project specifics
+#### Step 17-18: Metrics Collection → Retrospective
 
 ## Code Quality Standards
 
 ### Complexity Limits
 - Maximum function length: 50 lines
-- Maximum file length: 500 lines  
+- Maximum file length: 500 lines
 - Maximum cyclomatic complexity: 10
-- Clear, descriptive naming always
-
-### Testing Requirements
-- Test existing patterns when framework present
-- Focus on business logic and edge cases
-- Use existing test structure and conventions
-- Aim for reasonable coverage without obsessing over percentages
-
-### Documentation Guidelines
-- Inline documentation for complex logic
-- README updates only when explicitly requested
-- Code should be self-documenting through clear naming
-- Include `file_path:line_number` in explanations
 
 ### Quality Assurance
 - Always run available quality tools before completing
 - Fix linting and type errors immediately
 - No hardcoded secrets or credentials
-- Follow existing project conventions
 
 ## Git Configuration
 
 ### Commit Message Format
-```
 <type>: <description>
 
-<body (optional)>
-
 🤖 Generated with Claude Code
-
 Co-Authored-By: Claude <noreply@anthropic.com>
-```
 
 ### Commit Types
-- `feat`: New feature
-- `fix`: Bug fix
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `docs`: Documentation updates
-- `style`: Code formatting
-- `perf`: Performance improvements
+feat, fix, refactor, test, docs, style, perf
 
-### Branch Naming
-- Features: `feature/descriptive-name`
-- Fixes: `fix/issue-description`
-- Refactoring: `refactor/component-name`
-
-## Claude Code Integration
-
-### TodoWrite Usage
-- **MANDATORY**: Use TodoWrite for any task with >2 steps
-- Mark exactly ONE todo as "in_progress" at a time
-- Mark todos "completed" immediately after finishing
-- Break down complex tasks into smaller, actionable items
-
-### Quality Command Detection
-- Use Glob to find config files: `**/.eslintrc*`, `**/pyproject.toml`, etc.
-- Check `package.json` scripts section for available commands
-- Look for common patterns: `lint`, `test`, `typecheck`, `format`
-- Always ask user for commands if not obvious
-
-### Tool Integration
-- Use Read tool to understand existing code patterns
-- Use Grep to find similar implementations
-- Use Glob to discover project structure
-- Use Bash to run quality checks and tests
-
-### Agent Enforcement Triggers
-1. **Task received**: framework-orchestrator creates TodoWrite workflow
-2. **Phase transitions**: Agents coordinate through orchestrator
-3. **Quality gates**: quality-guardian validates before progression
-4. **Completion**: metrics-collector records data before closure
-5. **Git integration**: review-coordinator handles commits and PRs
-
-## Project-Specific Adaptations
-
-### JavaScript/TypeScript Projects
-- Look for: `package.json`, `.eslintrc*`, `tsconfig.json`
-- Common commands: `npm run lint`, `npm run typecheck`, `npm test`
-- Check for: Prettier, ESLint, Jest, Vitest
-
-### Python Projects  
-- Look for: `pyproject.toml`, `requirements.txt`, `setup.py`
-- Common tools: `ruff`, `black`, `mypy`, `pytest`
-- Virtual environment detection
-
-### Rust Projects
-- Look for: `Cargo.toml`, `Cargo.lock`
-- Common commands: `cargo clippy`, `cargo fmt`, `cargo test`
-- Check for workspace configuration
-
-### Go Projects
-- Look for: `go.mod`, `go.sum`, `Makefile`
-- Common commands: `go vet`, `go test ./...`, `go fmt`
-- Check for module structure and build tools
-
-### Other Languages
-- Examine project files to understand toolchain
-- Ask user for specific quality commands if unclear
-- Adapt patterns to match existing project structure
-
-# Important Reminders
-
-1. **Always use TodoWrite** for task management and progress tracking
-2. **Run quality checks** before considering any task complete
-3. **Follow existing patterns** rather than imposing new conventions
-4. **Only commit when explicitly requested** by the user
-5. **Ask about co-authoring** when creating git commits
-6. **Prefer editing existing files** over creating new ones
-7. **Keep responses concise** and focused on the task at hand
-# Agent-Enhanced Framework Usage
-
-## How to Use the Sub-Agent System
-
-### Primary Entry Point
-For any development task, use the framework-orchestrator:
-```bash
-# Trigger the complete 18-step workflow
-/agents framework-orchestrator "Add user authentication to my React app"
-/agents framework-orchestrator "Refactor database layer and add caching"
-/agents framework-orchestrator "Create comprehensive test suite for API endpoints"
+## Important Reminders
+1. Always use TodoWrite for task management
+2. Run quality checks before completing tasks
+3. Follow existing patterns
+4. Only commit when explicitly requested
+5. Use `git -C <directory>` instead of `cd && git`
 ```
-
-### Agent Coordination Workflow
-1. **framework-orchestrator** receives task and creates TodoWrite workflow
-2. **context-analyst** analyzes project structure and tech stack
-3. **plan-architect** creates comprehensive implementation plan
-4. **implementation-engineer** develops code following quality standards
-5. **test-specialist** creates and validates comprehensive test suite
-6. **quality-guardian** enforces quality gates and standards
-7. **review-coordinator** creates PR and manages review process
-8. **metrics-collector** collects data and provides retrospective insights
-
-### Agent Quality Standards
-- All agents report completion back to framework-orchestrator
-- Enforce framework standards (functions <50 lines, files <500 lines)
-- Use semantic commit messages with agent co-authoring
-- Integrate with existing project patterns and tools
-- Follow existing conventions rather than creating new ones
-```
-
-## Customization
-
-- Update author email in Git section
-- Adjust quality commands for your stack
-- Add project-specific patterns
-- Set appropriate complexity limits
-
-## Maintenance
-
-- Review effectiveness monthly
-- Update for new project patterns
-- Version control `.claude` directory
 
 ---
 
-*Optimized for Claude Code CLI*
-*Framework Version: 3.0 (Agent-Enhanced)*
-*Last Updated: 2025-09-04*
+## settings.json
+
+```json
+{
+  "alwaysThinkingEnabled": true,
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(npm:*)",
+      "Bash(yarn:*)",
+      "Bash(pnpm:*)",
+      "Bash(pytest:*)",
+      "Bash(cargo:*)",
+      "Bash(go:*)",
+      "Bash(make:*)",
+      "Bash(docker:*)"
+    ],
+    "deny": []
+  }
+}
+```
+
+---
+
+## Hooks Configuration
+
+### hooks/pre-edit.json (File Protection)
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": {
+          "tool": ["Edit", "Write"],
+          "file_pattern": [
+            ".env*",
+            "*.key",
+            "*.pem",
+            "credentials*",
+            ".git/*",
+            "**/secrets/**"
+          ]
+        },
+        "action": "block",
+        "message": "Protected file - requires explicit user approval"
+      }
+    ]
+  }
+}
+```
+
+### hooks/pre-commit.json (Quality Gate)
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": {
+          "tool": "Bash",
+          "command_pattern": "git commit*"
+        },
+        "action": "run",
+        "commands": [
+          {
+            "description": "Auto-format staged files",
+            "js": "npm run format --if-present",
+            "py": "black . && ruff check --fix . || true",
+            "go": "go fmt ./...",
+            "rs": "cargo fmt"
+          },
+          {
+            "description": "Run linting",
+            "js": "npm run lint --if-present",
+            "py": "ruff check .",
+            "go": "go vet ./...",
+            "rs": "cargo clippy"
+          },
+          {
+            "description": "Run tests",
+            "js": "npm test --if-present || true",
+            "py": "pytest -q || true",
+            "go": "go test ./... || true",
+            "rs": "cargo test || true"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+## MCP Configuration
+
+### mcp.json
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/v1",
+      "scope": "user",
+      "description": "GitHub PR/Issue automation"
+    },
+    "filesystem": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "scope": "local",
+      "description": "Enhanced file operations"
+    },
+    "memory": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "scope": "user",
+      "description": "Cross-session context"
+    }
+  }
+}
+```
+
+---
+
+## Skills Configuration
+
+### skills/security-review.md
+
+```markdown
+---
+name: "Security Review"
+description: |
+  Use when performing security audits, vulnerability scans,
+  or reviewing code for security issues. Read-only analysis.
+allowed-tools: Read, Grep, Glob, WebSearch
+---
+
+Perform comprehensive security analysis:
+1. Scan for hardcoded secrets (API_KEY, PASSWORD, SECRET, TOKEN)
+2. Check for SQL injection vulnerabilities
+3. Identify XSS risks in template rendering
+4. Review authentication/authorization implementations
+5. Check dependency vulnerabilities via package manifests
+```
+
+### skills/context-analysis.md
+
+```markdown
+---
+name: "Context Analysis"
+description: |
+  Use PROACTIVELY when exploring new codebases or
+  gathering project context. Read-only discovery.
+allowed-tools: Read, Grep, Glob
+---
+
+Generate comprehensive project context:
+1. Tech stack detection from config files
+2. Architecture pattern identification
+3. Test framework discovery
+4. Quality tool detection
+5. Dependency analysis
+```
+
+### skills/performance-audit.md
+
+```markdown
+---
+name: "Performance Audit"
+description: |
+  Use when analyzing performance bottlenecks.
+allowed-tools: Read, Grep, Glob, Bash
+---
+
+Analyze performance characteristics:
+1. Identify N+1 query patterns
+2. Find synchronous blocking operations
+3. Detect memory leak patterns
+4. Review caching implementations
+```
+
+---
+
+## Slash Commands
+
+### commands/agent.md
+
+```markdown
+---
+description: "Quick access to framework-orchestrator agent"
+model: sonnet
+argument_hint: "development task description"
+---
+
+Use the framework-orchestrator agent to coordinate the complete 18-step workflow for: $ARGUMENTS
+```
+
+### commands/context.md
+
+```markdown
+---
+description: "Refresh project context analysis"
+---
+
+Use context-analyst agent to:
+1. Re-analyze project structure
+2. Detect any new patterns or tools
+3. Update mental model of codebase
+4. Identify recent architectural changes
+```
+
+### commands/quality.md
+
+```markdown
+---
+description: "Run comprehensive quality checks"
+---
+
+Use quality-guardian agent to:
+1. Run all available linters
+2. Execute type checking
+3. Run test suite
+4. Check code complexity metrics
+5. Report any violations
+```
+
+### commands/security-scan.md
+
+```markdown
+---
+description: "Quick security scan of current changes"
+---
+
+Use forensic-specialist agent to scan for:
+- Hardcoded secrets in staged changes
+- New dependencies with known vulnerabilities
+- Security anti-patterns in modified code
+```
+
+### commands/pr-summary.md
+
+```markdown
+---
+description: "Generate PR summary from current branch"
+---
+
+Analyze all commits since branching from main:
+1. Summarize changes by category
+2. List modified files with descriptions
+3. Identify breaking changes
+4. Generate test plan recommendations
+```
+
+---
+
+## Quick Tips
+
+1. **Let agents work proactively** - Don't micromanage
+2. **Use slash commands** - `/quality`, `/context`, `/security-scan`
+3. **Trust the hooks** - Auto-format and validate on commit
+4. **Skills are read-only** - Safe for analysis
+5. **TodoWrite discipline** - ONE task in_progress at a time
+6. **Quality standards** - Functions <50 lines, Files <500 lines
+
+---
+
+*Framework Version: 3.1.0 (Agent-Enhanced with Hooks & Skills)*
+*Last Updated: 2025-11-26*

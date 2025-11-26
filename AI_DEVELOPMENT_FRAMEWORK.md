@@ -1,7 +1,39 @@
-# AI-Assisted Development Framework
+# AI-Assisted Development Framework v3.1
 
 ## Overview
 This framework establishes a systematic approach to AI-assisted software development, optimizing for collaboration between human developers and AI models while maintaining code quality, readability, and maintainability.
+
+## What's New in v3.1
+
+### Hooks System
+Automated quality gates and file protection:
+- **Pre-Edit Hooks**: Block edits to sensitive files (`.env*`, `*.key`, `*.pem`, `credentials*`)
+- **Pre-Commit Hooks**: Auto-format, lint, and test on commit
+
+### Skills System
+Read-only analysis modes with tool restrictions:
+- **security-review**: Security audits and vulnerability scanning
+- **context-analysis**: Project structure and pattern discovery
+- **performance-audit**: Bottleneck detection and optimization
+
+### Slash Commands
+Quick access to framework workflows:
+- `/agent <task>`: Full 18-step workflow
+- `/context`: Project analysis
+- `/quality`: Run quality checks
+- `/security-scan`: Security audit
+- `/pr-summary`: Generate PR summary
+
+### MCP Integration
+Model Context Protocol servers for enhanced capabilities:
+- **GitHub**: PR/Issue automation via `gh` CLI
+- **Filesystem**: Enhanced file operations
+- **Memory**: Cross-session context persistence
+
+### Proactive Agent Triggers
+Agents now activate automatically based on context:
+- **MUST BE USED**: Required for specific scenarios
+- **Use PROACTIVELY**: Recommended automatic activation
 
 ## Core Principles
 
@@ -23,17 +55,49 @@ This framework establishes a systematic approach to AI-assisted software develop
 - Minimum 80% coverage with performance benchmarks
 - Creates regression safety net
 
-### 4. **Multi-AI Review**
-- Claude for complex reasoning and implementation
-- GitHub Copilot for code review
-- Specialized tools for security and performance
-- Cross-validation between AI models catches different issues
+### 4. **Agent-Based Orchestration**
+- 9 specialized agents with clear responsibilities
+- Proactive activation based on context
+- Hybrid model assignment (Opus for strategic, Sonnet for execution)
+- Quality gates enforced by dedicated quality-guardian agent
 
 ### 5. **Continuous Improvement**
 - Collect metrics on every iteration
 - Regular retrospectives and framework updates
 - Documentation as code philosophy
 - Feedback loops at every phase
+
+## Agent Hierarchy (v3.1)
+
+### Model Assignments
+
+| Agent | Model | Role | Proactive Trigger |
+|-------|-------|------|-------------------|
+| **framework-orchestrator** | opus | Master coordinator | MUST BE USED for any task >3 steps |
+| **context-analyst** | sonnet | Phase 1: context analysis | Use PROACTIVELY before implementation |
+| **plan-architect** | opus | Phase 1: planning | MUST BE USED for architectural decisions |
+| **implementation-engineer** | sonnet | Phase 2: coding | Use when executing approved plans |
+| **test-specialist** | sonnet | Phase 2: testing | Use PROACTIVELY after implementation |
+| **quality-guardian** | sonnet | Phase 2-3: QA | MUST BE USED before commit/PR/merge |
+| **review-coordinator** | sonnet | Phase 3: PR management | Use when creating PRs |
+| **metrics-collector** | sonnet | Phase 4: metrics | Use after task completion |
+| **forensic-specialist** | sonnet | Security: forensics | Use PROACTIVELY for security audits |
+
+### Inter-Agent Communication Protocol
+
+1. **Handoff Format**: JSON with task_id, status, findings, next_steps
+2. **Quality Gate Signals**: PASS/FAIL/WARN with specific violations listed
+3. **Escalation Path**: Any agent → quality-guardian → framework-orchestrator
+4. **Metrics Reporting**: All agents report timing + outcome to metrics-collector
+5. **Context Sharing**: Agents pass relevant file paths and patterns discovered
+
+### Agent Coordination Rules
+
+- Only framework-orchestrator can initiate TodoWrite workflows
+- Each specialist agent reports back to orchestrator
+- Quality gates must be approved by quality-guardian
+- All phases must be completed in sequence
+- Metrics must be collected by metrics-collector
 
 ## Enhanced Workflow Steps
 
@@ -319,8 +383,50 @@ repos:
 - Metrics dashboard
 - AI model performance logs
 
+## Hooks System
+
+### Pre-Edit Hook (File Protection)
+Blocks edits to sensitive files:
+- `.env*` - Environment files
+- `*.key`, `*.pem` - Cryptographic keys
+- `credentials*` - Credential files
+- `.git/*` - Git internals
+- `**/secrets/**` - Secret directories
+
+### Pre-Commit Hook (Quality Gate)
+Runs automatically on `git commit`:
+1. Auto-format code (Prettier/Black/Rustfmt/Go fmt)
+2. Run linting (ESLint/Ruff/Clippy/Go vet)
+3. Run type checking (TypeScript/Mypy/Cargo check)
+4. Run tests (Jest/Pytest/Cargo test/Go test)
+
+## Skills System
+
+### Available Skills
+
+| Skill | Purpose | Allowed Tools |
+|-------|---------|---------------|
+| `security-review` | Security audits | Read, Grep, Glob, WebSearch |
+| `context-analysis` | Project analysis | Read, Grep, Glob |
+| `performance-audit` | Bottleneck detection | Read, Grep, Glob, Bash |
+
+### Skill Characteristics
+- **Read-only analysis**: No Write/Edit tools
+- **Safe for exploration**: Can't modify code
+- **Tool-restricted**: Only specified tools available
+
+## Slash Commands
+
+| Command | Description | Agent Used |
+|---------|-------------|------------|
+| `/agent <task>` | Full 18-step workflow | framework-orchestrator |
+| `/context` | Refresh project analysis | context-analyst |
+| `/quality` | Run all quality checks | quality-guardian |
+| `/security-scan` | Quick security audit | forensic-specialist |
+| `/pr-summary` | Generate PR summary | review-coordinator |
+
 ---
 
-*Last Updated: 2025-09-04*
-*Version: 3.0.0 (Agent-Enhanced)*
-*Next Review: 2025-12-04*
+*Last Updated: 2025-11-26*
+*Version: 3.1.0 (Agent-Enhanced with Hooks & Skills)*
+*Next Review: 2026-02-26*

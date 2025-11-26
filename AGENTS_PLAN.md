@@ -1,8 +1,16 @@
-# AI Development Framework: Agent-Based Migration Plan
+# AI Development Framework: Agent-Based Architecture v3.1
 
 ## Executive Summary
 
-This document outlines the strategic migration from the current manual 18-step framework to a Claude Code sub-agent orchestrated approach. The migration leverages Claude Code's sub-agent capabilities to automate and orchestrate development workflows while maintaining the framework's core principles and quality standards.
+This document outlines the agent-based architecture for the AI Development Framework v3.1. The framework uses 9 specialized Claude Code sub-agents with proactive triggers, hybrid model assignments, and automated hooks to orchestrate development workflows while maintaining quality standards.
+
+### What's New in v3.1
+- **9 agents** (added forensic-specialist for security)
+- **Proactive triggers** (MUST BE USED, Use PROACTIVELY)
+- **Hybrid model assignment** (Opus for strategic, Sonnet for execution)
+- **Inter-agent communication protocol**
+- **Hooks system** for automated quality gates
+- **Skills system** for read-only analysis
 
 ## Current State Analysis
 
@@ -27,14 +35,30 @@ This document outlines the strategic migration from the current manual 18-step f
 - **Inconsistent execution** of framework steps
 - **Limited scalability** for complex multi-component features
 
-## Claude Code Sub-Agent Strategy
+## Agent Architecture v3.1
 
-### Core Agent Architecture
+### Agent Hierarchy with Model Assignments
+
+| Agent | Model | Role | Proactive Trigger |
+|-------|-------|------|-------------------|
+| **framework-orchestrator** | **opus** | Master coordinator | MUST BE USED for any task >3 steps |
+| **context-analyst** | sonnet | Phase 1: context | Use PROACTIVELY before implementation |
+| **plan-architect** | **opus** | Phase 1: planning | MUST BE USED for architectural decisions |
+| **implementation-engineer** | sonnet | Phase 2: coding | Use when executing approved plans |
+| **test-specialist** | sonnet | Phase 2: testing | Use PROACTIVELY after implementation |
+| **quality-guardian** | sonnet | Phase 2-3: QA | MUST BE USED before commit/PR/merge |
+| **review-coordinator** | sonnet | Phase 3: PRs | Use when creating PRs |
+| **metrics-collector** | sonnet | Phase 4: metrics | Use after task completion |
+| **forensic-specialist** | sonnet | Security | Use PROACTIVELY for security audits |
+
+### Core Agent Definitions
 
 #### 1. Framework Orchestrator (`framework-orchestrator`)
 ```yaml
 Purpose: Master controller for the 18-step workflow
+Model: opus (strategic reasoning required)
 Tools: All tools (Read, Write, Edit, Bash, TodoWrite, Task)
+Proactive Trigger: MUST BE USED for any task >3 steps
 Responsibilities:
   - Initialize TodoWrite with framework steps
   - Delegate specialized tasks to sub-agents
@@ -46,7 +70,9 @@ Responsibilities:
 #### 2. Context Analyst (`context-analyst`)
 ```yaml
 Purpose: Phase 1 specialist - context preparation and planning
+Model: sonnet
 Tools: Read, Glob, Grep, WebFetch
+Proactive Trigger: Use PROACTIVELY when entering unfamiliar codebase or before implementation
 Responsibilities:
   - Analyze project structure and tech stack
   - Review existing patterns and conventions
@@ -58,7 +84,9 @@ Responsibilities:
 #### 3. Plan Architect (`plan-architect`)
 ```yaml
 Purpose: Phase 1 specialist - detailed planning and architecture
+Model: opus (strategic reasoning required)
 Tools: Read, Write, Edit, TodoWrite, ExitPlanMode
+Proactive Trigger: MUST BE USED for architectural decisions. Use PROACTIVELY for complex features
 Responsibilities:
   - Create comprehensive implementation plans
   - Define acceptance criteria and success metrics
@@ -70,7 +98,9 @@ Responsibilities:
 #### 4. Implementation Engineer (`implementation-engineer`)
 ```yaml
 Purpose: Phase 2 specialist - code implementation
+Model: sonnet
 Tools: Read, Write, Edit, MultiEdit, NotebookEdit, Bash
+Proactive Trigger: Use when executing approved plans with code changes
 Responsibilities:
   - Implement features following quality standards
   - Follow semantic commit message patterns
@@ -82,7 +112,9 @@ Responsibilities:
 #### 5. Test Specialist (`test-specialist`)
 ```yaml
 Purpose: Phase 2 specialist - test creation and validation
+Model: sonnet
 Tools: Read, Write, Edit, Bash, Glob, Grep
+Proactive Trigger: Use PROACTIVELY after implementation to create comprehensive tests
 Responsibilities:
   - Analyze existing test patterns
   - Create comprehensive test suites
@@ -94,7 +126,9 @@ Responsibilities:
 #### 6. Quality Guardian (`quality-guardian`)
 ```yaml
 Purpose: Phase 2-3 specialist - quality assurance
+Model: sonnet
 Tools: Read, Bash, Grep, Glob
+Proactive Trigger: MUST BE USED before any commit, PR, or merge. Use PROACTIVELY after implementation
 Responsibilities:
   - Run linting and type checking
   - Execute security scans
@@ -106,7 +140,9 @@ Responsibilities:
 #### 7. Review Coordinator (`review-coordinator`)
 ```yaml
 Purpose: Phase 3 specialist - PR and review management
+Model: sonnet
 Tools: Read, Write, Bash (for git/gh commands)
+Proactive Trigger: Use when creating PRs or managing review workflows
 Responsibilities:
   - Create comprehensive pull requests
   - Generate PR descriptions with metrics
@@ -118,7 +154,9 @@ Responsibilities:
 #### 8. Metrics Collector (`metrics-collector`)
 ```yaml
 Purpose: Phase 4 specialist - data collection and analysis
+Model: sonnet
 Tools: Read, Write, Bash
+Proactive Trigger: Use after task completion to collect metrics and lessons learned
 Responsibilities:
   - Collect implementation metrics
   - Generate performance reports
@@ -127,23 +165,48 @@ Responsibilities:
   - Update framework effectiveness data
 ```
 
+#### 9. Forensic Specialist (`forensic-specialist`) - NEW in v3.1
+```yaml
+Purpose: Security specialist - defensive forensics and threat analysis
+Model: sonnet
+Tools: Read, Grep, Glob, Bash, WebSearch
+Proactive Trigger: Use PROACTIVELY for security audits or when suspicious patterns detected
+Responsibilities:
+  - Threat hunting and detection
+  - Malware analysis (static and behavioral)
+  - IOC (Indicator of Compromise) generation
+  - Chain of custody documentation
+  - Security audit and remediation guidance
+Defensive Only: NEVER create offensive tools or exploits
+```
+
+### Inter-Agent Communication Protocol
+
+1. **Handoff Format**: JSON with task_id, status, findings, next_steps
+2. **Quality Gate Signals**: PASS/FAIL/WARN with specific violations listed
+3. **Escalation Path**: Any agent → quality-guardian → framework-orchestrator
+4. **Metrics Reporting**: All agents report timing + outcome to metrics-collector
+5. **Context Sharing**: Agents pass relevant file paths and patterns discovered
+
 ### Agent Interaction Flow
 
 ```mermaid
 graph TB
-    User[User Request] --> FO[Framework Orchestrator]
+    User[User Request] --> FO[Framework Orchestrator - opus]
     FO --> CA[Context Analyst]
-    FO --> PA[Plan Architect]
+    FO --> PA[Plan Architect - opus]
     PA --> IE[Implementation Engineer]
     IE --> TS[Test Specialist]
     TS --> QG[Quality Guardian]
     QG --> RC[Review Coordinator]
     RC --> MC[Metrics Collector]
-    
+
+    FO -.-> FS[Forensic Specialist]
     FO -.-> TodoWrite[TodoWrite Management]
     QG -.-> IE[Feedback Loop]
     RC -.-> IE[Review Feedback]
     MC -.-> FO[Metrics Report]
+    FS -.-> QG[Security Findings]
 ```
 
 ## Migration Strategy
@@ -403,8 +466,10 @@ quality-guardian:
 
 ## Future Enhancements
 
+### Implemented in v3.1
+- **forensic-specialist**: Security audits and threat analysis (defensive only)
+
 ### Planned Agent Extensions
-- **Security Specialist**: Advanced security scanning and remediation
 - **Performance Engineer**: Automated performance optimization
 - **Documentation Writer**: Comprehensive documentation generation
 - **Deployment Manager**: CI/CD pipeline management and deployment
@@ -415,9 +480,46 @@ quality-guardian:
 - Integration with external development tools and services
 - Real-time collaboration features for team development
 
+## Hooks System (v3.1)
+
+### Pre-Edit Hook (File Protection)
+```json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": {
+        "tool": ["Edit", "Write"],
+        "file_pattern": [".env*", "*.key", "*.pem", "credentials*", ".git/*"]
+      },
+      "action": "block",
+      "message": "Protected file - requires explicit user approval"
+    }]
+  }
+}
+```
+
+### Pre-Commit Hook (Quality Gate)
+Runs automatically on `git commit`:
+1. Auto-format code
+2. Run linting
+3. Run type checking
+4. Run tests
+
+## Skills System (v3.1)
+
+### Available Skills
+
+| Skill | Purpose | Allowed Tools |
+|-------|---------|---------------|
+| `security-review` | Security audits | Read, Grep, Glob, WebSearch |
+| `context-analysis` | Project analysis | Read, Grep, Glob |
+| `performance-audit` | Bottleneck detection | Read, Grep, Glob, Bash |
+
+Skills are read-only analysis modes that restrict tool usage for safe exploration.
+
 ---
 
-*Migration Plan Version: 1.0*  
-*Created: 2025-09-04*  
-*Target Completion: TBD*  
-*Framework Version: 2.1 → 3.0 (Agent-Enhanced)*
+*Architecture Version: 3.1.0*
+*Created: 2025-09-04*
+*Updated: 2025-11-26*
+*Framework Version: 3.1 (Agent-Enhanced with Hooks & Skills)*

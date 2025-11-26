@@ -1,67 +1,91 @@
-# AI Development Framework v3.0 - Agent-Enhanced
+# AI Development Framework v3.1 - Agent-Enhanced
 
-> A systematic Claude Code sub-agent orchestrated approach to AI-assisted software development that automates the 18-step workflow while maintaining excellence in code quality, documentation, and delivery speed.
+> A systematic Claude Code sub-agent orchestrated approach to AI-assisted software development featuring automated hooks, specialized skills, MCP integration, and proactive agent triggers.
 
-## 🚀 Quick Start
+## Quick Start
 
-1. **Set Up Global Configuration (Recommended)**
+1. **Install Framework Configuration**
    ```bash
-   mkdir -p ~/dotfiles/claude/.claude
-   # Copy framework configuration to ~/dotfiles/claude/.claude/CLAUDE.md
-   # See CLAUDE_CONFIGURATION_SAMPLE.md for full content
+   # Clone and setup via dotfiles
+   cd ~/dotfiles/claude/.claude
+
+   # Structure after setup:
+   # ~/.claude/
+   # ├── CLAUDE.md → dotfiles symlink
+   # ├── commands/ → dotfiles symlink
+   # ├── hooks/    → dotfiles symlink
+   # ├── skills/   → dotfiles symlink
+   # └── mcp.json  → dotfiles symlink
+
    stow -d ~/dotfiles -t ~ claude
    ```
 
-2. **Use the Pre-Created Claude Code Sub-Agents**
+2. **Use Slash Commands**
    ```bash
-   # All 8 specialized agents are ready to use:
-   /agents framework-orchestrator "Your development task description"
-   # The orchestrator will coordinate all other agents automatically
+   /agent "Add user authentication to the API"    # Full orchestrated workflow
+   /context                                       # Analyze project context
+   /quality                                       # Run all quality checks
+   /security-scan                                 # Security audit
+   /pr-summary                                    # Generate PR summary
    ```
 
-3. **Start Your First Agent-Enhanced Feature**
+3. **Leverage Skills**
    ```bash
-   # Example usage:
-   /agents framework-orchestrator "Add dark mode toggle to the settings page"
-   
-   # The orchestrator automatically coordinates:
-   # - context-analyst: Analyzes project structure
-   # - plan-architect: Creates comprehensive implementation plan
-   # - implementation-engineer: Implements code with quality standards
-   # - test-specialist: Creates comprehensive test suite
-   # - quality-guardian: Enforces quality gates
-   # - review-coordinator: Creates PR and manages reviews
-   # - metrics-collector: Collects metrics and insights
+   # Skills are automatically invoked based on context
+   # Or manually via agent delegation
    ```
 
-4. **Follow the automated 18-step workflow** → See [QUICK_REFERENCE.md](QUICK_REFERENCE.md) and [AGENTS_PLAN.md](AGENTS_PLAN.md)
+---
 
-## 📋 What's Included
+## What's New in v3.1
 
-| File | Purpose |
-|------|---------|
-| [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete 18-step framework documentation |
-| [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Daily-use cheat sheet and visual guides |
-| [AGENTS_PLAN.md](AGENTS_PLAN.md) | Agent-enhanced migration plan and architecture |
-| [agents/](agents/) | Complete Claude Code sub-agent samples and configurations |
-| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Ready-to-use agent-enhanced AI configuration |
-| [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Project context template |
-| [CHANGELOG.md](CHANGELOG.md) | Version history and improvements |
-| [docs/ADRs/](docs/ADRs/) | Architecture Decision Records |
+| Feature | Description |
+|---------|-------------|
+| **Hooks System** | Pre-edit file protection, pre-commit quality gates |
+| **Skills** | Specialized read-only analysis (security, context, performance) |
+| **Slash Commands** | `/security-scan`, `/pr-summary`, `/context`, `/quality` |
+| **MCP Integration** | GitHub, filesystem, memory servers |
+| **Proactive Triggers** | Agents auto-delegate based on task patterns |
+| **Model Optimization** | Opus for orchestration, Sonnet for execution |
 
-## 🎯 Framework Overview
+---
 
-### The Agent-Enhanced 18-Step Workflow
+## Framework Architecture
+
+### Agent Hierarchy with Model Assignments
+
+| Agent | Model | Proactive Trigger |
+|-------|-------|-------------------|
+| **framework-orchestrator** | opus | MUST BE USED for tasks >3 steps |
+| **plan-architect** | opus | MUST BE USED for architectural decisions |
+| **context-analyst** | sonnet | Use PROACTIVELY before implementation |
+| **implementation-engineer** | sonnet | Execute approved plans |
+| **test-specialist** | sonnet | Use PROACTIVELY after implementation |
+| **quality-guardian** | sonnet | MUST BE USED before commit/PR/merge |
+| **review-coordinator** | sonnet | PR and review workflows |
+| **metrics-collector** | sonnet | Post-completion metrics |
+| **forensic-specialist** | sonnet | Security audits and threat analysis |
+
+### Inter-Agent Communication Protocol
+
+```
+1. Handoff Format:    JSON {task_id, status, findings, next_steps}
+2. Quality Signals:   PASS/FAIL/WARN with violations
+3. Escalation Path:   Any Agent → quality-guardian → framework-orchestrator
+4. Metrics Reporting: All agents → metrics-collector
+```
+
+### 18-Step Workflow
 
 ```mermaid
 graph TB
-    subgraph "📋 Phase 1: Planning & Context (1-4)"
-        A1[1. Context Prep] --> A2[2. Request Plan]
+    subgraph "Phase 1: Planning (Steps 1-4)"
+        A1[1. Context Prep] --> A2[2. Create Plan]
         A2 --> A3[3. Document Plan]
         A3 --> A4[4. Refine Plan]
     end
-    
-    subgraph "⚡ Phase 2: Implementation (5-10)"
+
+    subgraph "Phase 2: Implementation (Steps 5-10)"
         A4 --> B5[5. Pre-Setup]
         B5 --> B6[6. Branch]
         B6 --> B7[7. Code]
@@ -69,177 +93,399 @@ graph TB
         B8 --> B9[9. Test]
         B9 --> B10[10. Quality Check]
     end
-    
-    subgraph "🔍 Phase 3: Review & Integration (11-16)"
-        B10 --> C11[11. Push & CI/CD]
+
+    subgraph "Phase 3: Review (Steps 11-16)"
+        B10 --> C11[11. Push/CI]
         C11 --> C12[12. Create PR]
-        C12 --> C13[13. AI Review]
-        C13 --> C14[14. Feedback Loop]
-        C14 --> C15[15. Final Validation]
-        C15 --> C16[16. Merge & Cleanup]
+        C12 --> C13[13. Review]
+        C13 --> C14[14. Feedback]
+        C14 --> C15[15. Validate]
+        C15 --> C16[16. Merge]
     end
-    
-    subgraph "📊 Phase 4: Post-Merge (17-18)"
-        C16 --> D17[17. Collect Metrics]
+
+    subgraph "Phase 4: Post-Merge (Steps 17-18)"
+        C16 --> D17[17. Metrics]
         D17 --> D18[18. Retrospective]
     end
 ```
 
-### Core Principles
+---
 
-1. **🎯 Agent-Orchestrated Planning**: Automated comprehensive planning via specialized agents
-2. **🔄 Isolated Development**: Feature branches with clean merge strategies  
-3. **✅ Automated Test-Driven Validation**: 80% coverage minimum with performance benchmarks
-4. **🤖 Multi-Agent Quality**: 8 specialized Claude Code sub-agents for comprehensive quality
-5. **📈 Continuous Improvement**: Metrics-driven framework evolution with automated collection
+## Usage Manual
 
-## 🏆 Key Benefits
+### Hooks System
 
-- **⚡ Speed**: < 2 hours from plan to implementation for small features
-- **🎯 Quality**: < 1 bug per 100 lines of code with systematic validation
-- **📚 Knowledge**: Complete documentation and context preservation
-- **🔄 Consistency**: Standardized approach across all development
-- **🚀 Scalability**: Works for solo developers to large teams
+Hooks automate quality enforcement without manual intervention.
 
-## 🛠 Tool Integration
+#### Pre-Edit Hook (File Protection)
 
-### Required
-- **Claude Code CLI**: With sub-agent capabilities
-- **Git**: Version control with semantic commits
-- **8 Specialized Agents**: framework-orchestrator, context-analyst, plan-architect, implementation-engineer, test-specialist, quality-guardian, review-coordinator, metrics-collector
+Automatically blocks edits to sensitive files:
+- `.env*` - Environment files
+- `*.key`, `*.pem` - Cryptographic keys
+- `credentials*` - Credential files
+- `.git/*` - Git internals
 
-### Recommended  
-- **IDE**: Neovim with LazyVim configuration
-- **Quality**: Pre-commit hooks, CI/CD pipelines
-- **Documentation**: Markdown with Mermaid diagrams
-
-### Optional
-- **GitHub CLI**: Automated PR creation
-- **Security Tools**: SAST/DAST scanning
-- **Performance**: Profiling and monitoring tools
-
-## 📊 Performance Targets
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| Planning Time | 15-30 min | Steps 1-4 |
-| Implementation | < 2 hours | Steps 5-10 |
-| Review Cycles | < 3 | Steps 11-16 |
-| Test Coverage | >= 80% | Step 9 |
-| API Response | < 200ms | Step 10 |
-| Bug Rate | < 1/100 LOC | Step 17 |
-
-## 🤖 AI Model Usage Strategy
-
-| Model | Primary Use | Secondary Use |
-|-------|-------------|---------------|
-| **Claude Code Sub-Agents** | Automated workflow orchestration | All development phases |
-| **framework-orchestrator** | Master workflow coordination | TodoWrite management |
-| **context-analyst** | Project structure analysis | Tech stack detection |
-| **plan-architect** | Comprehensive planning | Architecture design |
-| **implementation-engineer** | Code implementation | Quality adherence |
-| **test-specialist** | Test creation and validation | Coverage verification |
-| **quality-guardian** | Quality assurance | Performance benchmarks |
-| **review-coordinator** | PR management | Review coordination |
-| **metrics-collector** | Data collection | Framework improvement |
-
-## 📖 Getting Started Guide
-
-### For Individual Developers
-1. Read [AGENTS_PLAN.md](AGENTS_PLAN.md) for agent setup
-2. Copy enhanced `.claude/CLAUDE.md` configuration
-3. Create the 8 specialized sub-agents in Claude Code
-4. Start with agent-orchestrated development
-
-### For Teams
-1. Review [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md)
-2. Set up shared agent configurations
-3. Customize agent behaviors for team standards
-4. Train team on agent-enhanced workflow
-5. Establish automated metrics dashboard
-
-### For Organizations
-1. Assess current development processes
-2. Plan gradual agent-enhanced adoption
-3. Customize agent configurations for organizational standards
-4. Implement team training on sub-agent workflows
-5. Monitor automated effectiveness metrics
-
-## 🔧 Configuration Examples
-
-### JavaScript/TypeScript Project
-```bash
-# Automated by quality-guardian agent
-npm run lint && npm run typecheck && npm test
+```json
+// ~/.claude/hooks/pre-edit.json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": {
+        "tool": ["Edit", "Write"],
+        "file_pattern": [".env*", "*.key", "credentials*"]
+      },
+      "action": "block",
+      "message": "Protected file - requires explicit approval"
+    }]
+  }
+}
 ```
 
-### Python Project  
-```bash
-# Automated by quality-guardian agent
-ruff check . && mypy . && pytest --cov=. --cov-fail-under=80
+#### Pre-Commit Hook (Quality Gate)
+
+Runs automatically before any `git commit`:
+- Auto-format code
+- Run linters
+- Execute type checking
+- Run test suite
+
+```json
+// ~/.claude/hooks/pre-commit.json
+{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": {
+        "tool": "Bash",
+        "command_pattern": "git commit*"
+      },
+      "action": "run",
+      "commands": [
+        {"format": "npm run format --if-present"},
+        {"lint": "npm run lint --if-present"},
+        {"typecheck": "npm run typecheck --if-present"},
+        {"test": "npm test --if-present || true"}
+      ]
+    }]
+  }
+}
 ```
-
-### Rust Project
-```bash
-# Automated by quality-guardian agent
-cargo clippy && cargo test
-```
-
-### Go Project
-```bash
-# Automated by quality-guardian agent
-go vet && go test -cover ./...
-```
-
-## 🤝 Contributing
-
-### Framework Improvements
-1. Create PLAN_IMPROVEMENT_*.md describing the enhancement
-2. Follow the 18-step workflow for implementation
-3. Update all related documentation
-4. Add ADR for significant architectural changes
-
-### Issue Reporting
-- Use GitHub Issues for bugs and feature requests
-- Include framework version and context
-- Provide reproduction steps and expected behavior
-
-## 📚 Learning Resources
-
-### Documentation
-- **Complete Framework**: [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md)
-- **Daily Reference**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
-- **Configuration**: [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md)
-
-### Examples
-- **Planning**: [PLAN_FRAMEWORK_DOCUMENTATION.md](PLAN_FRAMEWORK_DOCUMENTATION.md)
-- **Context**: [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md)
-- **Architecture**: [docs/ADRs/](docs/ADRs/)
-
-## 🔄 Version History
-
-- **v3.0.0** (2025-09-04): Agent-enhanced framework with Claude Code sub-agent orchestration and Go language support
-- **v2.0.0** (2025-09-02): Enhanced 18-step workflow with integrated improvements
-- **v1.0.0** (2025-09-02): Initial framework with 11-step basic workflow
-
-See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
-
-## 📞 Support
-
-- **Email**: joaoariedi@gmail.com
-- **Issues**: GitHub Issues for bugs and features
-- **Documentation**: Framework documentation in this repository
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Copyright (c) 2025 João Ariedi
 
 ---
 
-**Framework Version**: 3.0.0 (Agent-Enhanced)  
-**Last Updated**: 2025-09-04  
-**Compatibility**: Claude Code Sub-Agents, Universal AI development tools
+### Skills
 
-*Remember: This framework is about systematic excellence, not just following rules. Adapt it to your context while maintaining the core principles.*
+Skills are specialized, tool-restricted analysis modes.
+
+#### Security Review Skill
+```bash
+# Automatically invoked for security-related tasks
+# Tools: Read, Grep, Glob, WebSearch (read-only)
+
+# Performs:
+# - Hardcoded secrets scan
+# - SQL injection detection
+# - XSS risk assessment
+# - Auth/authz review
+# - Dependency vulnerability check
+```
+
+#### Context Analysis Skill
+```bash
+# Use PROACTIVELY when entering new codebases
+# Tools: Read, Grep, Glob (read-only)
+
+# Generates:
+# - Tech stack detection
+# - Architecture patterns
+# - Test framework discovery
+# - Quality tool detection
+```
+
+#### Performance Audit Skill
+```bash
+# For performance optimization tasks
+# Tools: Read, Grep, Glob, Bash
+
+# Analyzes:
+# - N+1 query patterns
+# - Blocking operations
+# - Memory leak patterns
+# - Caching opportunities
+```
+
+---
+
+### Slash Commands
+
+Quick access to common workflows.
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/agent <task>` | Full orchestrated workflow | `/agent "Add dark mode"` |
+| `/context` | Refresh project analysis | `/context` |
+| `/quality` | Run all quality checks | `/quality` |
+| `/security-scan` | Security audit | `/security-scan` |
+| `/pr-summary` | Generate PR summary | `/pr-summary` |
+
+#### /context Command
+```markdown
+Analyzes:
+1. Project structure and entry points
+2. Tech stack and versions
+3. Quality tools available
+4. Coding patterns in use
+5. Recent architectural changes
+```
+
+#### /quality Command
+```markdown
+Runs:
+1. Linting (ESLint/ruff/clippy/go vet)
+2. Type checking (TypeScript/mypy/cargo check)
+3. Formatting check (Prettier/black/rustfmt/gofmt)
+4. Test suite
+5. Complexity metrics
+```
+
+#### /security-scan Command
+```markdown
+Checks:
+1. Staged changes for secrets
+2. New dependencies for vulnerabilities
+3. Security anti-patterns
+4. Report with severity levels
+```
+
+#### /pr-summary Command
+```markdown
+Generates:
+1. Change summary by category
+2. Modified files list
+3. Breaking changes identification
+4. Test plan recommendations
+```
+
+---
+
+### MCP Integration
+
+Model Context Protocol servers extend Claude's capabilities.
+
+```json
+// ~/.claude/mcp.json
+{
+  "mcpServers": {
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/v1",
+      "description": "GitHub PR/Issue automation"
+    },
+    "filesystem": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
+      "description": "Enhanced file operations"
+    },
+    "memory": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Cross-session context"
+    }
+  }
+}
+```
+
+---
+
+## Quick Tips
+
+### 1. Let Agents Work Proactively
+Agents have proactive triggers - don't micromanage. Say:
+```
+"Add user authentication"
+```
+Not:
+```
+"First analyze the codebase, then create a plan, then implement..."
+```
+
+### 2. Use Slash Commands for Speed
+```bash
+/quality          # Instead of manually running lint, test, typecheck
+/context          # Instead of exploring files manually
+/security-scan    # Instead of manual security review
+```
+
+### 3. Trust the Hooks
+Don't manually format or lint - hooks handle it on commit:
+```bash
+git commit -m "feat: add feature"  # Auto-formats and validates
+```
+
+### 4. Skills are Read-Only
+Skills can't modify code - they're for analysis. Use them freely:
+- Security reviews before PRs
+- Context analysis for unfamiliar code
+- Performance audits before optimization
+
+### 5. Model Selection Matters
+- **Opus** (orchestrator, architect): Complex reasoning, architecture
+- **Sonnet** (specialists): Fast execution, implementation tasks
+
+### 6. TodoWrite is Your Friend
+Every task >2 steps should use TodoWrite:
+```
+1. Mark in_progress BEFORE starting
+2. Mark completed IMMEDIATELY after finishing
+3. Only ONE task in_progress at a time
+```
+
+### 7. Quality Standards (Memorize These)
+```
+Functions: < 50 lines
+Files:     < 500 lines
+Complexity: < 10
+Coverage:  >= 80%
+```
+
+### 8. Semantic Commits
+```bash
+feat:     # New feature
+fix:      # Bug fix
+refactor: # Code restructuring
+test:     # Adding tests
+docs:     # Documentation
+```
+
+### 9. Branch Naming
+```bash
+feature/descriptive-name
+fix/issue-description
+refactor/component-name
+```
+
+### 10. When Stuck, Use Context
+```bash
+/context  # Refresh understanding
+# Then describe what you need
+```
+
+---
+
+## Directory Structure
+
+```
+~/.claude/
+├── CLAUDE.md              # Main configuration (18-step workflow)
+├── settings.json          # Permissions and preferences
+├── mcp.json              # MCP server configuration
+├── commands/
+│   ├── agent.md          # /agent command
+│   ├── context.md        # /context command
+│   ├── quality.md        # /quality command
+│   ├── security-scan.md  # /security-scan command
+│   └── pr-summary.md     # /pr-summary command
+├── hooks/
+│   ├── pre-edit.json     # File protection
+│   └── pre-commit.json   # Quality gates
+├── skills/
+│   ├── security-review.md
+│   ├── context-analysis.md
+│   └── performance-audit.md
+└── agents/               # Agent definitions
+    ├── framework-orchestrator.md
+    ├── context-analyst.md
+    ├── plan-architect.md
+    ├── implementation-engineer.md
+    ├── test-specialist.md
+    ├── quality-guardian.md
+    ├── review-coordinator.md
+    ├── metrics-collector.md
+    └── forensic-specialist.md
+```
+
+---
+
+## Configuration Examples
+
+### JavaScript/TypeScript
+```bash
+# Quality check (automated by hooks)
+npm run lint && npm run typecheck && npm test
+```
+
+### Python
+```bash
+# Quality check (automated by hooks)
+ruff check . && mypy . && pytest --cov=.
+```
+
+### Rust
+```bash
+# Quality check (automated by hooks)
+cargo clippy && cargo fmt --check && cargo test
+```
+
+### Go
+```bash
+# Quality check (automated by hooks)
+go vet ./... && go test -cover ./...
+```
+
+---
+
+## Performance Targets
+
+| Metric | Target |
+|--------|--------|
+| Planning Time | 15-30 min |
+| Implementation | < 2 hours |
+| Review Cycles | < 3 |
+| Test Coverage | >= 80% |
+| API Response | < 200ms |
+| Bug Rate | < 1/100 LOC |
+
+---
+
+## Files Reference
+
+| File | Purpose |
+|------|---------|
+| [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete 18-step documentation |
+| [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Daily cheat sheet |
+| [AGENTS_PLAN.md](AGENTS_PLAN.md) | Agent architecture |
+| [agents/](agents/) | Agent definitions |
+| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Sample configuration |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+
+---
+
+## Version History
+
+- **v3.1.0** (2025-11-26): Hooks, skills, expanded commands, MCP integration, proactive triggers
+- **v3.0.0** (2025-09-04): Agent-enhanced with Claude Code sub-agents
+- **v2.0.0** (2025-09-02): Enhanced 18-step workflow
+- **v1.0.0** (2025-09-02): Initial 11-step framework
+
+See [CHANGELOG.md](CHANGELOG.md) for details.
+
+---
+
+## Support
+
+- **Issues**: GitHub Issues
+- **Documentation**: This repository
+- **Email**: joaoariedi@gmail.com
+
+## License
+
+MIT License - see [LICENSE](LICENSE)
+
+---
+
+**Framework Version**: 3.1.0 (Agent-Enhanced with Hooks & Skills)
+**Last Updated**: 2025-11-26
+**Compatibility**: Claude Code with sub-agents, hooks, skills, MCP
+
+*Systematic excellence through automation. The framework works for you, not the other way around.*
