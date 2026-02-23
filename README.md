@@ -1,296 +1,278 @@
-# AI Development Framework v3.1 - Agent-Enhanced
+# AI Development Framework v4.0
 
-> A systematic Claude Code sub-agent orchestrated approach to AI-assisted software development featuring automated hooks, specialized skills, MCP integration, and proactive agent triggers.
+> A systematic Claude Code configuration for spec-driven development (SDD) with quality gates, custom agents, automated hooks, and a full specification pipeline.
 
 ## Quick Start
 
-1. **Install Framework Configuration**
-   ```bash
-   # Clone and setup via dotfiles
-   cd ~/dotfiles/claude/.claude
+### 1. Install via Dotfiles
 
-   # Structure after setup:
-   # ~/.claude/
-   # ├── CLAUDE.md → dotfiles symlink
-   # ├── commands/ → dotfiles symlink
-   # ├── hooks/    → dotfiles symlink
-   # ├── skills/   → dotfiles symlink
-   # └── mcp.json  → dotfiles symlink
+```bash
+# Clone the dotfiles repo (or your own fork)
+git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
 
-   stow -d ~/dotfiles -t ~ claude
-   ```
+# Symlink Claude Code config into ~/.claude/
+cd ~/dotfiles
+stow claude
 
-2. **Use Slash Commands**
-   ```bash
-   /agent "Add user authentication to the API"    # Full orchestrated workflow
-   /context                                       # Analyze project context
-   /quality                                       # Run all quality checks
-   /security-scan                                 # Security audit
-   /pr-summary                                    # Generate PR summary
-   ```
-
-3. **Leverage Skills**
-   ```bash
-   # Skills are automatically invoked based on context
-   # Or manually via agent delegation
-   ```
-
----
-
-## What's New in v3.1
-
-| Feature | Description |
-|---------|-------------|
-| **Hooks System** | Pre-edit file protection, pre-commit quality gates |
-| **Skills** | Specialized read-only analysis (security, context, performance) |
-| **Slash Commands** | `/security-scan`, `/pr-summary`, `/context`, `/quality` |
-| **MCP Integration** | GitHub, filesystem, memory servers |
-| **Proactive Triggers** | Agents auto-delegate based on task patterns |
-| **Model Optimization** | Opus for orchestration, Sonnet for execution |
-
----
-
-## Framework Architecture
-
-### Agent Hierarchy with Model Assignments
-
-| Agent | Model | Proactive Trigger |
-|-------|-------|-------------------|
-| **framework-orchestrator** | opus | MUST BE USED for tasks >3 steps |
-| **plan-architect** | opus | MUST BE USED for architectural decisions |
-| **context-analyst** | sonnet | Use PROACTIVELY before implementation |
-| **implementation-engineer** | sonnet | Execute approved plans |
-| **test-specialist** | sonnet | Use PROACTIVELY after implementation |
-| **quality-guardian** | sonnet | MUST BE USED before commit/PR/merge |
-| **review-coordinator** | sonnet | PR and review workflows |
-| **metrics-collector** | sonnet | Post-completion metrics |
-| **forensic-specialist** | sonnet | Security audits and threat analysis |
-
-### Inter-Agent Communication Protocol
-
-```
-1. Handoff Format:    JSON {task_id, status, findings, next_steps}
-2. Quality Signals:   PASS/FAIL/WARN with violations
-3. Escalation Path:   Any Agent → quality-guardian → framework-orchestrator
-4. Metrics Reporting: All agents → metrics-collector
+# Verify symlinks
+ls -la ~/.claude/
+# CLAUDE.md → ../dotfiles/claude/.claude/CLAUDE.md
+# commands/ → ../dotfiles/claude/.claude/commands/
+# agents/   → ../dotfiles/claude/.claude/agents/
+# hooks/    → ../dotfiles/claude/.claude/hooks/
+# skills/   → ../dotfiles/claude/.claude/skills/
+# rules/    → ../dotfiles/claude/.claude/rules/
+# mcp.json  → ../dotfiles/claude/.claude/mcp.json
 ```
 
-### 18-Step Workflow
+### 2. Create Machine-Local Settings
 
-```mermaid
-graph TB
-    subgraph "Phase 1: Planning (Steps 1-4)"
-        A1[1. Context Prep] --> A2[2. Create Plan]
-        A2 --> A3[3. Document Plan]
-        A3 --> A4[4. Refine Plan]
-    end
+`settings.json` contains hooks and env vars. It's machine-specific and not managed by stow:
 
-    subgraph "Phase 2: Implementation (Steps 5-10)"
-        A4 --> B5[5. Pre-Setup]
-        B5 --> B6[6. Branch]
-        B6 --> B7[7. Code]
-        B7 --> B8[8. Document]
-        B8 --> B9[9. Test]
-        B9 --> B10[10. Quality Check]
-    end
-
-    subgraph "Phase 3: Review (Steps 11-16)"
-        B10 --> C11[11. Push/CI]
-        C11 --> C12[12. Create PR]
-        C12 --> C13[13. Review]
-        C13 --> C14[14. Feedback]
-        C14 --> C15[15. Validate]
-        C15 --> C16[16. Merge]
-    end
-
-    subgraph "Phase 4: Post-Merge (Steps 17-18)"
-        C16 --> D17[17. Metrics]
-        D17 --> D18[18. Retrospective]
-    end
-```
-
----
-
-## Usage Manual
-
-### Hooks System
-
-Hooks automate quality enforcement without manual intervention.
-
-#### Pre-Edit Hook (File Protection)
-
-Automatically blocks edits to sensitive files:
-- `.env*` - Environment files
-- `*.key`, `*.pem` - Cryptographic keys
-- `credentials*` - Credential files
-- `.git/*` - Git internals
-
-```json
-// ~/.claude/hooks/pre-edit.json
+```bash
+cat > ~/.claude/settings.json << 'EOF'
 {
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "hooks": {
-    "PreToolUse": [{
-      "matcher": {
-        "tool": ["Edit", "Write"],
-        "file_pattern": [".env*", "*.key", "credentials*"]
-      },
-      "action": "block",
-      "message": "Protected file - requires explicit approval"
-    }]
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "~/.claude/hooks/quality-before-commit.sh", "timeout": 120 }] },
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/block-sensitive-files.sh" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/run-tests-after-edit.sh", "timeout": 30 }] }
+    ],
+    "Stop": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/stop-quality-check.sh", "timeout": 10 }] }
+    ]
   }
 }
+EOF
 ```
 
-#### Pre-Commit Hook (Quality Gate)
+### 3. Verify Installation
 
-Runs automatically before any `git commit`:
-- Auto-format code
-- Run linters
-- Execute type checking
-- Run test suite
+```bash
+cd ~/any-project
+claude
+> /context          # should detect tech stack and structure
+> /speckit.init     # bootstraps .specify/ for spec-driven dev
+```
+
+After `stow claude`, every new Claude Code session loads the rules, agents, commands, and skills automatically.
+
+---
+
+## Feature Development Cycle
+
+The recommended workflow for building a feature from scratch using the spec-kit pipeline.
+
+### Step 1 — Orient
+
+```
+> /context
+```
+
+Outputs tech stack, architecture, test framework, build tools, key dependencies, recent git activity. Run once per project or when switching context.
+
+### Step 2 — Bootstrap Spec-Kit (once per project)
+
+```
+> /speckit.init
+```
+
+Creates a `.specify/` directory with templates and a skeleton constitution. Commit it so the team shares the same spec context:
+
+```
+> git add .specify/ && git commit -m "chore: initialize spec-kit scaffolding"
+```
+
+### Step 3 — Define Project Principles (once per project)
+
+```
+> /speckit.constitution
+```
+
+Reads README, config files, and `.claude/rules/` to propose 5 governance principles (tech stack, architecture, testing philosophy). Confirm or customize interactively.
+
+### Step 4 — Write the Specification
+
+```
+> /speckit.specify add user authentication with OAuth2
+```
+
+What happens:
+1. Generates a branch name (e.g., `003-user-auth-oauth2`)
+2. Creates `.specify/specs/003-user-auth-oauth2/spec.md` with user scenarios (Given/When/Then, P1/P2/P3), functional requirements (FR-001+), and success criteria (SC-001+)
+3. Auto-generates `checklists/requirements.md`
+4. Creates git branch `feature/003-user-auth-oauth2`
+
+### Step 5 — Resolve Ambiguities (optional)
+
+```
+> /speckit.clarify
+```
+
+Scans the spec against 9 categories (scope, error handling, security, edge cases, etc.) and asks up to 5 targeted multiple-choice questions. Answers are recorded in a `## Clarifications` section.
+
+### Step 6 — Create the Plan
+
+```
+> /speckit.plan
+```
+
+Resolves remaining clarifications by reading the codebase, identifies affected files, designs data model and API contracts, verifies constitution compliance. Writes `plan.md`.
+
+### Step 7 — Generate the Task List
+
+```
+> /speckit.tasks
+```
+
+Reads both `spec.md` and `plan.md`, generates phased tasks (Setup, Foundational, User Stories by priority, Polish), marks parallelizable tasks with `[P]`, and creates matching entries in the Claude Code task tracker with dependencies.
+
+### Step 8 — Validate (optional)
+
+```
+> /speckit.checklist    # requirement quality checklists
+> /speckit.analyze      # read-only consistency analysis
+```
+
+### Step 9 — Implement with TDD
+
+```
+> /speckit.implement
+```
+
+For each task: write failing test, verify fail, implement, verify pass, check for regressions. Quality gate runs between phases. Completion report maps every requirement to passing tests.
+
+### Step 10 — Ship
+
+```
+> /quality              # lint + types + format + tests
+> /security-scan        # scan staged changes
+> commit this           # Claude commits with semantic message
+> push it
+> /pr-summary           # generates PR description
+```
+
+### Pipeline at a Glance
+
+```
+/context                                    # orient
+/speckit.init                               # bootstrap (once per project)
+/speckit.constitution                       # principles (once per project)
+/speckit.specify <feature description>      # write spec
+/speckit.clarify                            # resolve ambiguities
+/speckit.plan                               # design
+/speckit.tasks                              # break down work
+/speckit.checklist                          # pre-implementation gate
+/speckit.analyze                            # consistency check
+/speckit.implement                          # TDD execution
+/quality                                    # final quality gate
+```
+
+---
+
+## All Slash Commands
+
+| Command | Arguments | Description |
+|---------|-----------|-------------|
+| `/agent` | `<task>` | Start a full development workflow with planning and task tracking |
+| `/context` | --- | Analyze project tech stack, tools, and structure |
+| `/pr-summary` | --- | Generate PR description from current branch diff |
+| `/quality` | --- | Run comprehensive quality checks (lint, types, tests) |
+| `/security-scan` | --- | Scan staged changes for security issues |
+| `/speckit.init` | --- | Bootstrap `.specify/` directory in current project |
+| `/speckit.constitution` | --- | Create/update project governance principles |
+| `/speckit.specify` | `<feature>` | Generate spec with scenarios, requirements, success criteria |
+| `/speckit.plan` | --- | Generate implementation plan from spec (auto-detects branch) |
+| `/speckit.tasks` | --- | Generate phased task list from plan and spec |
+| `/speckit.implement` | --- | Execute TDD implementation with quality gates |
+| `/speckit.analyze` | --- | Read-only cross-artifact consistency analysis |
+| `/speckit.clarify` | --- | Scan spec for ambiguities, ask targeted questions |
+| `/speckit.checklist` | --- | Generate requirement quality checklists |
+
+---
+
+## Custom Agents
+
+Four specialized agents with no built-in equivalent:
+
+| Agent | When to Use |
+|-------|-------------|
+| `test-specialist` | After implementation — creates comprehensive test suites following existing patterns |
+| `quality-guardian` | Before any commit/PR/merge — runs lint, type checks, security scans, performance validation |
+| `review-coordinator` | PR creation — generates descriptions, manages review workflow |
+| `forensic-specialist` | Incident response — threat hunting, IOC generation, chain of custody |
+
+For general tasks, Claude Code uses built-in agents automatically: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
+
+---
+
+## Hooks (Automatic)
+
+Shell-script hooks run automatically via `settings.json` configuration:
+
+| Hook | Trigger | What It Does |
+|------|---------|--------------|
+| `quality-before-commit.sh` | Before `git commit` | Runs language-specific linter, blocks commit on errors |
+| `block-sensitive-files.sh` | Before editing files | Blocks writes to `.env`, `*.key`, `*.pem`, `credentials*` |
+| `run-tests-after-edit.sh` | After editing source files | Auto-runs tests (throttled to 15s intervals) |
+| `stop-quality-check.sh` | Session stop | Reminds if tests haven't been run recently |
+
+---
+
+## Rules
+
+Modular policies loaded into the system prompt automatically:
+
+| Rule | Covers |
+|------|--------|
+| `code-quality.md` | Function/file size limits, testing stance, documentation policy |
+| `git-workflow.md` | Commit format (`<type>: <desc>`), branch naming, staging, co-authoring |
+| `agent-workflow.md` | 18-step development workflow with spec-kit pipeline integration |
+| `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go) |
+
+---
+
+## Skills (Internal)
+
+Used by agents and commands internally — not invoked directly:
+
+| Skill | Purpose |
+|-------|---------|
+| `context-analysis` | Project structure analysis methodology |
+| `security-review` | Code security checklist (secrets, SQLi, XSS, auth) |
+| `performance-audit` | N+1 queries, blocking I/O, memory leaks, O(n^2) detection |
+| `spec-template` | Generates structured Given/When/Then specifications |
+
+---
+
+## Task Management
+
+The framework uses Claude Code's built-in task tracker:
+
+| Tool | Usage |
+|------|-------|
+| `TaskCreate` | Mandatory for any task with >2 steps |
+| `TaskUpdate` | Mark exactly ONE task `in_progress` at a time; mark `completed` immediately after |
+| `TaskGet` | Read full task details before starting work |
+| `TaskList` | Check progress and find next available tasks |
+
+---
+
+## MCP Integration
 
 ```json
-// ~/.claude/hooks/pre-commit.json
-{
-  "hooks": {
-    "PreToolUse": [{
-      "matcher": {
-        "tool": "Bash",
-        "command_pattern": "git commit*"
-      },
-      "action": "run",
-      "commands": [
-        {"format": "npm run format --if-present"},
-        {"lint": "npm run lint --if-present"},
-        {"typecheck": "npm run typecheck --if-present"},
-        {"test": "npm test --if-present || true"}
-      ]
-    }]
-  }
-}
-```
-
----
-
-### Skills
-
-Skills are specialized, tool-restricted analysis modes.
-
-#### Security Review Skill
-```bash
-# Automatically invoked for security-related tasks
-# Tools: Read, Grep, Glob, WebSearch (read-only)
-
-# Performs:
-# - Hardcoded secrets scan
-# - SQL injection detection
-# - XSS risk assessment
-# - Auth/authz review
-# - Dependency vulnerability check
-```
-
-#### Context Analysis Skill
-```bash
-# Use PROACTIVELY when entering new codebases
-# Tools: Read, Grep, Glob (read-only)
-
-# Generates:
-# - Tech stack detection
-# - Architecture patterns
-# - Test framework discovery
-# - Quality tool detection
-```
-
-#### Performance Audit Skill
-```bash
-# For performance optimization tasks
-# Tools: Read, Grep, Glob, Bash
-
-# Analyzes:
-# - N+1 query patterns
-# - Blocking operations
-# - Memory leak patterns
-# - Caching opportunities
-```
-
----
-
-### Slash Commands
-
-Quick access to common workflows.
-
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/agent <task>` | Full orchestrated workflow | `/agent "Add dark mode"` |
-| `/context` | Refresh project analysis | `/context` |
-| `/quality` | Run all quality checks | `/quality` |
-| `/security-scan` | Security audit | `/security-scan` |
-| `/pr-summary` | Generate PR summary | `/pr-summary` |
-
-#### /context Command
-```markdown
-Analyzes:
-1. Project structure and entry points
-2. Tech stack and versions
-3. Quality tools available
-4. Coding patterns in use
-5. Recent architectural changes
-```
-
-#### /quality Command
-```markdown
-Runs:
-1. Linting (ESLint/ruff/clippy/go vet)
-2. Type checking (TypeScript/mypy/cargo check)
-3. Formatting check (Prettier/black/rustfmt/gofmt)
-4. Test suite
-5. Complexity metrics
-```
-
-#### /security-scan Command
-```markdown
-Checks:
-1. Staged changes for secrets
-2. New dependencies for vulnerabilities
-3. Security anti-patterns
-4. Report with severity levels
-```
-
-#### /pr-summary Command
-```markdown
-Generates:
-1. Change summary by category
-2. Modified files list
-3. Breaking changes identification
-4. Test plan recommendations
-```
-
----
-
-### MCP Integration
-
-Model Context Protocol servers extend Claude's capabilities.
-
-```json
-// ~/.claude/mcp.json
 {
   "mcpServers": {
     "github": {
       "transport": "http",
       "url": "https://api.githubcopilot.com/mcp/v1",
-      "description": "GitHub PR/Issue automation"
-    },
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
-      "description": "Enhanced file operations"
-    },
-    "memory": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "description": "Cross-session context"
+      "scope": "user",
+      "description": "GitHub PR/Issue automation for review-coordinator agent"
     }
   }
 }
@@ -298,153 +280,57 @@ Model Context Protocol servers extend Claude's capabilities.
 
 ---
 
-## Quick Tips
+## Quality Standards
 
-### 1. Let Agents Work Proactively
-Agents have proactive triggers - don't micromanage. Say:
 ```
-"Add user authentication"
-```
-Not:
-```
-"First analyze the codebase, then create a plan, then implement..."
+Functions:   < 50 lines
+Files:       < 500 lines
+Complexity:  < 10 (cyclomatic)
 ```
 
-### 2. Use Slash Commands for Speed
-```bash
-/quality          # Instead of manually running lint, test, typecheck
-/context          # Instead of exploring files manually
-/security-scan    # Instead of manual security review
-```
+Enforced by `code-quality.md` rule and `quality-guardian` agent. Test coverage follows project-configured thresholds.
 
-### 3. Trust the Hooks
-Don't manually format or lint - hooks handle it on commit:
-```bash
-git commit -m "feat: add feature"  # Auto-formats and validates
-```
+---
 
-### 4. Skills are Read-Only
-Skills can't modify code - they're for analysis. Use them freely:
-- Security reviews before PRs
-- Context analysis for unfamiliar code
-- Performance audits before optimization
+## `.specify/` Directory (per project)
 
-### 5. Model Selection Matters
-- **Opus** (orchestrator, architect): Complex reasoning, architecture
-- **Sonnet** (specialists): Fast execution, implementation tasks
+Created by `/speckit.init`. Commit to version control.
 
-### 6. TodoWrite is Your Friend
-Every task >2 steps should use TodoWrite:
 ```
-1. Mark in_progress BEFORE starting
-2. Mark completed IMMEDIATELY after finishing
-3. Only ONE task in_progress at a time
-```
-
-### 7. Quality Standards (Memorize These)
-```
-Functions: < 50 lines
-Files:     < 500 lines
-Complexity: < 10
-Coverage:  >= 80%
-```
-
-### 8. Semantic Commits
-```bash
-feat:     # New feature
-fix:      # Bug fix
-refactor: # Code restructuring
-test:     # Adding tests
-docs:     # Documentation
-```
-
-### 9. Branch Naming
-```bash
-feature/descriptive-name
-fix/issue-description
-refactor/component-name
-```
-
-### 10. When Stuck, Use Context
-```bash
-/context  # Refresh understanding
-# Then describe what you need
+.specify/
+├── memory/
+│   └── constitution.md         # project principles
+├── templates/
+│   ├── spec.md                 # specification template
+│   ├── plan.md                 # plan template
+│   ├── tasks.md                # task list template
+│   └── checklist.md            # checklist template
+└── specs/
+    └── 003-feature-name/       # one directory per feature branch
+        ├── spec.md             # specification
+        ├── plan.md             # implementation plan
+        ├── tasks.md            # phased task list
+        ├── research.md         # resolved clarifications
+        └── checklists/         # requirement quality checklists
 ```
 
 ---
 
-## Directory Structure
+## Dotfiles Package Structure
 
 ```
-~/.claude/
-├── CLAUDE.md              # Main configuration (18-step workflow)
-├── settings.json          # Permissions and preferences
-├── mcp.json              # MCP server configuration
-├── commands/
-│   ├── agent.md          # /agent command
-│   ├── context.md        # /context command
-│   ├── quality.md        # /quality command
-│   ├── security-scan.md  # /security-scan command
-│   └── pr-summary.md     # /pr-summary command
-├── hooks/
-│   ├── pre-edit.json     # File protection
-│   └── pre-commit.json   # Quality gates
-├── skills/
-│   ├── security-review.md
-│   ├── context-analysis.md
-│   └── performance-audit.md
-└── agents/               # Agent definitions
-    ├── framework-orchestrator.md
-    ├── context-analyst.md
-    ├── plan-architect.md
-    ├── implementation-engineer.md
-    ├── test-specialist.md
-    ├── quality-guardian.md
-    ├── review-coordinator.md
-    ├── metrics-collector.md
-    └── forensic-specialist.md
+~/dotfiles/claude/
+├── .claude/
+│   ├── CLAUDE.md               # core config (loaded into system prompt)
+│   ├── mcp.json                # MCP servers (GitHub)
+│   ├── agents/                 # 4 custom agents
+│   ├── commands/               # 14 slash commands (5 standard + 9 speckit)
+│   ├── hooks/                  # 4 lifecycle hooks (shell scripts)
+│   ├── rules/                  # 4 modular policy files
+│   └── skills/                 # 4 internal skills
+├── .stow-local-ignore          # excludes README from stow
+└── README.md
 ```
-
----
-
-## Configuration Examples
-
-### JavaScript/TypeScript
-```bash
-# Quality check (automated by hooks)
-npm run lint && npm run typecheck && npm test
-```
-
-### Python
-```bash
-# Quality check (automated by hooks)
-ruff check . && mypy . && pytest --cov=.
-```
-
-### Rust
-```bash
-# Quality check (automated by hooks)
-cargo clippy && cargo fmt --check && cargo test
-```
-
-### Go
-```bash
-# Quality check (automated by hooks)
-go vet ./... && go test -cover ./...
-```
-
----
-
-## Performance Targets
-
-| Metric | Target |
-|--------|--------|
-| Planning Time | 15-30 min |
-| Implementation | < 2 hours |
-| Review Cycles | < 3 |
-| Test Coverage | >= 80% |
-| API Response | < 200ms |
-| Bug Rate | < 1/100 LOC |
 
 ---
 
@@ -452,17 +338,18 @@ go vet ./... && go test -cover ./...
 
 | File | Purpose |
 |------|---------|
-| [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete 18-step documentation |
+| [AI_DEVELOPMENT_FRAMEWORK.md](AI_DEVELOPMENT_FRAMEWORK.md) | Complete workflow documentation |
 | [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | Daily cheat sheet |
+| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Complete configuration reference |
+| [DOTFILES_SETUP.md](DOTFILES_SETUP.md) | Installation guide |
 | [AGENTS_PLAN.md](AGENTS_PLAN.md) | Agent architecture |
-| [agents/](agents/) | Agent definitions |
-| [CLAUDE_CONFIGURATION_SAMPLE.md](CLAUDE_CONFIGURATION_SAMPLE.md) | Sample configuration |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
 
 ## Version History
 
+- **v4.0.0** (2026-02-23): Spec-kit SDD pipeline, simplified to 4 agents, TaskCreate API, actual hook scripts
 - **v3.1.0** (2025-11-26): Hooks, skills, expanded commands, MCP integration, proactive triggers
 - **v3.0.0** (2025-09-04): Agent-enhanced with Claude Code sub-agents
 - **v2.0.0** (2025-09-02): Enhanced 18-step workflow
@@ -472,20 +359,12 @@ See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
-## Support
-
-- **Issues**: GitHub Issues
-- **Documentation**: This repository
-- **Email**: joaoariedi@gmail.com
-
 ## License
 
 MIT License - see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 3.1.0 (Agent-Enhanced with Hooks & Skills)
-**Last Updated**: 2025-11-26
-**Compatibility**: Claude Code with sub-agents, hooks, skills, MCP
-
-*Systematic excellence through automation. The framework works for you, not the other way around.*
+**Framework Version**: 4.0.0
+**Last Updated**: 2026-02-23
+**Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit

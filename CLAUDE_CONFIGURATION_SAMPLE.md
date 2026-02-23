@@ -1,29 +1,16 @@
-# Claude Code Configuration Sample v3.1
+# Claude Code Configuration Reference v4.0
 
-Complete configuration for the AI Development Framework with hooks, skills, MCP integration, and proactive agent triggers.
+Complete reference of all configuration files deployed via the dotfiles stow package. These are the actual files that get symlinked to `~/.claude/`.
 
-## Setup Options
+## Setup
 
-### 1. Global Configuration (Recommended)
 ```bash
-# Create dotfiles structure
-mkdir -p ~/dotfiles/claude/.claude/{agents,commands,hooks,skills}
+# Recommended: via dotfiles + stow
+cd ~/dotfiles && stow claude
 
-# Copy configurations
-cp -r .claude/* ~/dotfiles/claude/.claude/
-
-# Symlink via stow
-stow -d ~/dotfiles -t ~ claude
-
-# Verify symlinks
-ls -la ~/.claude/
+# Create machine-local settings (not managed by stow)
+# See DOTFILES_SETUP.md for the full settings.json content
 ```
-
-### 2. Project-Specific
-Place files in `.claude/` directory of your project.
-
-### 3. Direct Global
-Place files directly in `~/.claude/`
 
 ---
 
@@ -31,252 +18,138 @@ Place files directly in `~/.claude/`
 
 ```
 ~/.claude/
-├── CLAUDE.md              # Main configuration
-├── settings.json          # Permissions
-├── mcp.json              # MCP servers
-├── commands/
-│   ├── agent.md          # /agent command
-│   ├── context.md        # /context command
-│   ├── quality.md        # /quality command
-│   ├── security-scan.md  # /security-scan command
-│   └── pr-summary.md     # /pr-summary command
-├── hooks/
-│   ├── pre-edit.json     # File protection
-│   └── pre-commit.json   # Quality gates
-├── skills/
-│   ├── security-review.md
-│   ├── context-analysis.md
-│   └── performance-audit.md
-└── agents/
-    ├── framework-orchestrator.md
-    ├── context-analyst.md
-    ├── plan-architect.md
-    ├── implementation-engineer.md
-    ├── test-specialist.md
-    ├── quality-guardian.md
-    ├── review-coordinator.md
-    ├── metrics-collector.md
-    └── forensic-specialist.md
+├── CLAUDE.md               # core config (system prompt)
+├── mcp.json                # MCP servers
+├── agents/                 # 4 custom agents
+│   ├── test-specialist.md
+│   ├── quality-guardian.md
+│   ├── review-coordinator.md
+│   └── forensic-specialist.md
+├── commands/               # 14 slash commands
+│   ├── agent.md
+│   ├── context.md
+│   ├── pr-summary.md
+│   ├── quality.md
+│   ├── security-scan.md
+│   ├── speckit.init.md
+│   ├── speckit.constitution.md
+│   ├── speckit.specify.md
+│   ├── speckit.plan.md
+│   ├── speckit.tasks.md
+│   ├── speckit.implement.md
+│   ├── speckit.analyze.md
+│   ├── speckit.clarify.md
+│   └── speckit.checklist.md
+├── hooks/                  # 4 shell script hooks
+│   ├── quality-before-commit.sh
+│   ├── block-sensitive-files.sh
+│   ├── run-tests-after-edit.sh
+│   └── stop-quality-check.sh
+├── rules/                  # 4 modular policy files
+│   ├── code-quality.md
+│   ├── git-workflow.md
+│   ├── agent-workflow.md
+│   └── quality-tooling.md
+└── skills/                 # 4 internal skills
+    ├── context-analysis.md
+    ├── security-review.md
+    ├── performance-audit.md
+    └── spec-template.md
 ```
 
 ---
 
-## CLAUDE.md Configuration
+## CLAUDE.md
+
+The core configuration loaded into every Claude Code session:
 
 ```markdown
-# AI Development Framework Configuration v3.1 - Agent-Enhanced
+# AI Development Framework v3.1 - Agent-Enhanced
 
-## Agent-Based Workflow Activation
+## Custom Agents
 
-### Primary Agent: framework-orchestrator
-- **Trigger**: Any development task requiring >3 steps
-- **Purpose**: Master coordinator for 18-step workflow
-- **Delegation**: Automatically delegates to specialized agents
+| Agent | Role | When to Use |
+|-------|------|-------------|
+| **test-specialist** | Testing | After implementation, comprehensive tests |
+| **quality-guardian** | QA | Before any commit, PR, or merge |
+| **review-coordinator** | PR management | Creating PRs, managing review workflows |
+| **forensic-specialist** | Security | Security audits, suspicious patterns |
 
-### Agent Hierarchy (with Proactive Triggers)
+For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
-| Agent | Model | Role | Proactive Trigger |
-|-------|-------|------|-------------------|
-| **framework-orchestrator** | opus | Master coordinator | MUST BE USED for any task >3 steps |
-| **context-analyst** | sonnet | Phase 1: context analysis | Use PROACTIVELY before implementation |
-| **plan-architect** | opus | Phase 1: planning | MUST BE USED for architectural decisions |
-| **implementation-engineer** | sonnet | Phase 2: coding | Use when executing approved plans |
-| **test-specialist** | sonnet | Phase 2: testing | Use PROACTIVELY after implementation |
-| **quality-guardian** | sonnet | Phase 2-3: QA | MUST BE USED before commit/PR/merge |
-| **review-coordinator** | sonnet | Phase 3: PR management | Use when creating PRs |
-| **metrics-collector** | sonnet | Phase 4: metrics | Use after task completion |
-| **forensic-specialist** | sonnet | Security: forensics | Use PROACTIVELY for security audits |
+## Task Management API
+- **TaskCreate**: Use for any task with >2 steps (MANDATORY)
+- **TaskUpdate**: Mark exactly ONE task "in_progress" at a time; mark "completed" immediately after
+- **TaskGet**: Read full task details before starting work
+- **TaskList**: Check progress and find next available tasks
 
-### Agent Coordination Rules
-- Only framework-orchestrator can initiate TodoWrite workflows
-- Each specialist agent reports back to orchestrator
-- Quality gates must be approved by quality-guardian
-- All phases must be completed in sequence
-- Metrics must be collected by metrics-collector
+## Core Rules
+1. Do what has been asked; nothing more, nothing less
+2. NEVER create files unless absolutely necessary for achieving the goal
+3. ALWAYS prefer editing existing files over creating new ones
+4. NEVER proactively create documentation files (*.md) unless explicitly requested
+5. Only commit when explicitly requested by the user
+6. Follow existing project patterns rather than imposing new conventions
+7. Keep responses concise and focused on the task
+8. Use `git -C <directory>` instead of `cd <directory> && git` to avoid zoxide conflicts
+9. Version declaration is deprecated in docker compose, do not add it
 
-### Inter-Agent Communication Protocol
-1. **Handoff Format**: JSON with task_id, status, findings, next_steps
-2. **Quality Gate Signals**: PASS/FAIL/WARN with specific violations listed
-3. **Escalation Path**: Any agent → quality-guardian → framework-orchestrator
-4. **Metrics Reporting**: All agents report timing + outcome to metrics-collector
-5. **Context Sharing**: Agents pass relevant file paths and patterns discovered
+## Tool Usage
+- Use Read to understand existing code before suggesting modifications
+- Use Grep to find similar implementations
+- Use Glob to discover project structure
+- Use Bash only for system commands and terminal operations
+- Use EnterPlanMode/ExitPlanMode for complex features requiring user approval
+- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: specify -> plan -> tasks -> implement
 
-### Phase 1: Planning & Context Setup (Steps 1-4)
-
-#### Step 1: Context Preparation (context-analyst)
-- Automated project structure analysis using Glob/Read tools
-- Auto-detect tech stack from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`
-- Identify existing patterns, conventions, and quality tools
-- Generate comprehensive project context report
-
-#### Step 2: Create Todo List & Plan (plan-architect)
-- **Automated TodoWrite** creation by framework-orchestrator
-- AI-generated comprehensive task breakdown
-- Uses ExitPlanMode for complex implementations
-
-#### Step 3: Plan Documentation (Optional)
-- For complex features (>5 todos), save as `PLAN_<DESCRIPTIVE_NAME>.md`
-- Skip for simple tasks (<3 todos)
-
-#### Step 4: Plan Refinement
-- Iterate todos based on user feedback
-- Clarify ambiguities before implementation
-
-### Phase 2: Implementation with Quality Gates (Steps 5-10)
-
-#### Step 5: Pre-Implementation Setup
-- Check for existing quality tools using Grep/Glob
-- Identify available lint/format/test commands
-
-#### Step 6: Branch Creation (Git Projects Only)
-- Features: `feature/<descriptive-name>`
-- Fixes: `fix/<issue-description>`
-
-#### Step 7: Incremental Development with TodoWrite
-- Mark todo as "in_progress" before starting work
-- Follow code quality limits (functions <50 lines, files <500 lines)
-- Mark todo as "completed" immediately after finishing
-
-#### Step 8: Documentation During Development
-- Add inline documentation for complex functions
-- Focus on code clarity over excessive documentation
-
-#### Step 9: Test Creation & Validation
-- Follow existing test patterns
-- Focus on business logic and edge cases
-
-#### Step 10: Quality Checks
-- **ALWAYS run quality checks after implementation**
-- Fix any issues before considering task complete
-
-### Phase 3: Review & Integration (Steps 11-16)
-
-#### Step 11-16: Local Validation → Git Integration → Review → Merge
-
-### Phase 4: Post-Implementation (Steps 17-18)
-
-#### Step 17-18: Metrics Collection → Retrospective
-
-## Code Quality Standards
-
-### Complexity Limits
-- Maximum function length: 50 lines
-- Maximum file length: 500 lines
-- Maximum cyclomatic complexity: 10
-
-### Quality Assurance
-- Always run available quality tools before completing
-- Fix linting and type errors immediately
-- No hardcoded secrets or credentials
-
-## Git Configuration
-
-### Commit Message Format
-<type>: <description>
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
-
-### Commit Types
-feat, fix, refactor, test, docs, style, perf
-
-## Important Reminders
-1. Always use TodoWrite for task management
-2. Run quality checks before completing tasks
-3. Follow existing patterns
-4. Only commit when explicitly requested
-5. Use `git -C <directory>` instead of `cd && git`
+See `.claude/rules/` for detailed policies on code quality, git workflow, agent coordination, and language-specific tooling.
 ```
 
 ---
 
-## settings.json
+## settings.json (machine-local, not stowed)
 
 ```json
 {
-  "alwaysThinkingEnabled": true,
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(npm:*)",
-      "Bash(yarn:*)",
-      "Bash(pnpm:*)",
-      "Bash(pytest:*)",
-      "Bash(cargo:*)",
-      "Bash(go:*)",
-      "Bash(make:*)",
-      "Bash(docker:*)"
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{
+          "type": "command",
+          "command": "~/.claude/hooks/quality-before-commit.sh",
+          "timeout": 120
+        }]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "~/.claude/hooks/block-sensitive-files.sh"
+        }]
+      }
     ],
-    "deny": []
-  }
-}
-```
-
----
-
-## Hooks Configuration
-
-### hooks/pre-edit.json (File Protection)
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
+    "PostToolUse": [
       {
-        "matcher": {
-          "tool": ["Edit", "Write"],
-          "file_pattern": [
-            ".env*",
-            "*.key",
-            "*.pem",
-            "credentials*",
-            ".git/*",
-            "**/secrets/**"
-          ]
-        },
-        "action": "block",
-        "message": "Protected file - requires explicit user approval"
+        "matcher": "Edit|Write",
+        "hooks": [{
+          "type": "command",
+          "command": "~/.claude/hooks/run-tests-after-edit.sh",
+          "timeout": 30
+        }]
       }
-    ]
-  }
-}
-```
-
-### hooks/pre-commit.json (Quality Gate)
-
-```json
-{
-  "hooks": {
-    "PreToolUse": [
+    ],
+    "Stop": [
       {
-        "matcher": {
-          "tool": "Bash",
-          "command_pattern": "git commit*"
-        },
-        "action": "run",
-        "commands": [
-          {
-            "description": "Auto-format staged files",
-            "js": "npm run format --if-present",
-            "py": "black . && ruff check --fix . || true",
-            "go": "go fmt ./...",
-            "rs": "cargo fmt"
-          },
-          {
-            "description": "Run linting",
-            "js": "npm run lint --if-present",
-            "py": "ruff check .",
-            "go": "go vet ./...",
-            "rs": "cargo clippy"
-          },
-          {
-            "description": "Run tests",
-            "js": "npm test --if-present || true",
-            "py": "pytest -q || true",
-            "go": "go test ./... || true",
-            "rs": "cargo test || true"
-          }
-        ]
+        "matcher": "",
+        "hooks": [{
+          "type": "command",
+          "command": "~/.claude/hooks/stop-quality-check.sh",
+          "timeout": 10
+        }]
       }
     ]
   }
@@ -285,9 +158,7 @@ feat, fix, refactor, test, docs, style, perf
 
 ---
 
-## MCP Configuration
-
-### mcp.json
+## mcp.json
 
 ```json
 {
@@ -296,21 +167,7 @@ feat, fix, refactor, test, docs, style, perf
       "transport": "http",
       "url": "https://api.githubcopilot.com/mcp/v1",
       "scope": "user",
-      "description": "GitHub PR/Issue automation"
-    },
-    "filesystem": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem"],
-      "scope": "local",
-      "description": "Enhanced file operations"
-    },
-    "memory": {
-      "transport": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"],
-      "scope": "user",
-      "description": "Cross-session context"
+      "description": "GitHub PR/Issue automation for review-coordinator agent"
     }
   }
 }
@@ -318,147 +175,132 @@ feat, fix, refactor, test, docs, style, perf
 
 ---
 
-## Skills Configuration
+## Rules
 
-### skills/security-review.md
+### rules/code-quality.md
+- Function length: <50 lines
+- File length: <500 lines
+- Cyclomatic complexity: <10
+- Test existing patterns when framework present
+- Focus on business logic and edge cases
+- Inline documentation for complex logic only
+- No hardcoded secrets or credentials
 
-```markdown
+### rules/git-workflow.md
+- Commit format: `<type>: <description>` + optional body + Co-Authored-By
+- Types: feat, fix, refactor, test, docs, style, perf
+- Branch naming: `feature/*`, `fix/*`, `refactor/*`
+- Stage specific files (not `git add .`)
+- Only commit when user explicitly requests
+
+### rules/agent-workflow.md
+- 18-step development workflow across 4 phases
+- Phase 1: Planning (context, task list, plan review, refinement)
+- Phase 2: Implementation (setup, branch, code, docs, tests, quality)
+- Phase 3: Review (validation, git, self-review, final validation)
+- Phase 4: Post-implementation (retrospective)
+- SDD integration: spec-kit pipeline for test creation and validation
+
+### rules/quality-tooling.md
+- Auto-detect config files per language
+- JS/TS: ESLint, Prettier, TypeScript, Jest/Vitest
+- Python: ruff, mypy, black, pytest
+- Rust: cargo clippy, rustfmt, cargo test
+- Go: go vet, gofmt, go test
+
 ---
-name: "Security Review"
-description: |
-  Use when performing security audits, vulnerability scans,
-  or reviewing code for security issues. Read-only analysis.
-allowed-tools: Read, Grep, Glob, WebSearch
+
+## Hooks
+
+### hooks/quality-before-commit.sh
+Intercepts `git commit` commands and runs language-specific linters. Blocks commit if linter fails. Detects language from config files (package.json, pyproject.toml, Cargo.toml, go.mod). Returns exit code 2 on failure.
+
+### hooks/block-sensitive-files.sh
+Blocks writes to `.env*`, `*.key`, `*.pem`, `*.p12`, `*.pfx`, `*.secret`, `credentials*`, `.git/*`, `*/secrets/*`. Returns exit code 2 for blocked files; requires explicit user approval to proceed.
+
+### hooks/run-tests-after-edit.sh
+Auto-detects test runner and executes tests after source file edits. Throttled to 15-second intervals per directory. Skips docs, configs, and test files. Non-blocking (always returns 0).
+
+### hooks/stop-quality-check.sh
+Checks if source files were edited recently but tests weren't run. Shows a reminder if tests are stale (60s window). Non-blocking.
+
 ---
 
-Perform comprehensive security analysis:
-1. Scan for hardcoded secrets (API_KEY, PASSWORD, SECRET, TOKEN)
-2. Check for SQL injection vulnerabilities
-3. Identify XSS risks in template rendering
-4. Review authentication/authorization implementations
-5. Check dependency vulnerabilities via package manifests
-```
+## Agents
+
+### agents/test-specialist.md
+- **Trigger**: Use proactively after implementation
+- **Expertise**: Jest, pytest, cargo test, go test
+- **Workflow**: Pattern analysis, strategy design, test creation, validation
+- **Standards**: Independent tests, clear failure messages, business logic focus
+
+### agents/quality-guardian.md
+- **Trigger**: Mandatory before any commit, PR, or merge
+- **Checks**: Lint, types, format, security, performance, complexity
+- **Languages**: JS/TS (ESLint, Prettier, TSC), Python (ruff, mypy), Rust (clippy), Go (vet)
+- **Limits**: Functions <50 lines, files <500 lines, complexity <10
+
+### agents/review-coordinator.md
+- **Trigger**: When creating PRs or managing reviews
+- **Capabilities**: PR descriptions with metrics, review coordination, merge management
+- **Standards**: <3 review iterations, comprehensive descriptions
+
+### agents/forensic-specialist.md
+- **Trigger**: Security audits, suspected compromise
+- **Capabilities**: Threat hunting, malware analysis, IOC generation
+- **Constraint**: Defensive only — never creates offensive tools
+
+---
+
+## Skills
 
 ### skills/context-analysis.md
+- **Tools**: Read, Grep, Glob (read-only)
+- **Purpose**: Tech stack detection, architecture patterns, test framework discovery
 
-```markdown
----
-name: "Context Analysis"
-description: |
-  Use PROACTIVELY when exploring new codebases or
-  gathering project context. Read-only discovery.
-allowed-tools: Read, Grep, Glob
----
-
-Generate comprehensive project context:
-1. Tech stack detection from config files
-2. Architecture pattern identification
-3. Test framework discovery
-4. Quality tool detection
-5. Dependency analysis
-```
+### skills/security-review.md
+- **Tools**: Read, Grep, Glob, WebSearch (read-only)
+- **Purpose**: Hardcoded secrets, SQL injection, XSS, auth review, dependency vulnerabilities
 
 ### skills/performance-audit.md
+- **Tools**: Read, Grep, Glob, Bash
+- **Purpose**: N+1 queries, blocking I/O, memory leaks, caching, algorithm complexity
 
-```markdown
----
-name: "Performance Audit"
-description: |
-  Use when analyzing performance bottlenecks.
-allowed-tools: Read, Grep, Glob, Bash
----
-
-Analyze performance characteristics:
-1. Identify N+1 query patterns
-2. Find synchronous blocking operations
-3. Detect memory leak patterns
-4. Review caching implementations
-```
+### skills/spec-template.md
+- **Tools**: Read, Grep, Glob (read-only)
+- **Purpose**: Generate Given/When/Then specifications, categorized as Must have/Should have/Edge cases
 
 ---
 
-## Slash Commands
+## Spec-Kit Commands
 
-### commands/agent.md
+### commands/speckit.init.md
+Bootstraps `.specify/` directory with templates (spec, plan, tasks, checklist) and a skeleton constitution. Creates `memory/`, `templates/`, and `specs/` subdirectories.
 
-```markdown
----
-description: "Quick access to framework-orchestrator agent"
-model: sonnet
-argument_hint: "development task description"
----
+### commands/speckit.constitution.md
+Reads project context (README, configs, tech stack) to propose 5 governance principles. Interactive confirmation. Semantic versioning with dates.
 
-Use the framework-orchestrator agent to coordinate the complete 18-step workflow for: $ARGUMENTS
-```
+### commands/speckit.specify.md
+Takes feature description as argument. Generates branch name, creates spec.md with user scenarios (Given/When/Then), functional requirements (FR-001+), success criteria (SC-001+). Auto-generates requirements checklist. Creates git branch.
 
-### commands/context.md
+### commands/speckit.plan.md
+Loads spec + constitution. Phase 0: Research (resolve clarifications). Phase 1: Design (affected files, data model, contracts). Constitution compliance gate. Outputs plan.md.
 
-```markdown
----
-description: "Refresh project context analysis"
----
+### commands/speckit.tasks.md
+Loads plan + spec. Generates phased tasks: Setup, Foundational, User Stories (by priority), Polish. `[P]` marks parallelizable tasks. Creates TaskCreate entries with dependencies.
 
-Use context-analyst agent to:
-1. Re-analyze project structure
-2. Detect any new patterns or tools
-3. Update mental model of codebase
-4. Identify recent architectural changes
-```
+### commands/speckit.implement.md
+TDD execution: write failing test, verify fail, implement, verify pass, no regressions. Quality gate between phases. Completion report with coverage mapping.
 
-### commands/quality.md
+### commands/speckit.analyze.md
+Read-only analysis: duplication, ambiguity, underspecification, constitution alignment, coverage gaps, inconsistency. Severity levels: CRITICAL/HIGH/MEDIUM/LOW.
 
-```markdown
----
-description: "Run comprehensive quality checks"
----
+### commands/speckit.clarify.md
+Scans spec against 9 taxonomy categories. Max 5 questions per session with recommended answers. Updates spec.md with `## Clarifications` section.
 
-Use quality-guardian agent to:
-1. Run all available linters
-2. Execute type checking
-3. Run test suite
-4. Check code complexity metrics
-5. Report any violations
-```
-
-### commands/security-scan.md
-
-```markdown
----
-description: "Quick security scan of current changes"
----
-
-Use forensic-specialist agent to scan for:
-- Hardcoded secrets in staged changes
-- New dependencies with known vulnerabilities
-- Security anti-patterns in modified code
-```
-
-### commands/pr-summary.md
-
-```markdown
----
-description: "Generate PR summary from current branch"
----
-
-Analyze all commits since branching from main:
-1. Summarize changes by category
-2. List modified files with descriptions
-3. Identify breaking changes
-4. Generate test plan recommendations
-```
+### commands/speckit.checklist.md
+Generates requirement quality checklists (requirements.md always, plus ux.md, api.md, security.md as applicable). CHK001+ numbering with quality dimensions.
 
 ---
 
-## Quick Tips
-
-1. **Let agents work proactively** - Don't micromanage
-2. **Use slash commands** - `/quality`, `/context`, `/security-scan`
-3. **Trust the hooks** - Auto-format and validate on commit
-4. **Skills are read-only** - Safe for analysis
-5. **TodoWrite discipline** - ONE task in_progress at a time
-6. **Quality standards** - Functions <50 lines, Files <500 lines
-
----
-
-*Framework Version: 3.1.0 (Agent-Enhanced with Hooks & Skills)*
-*Last Updated: 2025-11-26*
+*Configuration Version: 4.0.0 | Last Updated: 2026-02-23*

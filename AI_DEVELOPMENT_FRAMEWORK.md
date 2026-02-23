@@ -1,432 +1,308 @@
-# AI-Assisted Development Framework v3.1
+# AI-Assisted Development Framework v4.0
 
 ## Overview
-This framework establishes a systematic approach to AI-assisted software development, optimizing for collaboration between human developers and AI models while maintaining code quality, readability, and maintainability.
 
-## What's New in v3.1
-
-### Hooks System
-Automated quality gates and file protection:
-- **Pre-Edit Hooks**: Block edits to sensitive files (`.env*`, `*.key`, `*.pem`, `credentials*`)
-- **Pre-Commit Hooks**: Auto-format, lint, and test on commit
-
-### Skills System
-Read-only analysis modes with tool restrictions:
-- **security-review**: Security audits and vulnerability scanning
-- **context-analysis**: Project structure and pattern discovery
-- **performance-audit**: Bottleneck detection and optimization
-
-### Slash Commands
-Quick access to framework workflows:
-- `/agent <task>`: Full 18-step workflow
-- `/context`: Project analysis
-- `/quality`: Run quality checks
-- `/security-scan`: Security audit
-- `/pr-summary`: Generate PR summary
-
-### MCP Integration
-Model Context Protocol servers for enhanced capabilities:
-- **GitHub**: PR/Issue automation via `gh` CLI
-- **Filesystem**: Enhanced file operations
-- **Memory**: Cross-session context persistence
-
-### Proactive Agent Triggers
-Agents now activate automatically based on context:
-- **MUST BE USED**: Required for specific scenarios
-- **Use PROACTIVELY**: Recommended automatic activation
+This framework establishes a systematic approach to AI-assisted software development using Claude Code. It combines spec-driven development (SDD), automated quality gates, specialized agents, and a structured 18-step workflow to produce high-quality software efficiently.
 
 ## Core Principles
 
-### 1. **Plan-First Development**
-- Always begin with comprehensive planning before implementation
-- Plans serve as contracts between human and AI
-- Iterative refinement ensures alignment before execution
-- Include risk assessment and success metrics upfront
+### 1. Spec-Driven Development
+- Begin features with a formal specification (user scenarios, functional requirements, success criteria)
+- Specifications are written in `.specify/` and committed to version control
+- A constitution defines project-level governance principles
+- The spec-kit pipeline guides the full cycle: specify, plan, tasks, implement
 
-### 2. **Isolated Development**
-- Each feature/fix developed in dedicated branches
-- Prevents pollution of main branch
-- Enables clean rollback if needed
-- Maintain feature flags for gradual rollout
+### 2. Isolated Development
+- Each feature developed in a dedicated branch
+- Spec-kit auto-generates branch names from specifications
+- Clean rollback via branch deletion if needed
 
-### 3. **Test-Driven Validation**
-- Define test scenarios during planning phase
-- Tests created after implementation to validate requirements
-- Minimum 80% coverage with performance benchmarks
-- Creates regression safety net
+### 3. Test-Driven Implementation
+- Tests written before implementation code (Red-Green cycle)
+- Failing test first, then minimum code to pass
+- Full suite must pass with no regressions after each task
+- Quality gate runs between implementation phases
 
-### 4. **Agent-Based Orchestration**
-- 9 specialized agents with clear responsibilities
-- Proactive activation based on context
-- Hybrid model assignment (Opus for strategic, Sonnet for execution)
-- Quality gates enforced by dedicated quality-guardian agent
+### 4. Automated Quality Gates
+- 4 hooks enforce quality automatically (lint, file protection, test runs, reminders)
+- `quality-guardian` agent validates before commit/PR/merge
+- Code quality limits enforced: functions <50 lines, files <500 lines, complexity <10
 
-### 5. **Continuous Improvement**
-- Collect metrics on every iteration
-- Regular retrospectives and framework updates
-- Documentation as code philosophy
-- Feedback loops at every phase
+### 5. Minimal Configuration
+- 4 custom agents (down from 9) — only where built-in agents fall short
+- Built-in agents handle planning, exploration, and general implementation
+- TaskCreate/TaskUpdate for tracking (replaces TodoWrite)
+- Rules and skills auto-loaded via dotfiles symlinks
 
-## Agent Hierarchy (v3.1)
+## Agent Architecture
 
-### Model Assignments
+### Custom Agents (4)
 
-| Agent | Model | Role | Proactive Trigger |
-|-------|-------|------|-------------------|
-| **framework-orchestrator** | opus | Master coordinator | MUST BE USED for any task >3 steps |
-| **context-analyst** | sonnet | Phase 1: context analysis | Use PROACTIVELY before implementation |
-| **plan-architect** | opus | Phase 1: planning | MUST BE USED for architectural decisions |
-| **implementation-engineer** | sonnet | Phase 2: coding | Use when executing approved plans |
-| **test-specialist** | sonnet | Phase 2: testing | Use PROACTIVELY after implementation |
-| **quality-guardian** | sonnet | Phase 2-3: QA | MUST BE USED before commit/PR/merge |
-| **review-coordinator** | sonnet | Phase 3: PR management | Use when creating PRs |
-| **metrics-collector** | sonnet | Phase 4: metrics | Use after task completion |
-| **forensic-specialist** | sonnet | Security: forensics | Use PROACTIVELY for security audits |
+| Agent | Phase | Purpose |
+|-------|-------|---------|
+| `test-specialist` | Phase 2 | Creates comprehensive test suites following existing patterns |
+| `quality-guardian` | Phase 2-3 | Lint, type checks, security scans, performance validation |
+| `review-coordinator` | Phase 3 | PR descriptions, review workflow, merge management |
+| `forensic-specialist` | Security | Threat hunting, IOC generation, chain of custody |
 
-### Inter-Agent Communication Protocol
+### Built-in Agents (used automatically)
 
-1. **Handoff Format**: JSON with task_id, status, findings, next_steps
-2. **Quality Gate Signals**: PASS/FAIL/WARN with specific violations listed
-3. **Escalation Path**: Any agent → quality-guardian → framework-orchestrator
-4. **Metrics Reporting**: All agents report timing + outcome to metrics-collector
-5. **Context Sharing**: Agents pass relevant file paths and patterns discovered
+| Agent | Purpose |
+|-------|---------|
+| `Explore` | Fast codebase search and exploration |
+| `Plan` | Architecture design and implementation planning |
+| `general-purpose` | Multi-step implementation tasks |
 
-### Agent Coordination Rules
-
-- Only framework-orchestrator can initiate TodoWrite workflows
-- Each specialist agent reports back to orchestrator
-- Quality gates must be approved by quality-guardian
-- All phases must be completed in sequence
-- Metrics must be collected by metrics-collector
+### Agent Usage Rules
+- Prefer built-in agents for general tasks
+- Use custom agents only for their specialized capabilities
+- `quality-guardian` is mandatory before any commit, PR, or merge
+- `test-specialist` should be used proactively after implementation
+- `forensic-specialist` activates proactively when suspicious patterns are detected
 
 ## Enhanced Workflow Steps
 
-### Phase 1: Planning & Context Setup
+### Phase 1: Planning & Context Setup (Steps 1-4)
 
-#### 1. **Context Preparation**
-   - Create/Update `PROJECT_CONTEXT.md` with:
-     - Tech stack details
-     - Architecture decisions  
-     - Coding conventions
-     - Common patterns used
-   - Review existing ADRs (Architecture Decision Records)
-   - Identify relevant prompt templates
+#### Step 1: Context Preparation
+- Use `Explore` agent or `/context` command for project analysis
+- Auto-detect tech stack from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`
+- Identify existing patterns, conventions, and quality tools
 
-#### 2. **Request Detailed Plan**
-   - Use prompt templates for consistency
-   - Ask Claude for comprehensive implementation plan including:
-     - Objective and scope
-     - Step-by-step implementation approach
-     - Acceptance criteria and success metrics
-     - Risk assessment with mitigation strategies
-     - Time estimates per step
-     - Dependencies and prerequisites
-     - Test scenarios and coverage targets
-     - Performance benchmarks
+#### Step 2: Create Task List & Plan
+- Use TaskCreate for comprehensive task breakdown with acceptance criteria
+- Use EnterPlanMode/ExitPlanMode for complex implementations
+- For spec-driven features, use `/speckit.specify` to write the specification first
 
-#### 3. **Plan Documentation**
-   - Save as `PLAN_<DESCRIPTIVE_NAME>.md`
-   - Automatically gitignored to keep repository clean
-   - Include test plan with coverage targets
-   - Document architectural decisions as ADRs
-   - Define measurable success criteria
+#### Step 3: Plan Review (Optional for Simple Tasks)
+- For complex features (>5 tasks), use EnterPlanMode for user approval
+- For SDD features, `/speckit.plan` generates the design with constitution compliance
+- Skip for simple tasks (<3 tasks)
 
-#### 4. **Plan Refinement**
-   - Discuss and iterate on plan with Claude
-   - Clarify ambiguities
-   - Add missing requirements
-   - Validate time estimates
-   - Consider performance implications
-   - Review risk mitigation strategies
-   - Finalize test scenarios
+#### Step 4: Plan Refinement
+- Iterate tasks based on user feedback
+- Use `/speckit.clarify` to resolve ambiguities in specifications
+- Break down large tasks into smaller, manageable pieces
 
-### Phase 2: Implementation with Quality Gates
+### Phase 2: Implementation with Quality Gates (Steps 5-10)
 
-#### 5. **Pre-Implementation Setup**
-   - Configure pre-commit hooks:
-     - Linting (ESLint, Ruff, Clippy)
-     - Format checking (Prettier, Black, Rustfmt)
-     - Basic security scanning
-   - Set up PR template
-   - Verify CI/CD pipeline configuration
+#### Step 5: Pre-Implementation Setup
+- Detect existing quality tools using Grep/Glob
+- Identify available lint, format, and test commands
+- For SDD: run `/speckit.tasks` to generate phased task list with dependencies
+- Optionally run `/speckit.checklist` for requirement quality validation
 
-#### 6. **Branch Creation**
-   - Create feature branch: `feature/<task-name>`
-   - Or bugfix branch: `fix/<issue-name>`
-   - Or refactor branch: `refactor/<component-name>`
-   - Keep branch names descriptive but concise
+#### Step 6: Branch Creation (Git Projects Only)
+- Features: `feature/<descriptive-name>`
+- Fixes: `fix/<issue-description>`
+- Refactoring: `refactor/<component-name>`
+- Spec-kit auto-creates branches from spec names (e.g., `feature/003-user-auth`)
 
-#### 7. **Incremental Development**
-   - Implement plan step-by-step
-   - Follow code complexity limits:
-     - Functions < 50 lines
-     - Cyclomatic complexity < 10
-     - Clear, descriptive naming
-   - Specialized agent coordination:
-     - implementation-engineer: Complex logic, architecture
-     - test-specialist: Test creation and validation
-     - quality-guardian: Continuous quality monitoring
-   - Commit frequently with semantic messages:
-     - Format: `<type>(<scope>): <description>`
-     - Types: feat, fix, refactor, test, docs, perf
-   - Keep each commit atomic and reversible
+#### Step 7: Incremental Development with Task Tracking
+- Use TaskUpdate to mark task as `in_progress` before starting work
+- Follow code quality limits (functions <50 lines, files <500 lines)
+- Use TaskUpdate to mark task as `completed` immediately after finishing
+- Use semantic commit messages: `<type>: <description>`
 
-#### 8. **Documentation During Development**
-   - Write inline documentation (JSDoc/PyDoc)
-   - Update README.md for new features
-   - Create/Update ADRs for architectural changes
-   - Document API changes comprehensively
-   - Add examples for complex features
+#### Step 8: Documentation During Development
+- Inline documentation for complex functions only
+- Focus on code clarity over excessive documentation
+- Code should be self-documenting through clear naming
 
-#### 9. **Test Creation & Validation**
-   - Write comprehensive tests covering:
-     - Unit tests for business logic
-     - Integration tests for APIs
-     - Edge cases and error conditions
-     - Performance benchmarks for critical paths
-   - Ensure minimum 80% coverage
-   - Run full test suite
-   - Validate against success metrics from plan
+#### Step 9: Test Creation & Validation
+- For spec-driven development (SDD), use the spec-kit pipeline: `/speckit.specify` -> `/speckit.plan` -> `/speckit.tasks` -> `/speckit.implement`
+- Use `test-specialist` agent for comprehensive test suites
+- Find existing test patterns using Glob: `**/*test*`, `**/spec/**`
+- Hook auto-runs tests after source file edits (throttled to 15s)
 
-#### 10. **Quality Checks**
-   - Run linting: `npm run lint` / `ruff check`
-   - Run type checking: `npm run typecheck` / `mypy`
-   - Run security scanning
-   - Check performance benchmarks:
-     - API response < 200ms (95th percentile)
-     - Page load < 3 seconds
-   - Verify no regression in existing tests
+#### Step 10: Quality Checks
+- Use `quality-guardian` agent before any commit or PR
+- Always run quality checks after implementation
+- Fix any issues before considering task complete
 
-### Phase 3: Review, Integration & Feedback
+### Phase 3: Review & Integration (Steps 11-16)
 
-#### 11. **Push to Remote & CI/CD**
-   - Push branch to remote repository
-   - Ensure CI/CD pipeline passes:
-     - Automated tests
-     - Code coverage reporting
-     - Security vulnerability scanning
-     - Performance benchmarks
-   - Monitor build time (< 5 minutes target)
+#### Step 11: Local Validation
+- Ensure all tasks are completed via TaskList
+- Run full test suite, verify no regressions
 
-#### 12. **Pull Request Creation**
-   - Use PR template with:
-     - Link to original PLAN_*.md
-     - Summary of changes
-     - Test results and coverage report
-     - Performance impact analysis
-     - Breaking changes highlighted
-     - Migration guide if needed
-   - Reference issue/ticket numbers
-   - Include screenshots/demos if UI changes
+#### Step 12: Git Integration
+- Stage relevant changes by name (not `git add .`)
+- Create semantic commit with Co-Authored-By
 
-#### 13. **Multi-AI Code Review**
-   - GitHub Copilot automated review focusing on:
-     - Security vulnerabilities
-     - Performance issues
-     - Code maintainability
-     - Best practices adherence
-   - Request specialized scans:
-     - Security analysis tools
-     - Performance profiling
-     - Accessibility checking
+#### Step 13-14: Self-Review & Issue Resolution
+- Review for security, performance, maintainability
+- Fix quality check failures, re-run tests
 
-#### 14. **Review Feedback Loop**
-   - Send Copilot comments to Claude
-   - Address concerns systematically
-   - Update code and tests as needed
-   - Re-run quality checks after changes
-   - Document decisions in PR comments
-   - Target < 3 review iterations
+#### Step 15-16: Final Validation & Completion
+- Verify all acceptance criteria met
+- Use `review-coordinator` agent for PR creation if needed
+- Only commit when user explicitly requests it
 
-#### 15. **Final Validation**
-   - Verify all acceptance criteria met
-   - Confirm test coverage maintained
-   - Check performance benchmarks
-   - Validate documentation updated
-   - Ensure CHANGELOG.md updated
-   - Run final security scan
+### Phase 4: Post-Implementation (Steps 17-18) - Optional
 
-#### 16. **Merge & Cleanup**
-   - Squash commits if appropriate
-   - Maintain clean git history
-   - Use semantic merge commit message
-   - Delete feature branch after merge
-   - Update PROJECT_CONTEXT.md if needed
-   - Tag release if applicable
+#### Step 17-18: Retrospective
+- Note lessons learned in auto-memory
+- Record useful patterns discovered
 
-### Phase 4: Post-Merge Activities
+## Spec-Kit Pipeline (SDD)
 
-#### 17. **Metrics Collection**
-   - Record implementation time vs estimate
-   - Log number of review iterations
-   - Track test coverage achieved
-   - Note any production issues
-   - Document lessons learned
+The spec-kit pipeline provides a structured approach to spec-driven development:
 
-#### 18. **Retrospective & Improvement**
-   - Review what went well
-   - Identify improvement areas
-   - Update prompt templates
-   - Refine time estimates
-   - Adjust framework if needed
-   - Share learnings with team
-
-## Tool Integration
-
-### Development Environment
-```lua
--- Neovim + LazyVim recommended plugins
-{
-  "github/copilot.vim",
-  "antropic/claude.nvim",
-  "nvim-telescope/telescope.nvim",
-  "nvim-treesitter/nvim-treesitter",
-  "neovim/nvim-lspconfig",
-  "folke/trouble.nvim",  -- Diagnostics
-  "lewis6991/gitsigns.nvim",  -- Git integration
-}
+```
+/speckit.init              Bootstrap .specify/ directory (once per project)
+       |
+/speckit.constitution      Define project principles (once per project)
+       |
+/speckit.specify <feat>    Write spec: scenarios, requirements, success criteria
+       |
+/speckit.clarify           Resolve ambiguities (optional)
+       |
+/speckit.plan              Design: research, affected files, constitution compliance
+       |
+/speckit.tasks             Break down: phased tasks with dependencies
+       |
+/speckit.checklist         Validate requirements quality (optional)
+       |
+/speckit.analyze           Cross-artifact consistency check (optional)
+       |
+/speckit.implement         TDD execution: red-green cycle per task
 ```
 
-### Git Configuration
-```bash
-# Workflow aliases
-git config --global alias.plan "checkout -b"
-git config --global alias.publish "push -u origin HEAD"
-git config --global alias.pr "!gh pr create"
-git config --global alias.semantic "commit -m"
-```
+### Spec-Kit Artifacts
 
-### Pre-commit Configuration
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: local
-    hooks:
-      - id: lint
-        name: Lint
-        entry: npm run lint
-        language: system
-      - id: typecheck
-        name: Type Check
-        entry: npm run typecheck
-        language: system
-      - id: test
-        name: Test
-        entry: npm test
-        language: system
-```
+Each feature generates artifacts in `.specify/specs/<branch>/`:
 
-## Best Practices for Human-AI Readability
-
-### For Humans
-1. **Clear Structure**: Consistent file organization with obvious entry points
-2. **Meaningful Names**: Self-documenting variables, functions, and files
-3. **Visual Hierarchy**: Strategic whitespace and formatting
-4. **Progressive Disclosure**: Simple API, complex implementation
-5. **Example-Driven**: Include usage examples in documentation
-
-### For AI Models
-1. **Explicit Context**: Never assume AI remembers previous conversations
-2. **Complete Examples**: Provide full code samples with imports
-3. **Type Annotations**: Use TypeScript/Python type hints everywhere
-4. **Pattern Consistency**: Use same patterns throughout codebase
-5. **Business Logic Comments**: Explain why, not what
-6. **File Path References**: Include file_path:line_number format
-
-## Success Metrics & Benchmarks
-
-### Efficiency Metrics
-- **Planning Time**: 15-30 minutes for small features
-- **Plan to Implementation**: < 2 hours for small features
-- **Review Cycles**: < 3 iterations
-- **Build Time**: < 5 minutes
-- **Test Suite**: < 10 minutes
-
-### Quality Metrics
-- **Test Coverage**: Minimum 80%
-- **Code Complexity**: Cyclomatic complexity < 10
-- **Function Length**: < 50 lines
-- **Documentation Coverage**: 100% for public APIs
-- **Bug Rate**: < 1 bug per 100 lines of new code
-
-### Performance Benchmarks
-- **API Response**: < 200ms (95th percentile)
-- **Page Load**: < 3 seconds
-- **Memory Usage**: No leaks detected
-- **Bundle Size**: < 10% increase per feature
-
-### Security Standards
-- **Vulnerabilities**: 0 critical/high severity
-- **Dependency Audit**: All dependencies current
-- **Secret Scanning**: 0 exposed credentials
-- **OWASP Compliance**: Top 10 mitigated
-
-## Continuous Evolution
-
-### Review Schedule
-- **Weekly**: Team retrospectives on active projects
-- **Monthly**: Framework effectiveness review
-- **Quarterly**: Major framework updates
-- **Annually**: Complete framework overhaul
-
-### Evolution Triggers
-- Technology stack changes
-- AI model improvements
-- Team size changes
-- Project complexity increase
-- Repeated pain points identified
-
-### Feedback Channels
-- PR comments and discussions
-- Team retrospectives
-- Framework issue tracker
-- Metrics dashboard
-- AI model performance logs
+| Artifact | Generated By | Purpose |
+|----------|-------------|---------|
+| `spec.md` | `/speckit.specify` | User scenarios, FRs, success criteria |
+| `plan.md` | `/speckit.plan` | Design, affected files, constitution compliance |
+| `tasks.md` | `/speckit.tasks` | Phased task list with IDs and dependencies |
+| `research.md` | `/speckit.plan` | Resolved clarifications |
+| `checklists/*.md` | `/speckit.checklist` | Requirement quality checklists |
+| `data-model.md` | `/speckit.plan` | Schema changes (if applicable) |
+| `contracts/` | `/speckit.plan` | API contracts (if applicable) |
 
 ## Hooks System
 
-### Pre-Edit Hook (File Protection)
-Blocks edits to sensitive files:
-- `.env*` - Environment files
-- `*.key`, `*.pem` - Cryptographic keys
-- `credentials*` - Credential files
-- `.git/*` - Git internals
-- `**/secrets/**` - Secret directories
+All hooks are shell scripts in `~/.claude/hooks/`, configured via `settings.json`:
 
-### Pre-Commit Hook (Quality Gate)
-Runs automatically on `git commit`:
-1. Auto-format code (Prettier/Black/Rustfmt/Go fmt)
-2. Run linting (ESLint/Ruff/Clippy/Go vet)
-3. Run type checking (TypeScript/Mypy/Cargo check)
-4. Run tests (Jest/Pytest/Cargo test/Go test)
+### quality-before-commit.sh
+- **Trigger**: PreToolUse on `Bash` (intercepts `git commit`)
+- **Action**: Runs language-specific linter, blocks commit on errors
+- **Languages**: ESLint/TypeScript, ruff, cargo clippy, go vet
 
-## Skills System
+### block-sensitive-files.sh
+- **Trigger**: PreToolUse on `Edit|Write`
+- **Action**: Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*`
+- **Override**: Requires explicit user approval
 
-### Available Skills
+### run-tests-after-edit.sh
+- **Trigger**: PostToolUse on `Edit|Write`
+- **Action**: Auto-runs test suite after source file edits
+- **Throttle**: 15 seconds between runs
+- **Non-blocking**: Always returns 0
 
-| Skill | Purpose | Allowed Tools |
-|-------|---------|---------------|
-| `security-review` | Security audits | Read, Grep, Glob, WebSearch |
-| `context-analysis` | Project analysis | Read, Grep, Glob |
-| `performance-audit` | Bottleneck detection | Read, Grep, Glob, Bash |
+### stop-quality-check.sh
+- **Trigger**: Stop event
+- **Action**: Reminds if source files were edited but tests not run (60s window)
+- **Non-blocking**: Always returns 0
 
-### Skill Characteristics
-- **Read-only analysis**: No Write/Edit tools
-- **Safe for exploration**: Can't modify code
-- **Tool-restricted**: Only specified tools available
+## Quality Tooling by Language
 
-## Slash Commands
+### JavaScript/TypeScript
+```bash
+# Config detection: package.json, .eslintrc*, tsconfig.json
+npm run lint          # ESLint
+npm run typecheck     # TypeScript
+npm run format        # Prettier
+npm test              # Jest/Vitest
+```
 
-| Command | Description | Agent Used |
-|---------|-------------|------------|
-| `/agent <task>` | Full 18-step workflow | framework-orchestrator |
-| `/context` | Refresh project analysis | context-analyst |
-| `/quality` | Run all quality checks | quality-guardian |
-| `/security-scan` | Quick security audit | forensic-specialist |
-| `/pr-summary` | Generate PR summary | review-coordinator |
+### Python
+```bash
+# Config detection: pyproject.toml, requirements.txt
+ruff check .          # Linting
+mypy .                # Type checking
+ruff format .         # Formatting
+pytest                # Testing
+```
+
+### Rust
+```bash
+# Config detection: Cargo.toml
+cargo clippy          # Linting
+cargo fmt             # Formatting
+cargo test            # Testing
+```
+
+### Go
+```bash
+# Config detection: go.mod
+go vet ./...          # Linting
+go fmt ./...          # Formatting
+go test ./...         # Testing
+```
+
+## Task Management
+
+The framework uses Claude Code's TaskCreate/TaskUpdate API:
+
+```
+TaskCreate    → mandatory for any task with >2 steps
+                subject, description, activeForm fields
+
+TaskUpdate    → mark exactly ONE task "in_progress" at a time
+                mark "completed" immediately after finishing
+
+TaskGet       → read full task details before starting work
+
+TaskList      → check progress, find next available tasks
+```
+
+Rules:
+- Only ONE task `in_progress` at a time
+- Mark `completed` immediately after finishing
+- Use TaskCreate for any work with >2 steps
+
+## MCP Integration
+
+Single MCP server for GitHub automation:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/v1",
+      "scope": "user",
+      "description": "GitHub PR/Issue automation for review-coordinator agent"
+    }
+  }
+}
+```
+
+## Code Quality Standards
+
+### Complexity Limits
+- Maximum function length: 50 lines
+- Maximum file length: 500 lines
+- Maximum cyclomatic complexity: 10
+- Clear, descriptive naming always
+
+### Quality Assurance
+- Always run available quality tools before completing any task
+- Fix linting and type errors immediately
+- No hardcoded secrets or credentials
+- Follow existing project conventions and patterns
+
+### Git Workflow
+- Commit format: `<type>: <description>` with optional body and Co-Authored-By
+- Types: feat, fix, refactor, test, docs, style, perf
+- Branch naming: `feature/*`, `fix/*`, `refactor/*`
+- Stage specific files (not `git add .`)
+- Only commit when user explicitly requests it
 
 ---
 
-*Last Updated: 2025-11-26*
-*Version: 3.1.0 (Agent-Enhanced with Hooks & Skills)*
-*Next Review: 2026-02-26*
+*Framework Version: 4.0.0 | Last Updated: 2026-02-23*

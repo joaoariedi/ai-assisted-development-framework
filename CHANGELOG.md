@@ -5,6 +5,41 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-02-23
+
+### Added
+- **Spec-Kit SDD Pipeline**: 9 new `/speckit.*` slash commands for full spec-driven development
+  - `/speckit.init`: Bootstrap `.specify/` directory with templates
+  - `/speckit.constitution`: Define project governance principles
+  - `/speckit.specify`: Generate specs with scenarios, requirements, success criteria
+  - `/speckit.plan`: Generate implementation plans with constitution compliance
+  - `/speckit.tasks`: Generate phased task lists with Claude Code tracker integration
+  - `/speckit.implement`: TDD execution with quality gates (red-green cycle)
+  - `/speckit.analyze`: Read-only cross-artifact consistency analysis
+  - `/speckit.clarify`: Targeted clarification questions for ambiguous specs
+  - `/speckit.checklist`: Requirement quality checklists
+- **`spec-template` skill**: Internal skill for Given/When/Then pattern generation
+- **`.specify/` directory structure**: Per-project spec artifacts committed to version control
+
+### Changed
+- **Agent count reduced from 9 to 4**: Removed framework-orchestrator, context-analyst, plan-architect, implementation-engineer, metrics-collector. These roles are now handled by Claude Code's built-in agents (Explore, Plan, general-purpose)
+- **Task management**: Replaced TodoWrite with TaskCreate/TaskUpdate/TaskGet/TaskList API
+- **Hooks**: Now implemented as shell scripts (`*.sh`) instead of JSON config files, configured via `settings.json`
+- **MCP servers**: Simplified to GitHub only (removed filesystem and memory servers)
+- **Rules system**: 4 modular policy files in `rules/` directory (code-quality, git-workflow, agent-workflow, quality-tooling)
+
+### Removed
+- **5 agents**: framework-orchestrator, context-analyst, plan-architect, implementation-engineer, metrics-collector
+- **`/spec-driven` skill**: Replaced by `/speckit.implement` command
+- **JSON hook files**: Replaced by shell script hooks
+- **Filesystem MCP server**: Not needed with Claude Code's built-in file tools
+- **Memory MCP server**: Replaced by Claude Code's auto-memory feature
+
+### Enhanced
+- **Agent workflow**: Updated to reference spec-kit pipeline for SDD
+- **CLAUDE.md**: Simplified to focus on 4 custom agents + TaskCreate API + SDD reference
+- **Quality tooling**: Comprehensive per-language tool detection (JS/TS, Python, Rust, Go)
+
 ## [3.1.0] - 2025-11-26
 
 ### Added

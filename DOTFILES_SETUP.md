@@ -1,207 +1,190 @@
-# Dotfiles Setup for AI Development Framework
-
-This guide shows how to set up the AI Development Framework using the dotfiles/stow approach for clean configuration management.
+# Dotfiles Setup Guide
 
 ## Overview
 
-The dotfiles/stow approach provides:
-- **Clean Management**: All configurations in one place
-- **Version Control**: Track changes to your development setup
-- **Portability**: Easy setup on new machines
-- **Isolation**: No direct edits to home directory files
+The AI Development Framework is managed via [GNU Stow](https://www.gnu.org/software/stow/) for clean symlink management. All configuration lives in `~/dotfiles/claude/.claude/` and gets symlinked to `~/.claude/` so every Claude Code session loads it automatically.
 
 ## Prerequisites
 
 ```bash
-# Install stow (most Linux distributions)
+# Install stow
 sudo pacman -S stow        # Arch/Manjaro
 sudo apt install stow      # Ubuntu/Debian
 sudo dnf install stow      # Fedora
 brew install stow          # macOS
 ```
 
-## Setup Steps
+## Setup
 
-### 1. Create Dotfiles Structure
+### 1. Clone Dotfiles
 
 ```bash
-# Create the dotfiles directory structure
-mkdir -p ~/dotfiles/claude/.claude
+git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
 ```
 
-### 2. Copy Framework Configuration
+### 2. Apply Symlinks
 
 ```bash
-# Navigate to the framework repository
-cd /path/to/ai-development-framework
-
-# Extract the configuration content (everything between the markdown code blocks)
-sed -n '/^```markdown$/,/^```$/p' CLAUDE_CONFIGURATION_SAMPLE.md | \
-    head -n -1 | tail -n +2 > ~/dotfiles/claude/.claude/CLAUDE.md
-```
-
-### 3. Apply Configuration with Stow
-
-```bash
-# Create symlinks using stow
 cd ~/dotfiles
 stow claude
-
-# Verify the symlink was created
-ls -la ~/.claude/CLAUDE.md
-# Should show: ~/.claude/CLAUDE.md -> ../dotfiles/claude/.claude/CLAUDE.md
 ```
 
-### 4. Version Control Your Dotfiles
+This creates symlinks in `~/.claude/` pointing to the config files:
+
+```
+~/.claude/
+├── CLAUDE.md       → ~/dotfiles/claude/.claude/CLAUDE.md
+├── mcp.json        → ~/dotfiles/claude/.claude/mcp.json
+├── agents/         → ~/dotfiles/claude/.claude/agents/
+├── commands/       → ~/dotfiles/claude/.claude/commands/
+├── hooks/          → ~/dotfiles/claude/.claude/hooks/
+├── rules/          → ~/dotfiles/claude/.claude/rules/
+└── skills/         → ~/dotfiles/claude/.claude/skills/
+```
+
+### 3. Create Machine-Local Settings
+
+`settings.json` is machine-specific (hooks config, env vars) and is NOT managed by stow. Create it manually:
 
 ```bash
-cd ~/dotfiles
-git init
-git add .
-git commit -m "feat: add AI development framework configuration"
-
-# Optional: push to remote repository
-git remote add origin git@github.com:yourusername/dotfiles.git
-git push -u origin main
+cat > ~/.claude/settings.json << 'EOF'
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "~/.claude/hooks/quality-before-commit.sh", "timeout": 120 }] },
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/block-sensitive-files.sh" }] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/run-tests-after-edit.sh", "timeout": 30 }] }
+    ],
+    "Stop": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/stop-quality-check.sh", "timeout": 10 }] }
+    ]
+  }
+}
+EOF
 ```
 
-## File Structure
+### 4. Verify
 
-After setup, your structure should look like:
+```bash
+ls -la ~/.claude/CLAUDE.md          # should show symlink
+claude                               # open Claude Code
+> /context                           # should work
+> /speckit.init                      # should work
+```
+
+## What Gets Installed
+
+| Component | Count | Purpose |
+|-----------|-------|---------|
+| **CLAUDE.md** | 1 | Core config loaded into system prompt |
+| **Rules** | 4 | code-quality, git-workflow, agent-workflow, quality-tooling |
+| **Commands** | 14 | 5 standard + 9 spec-kit pipeline |
+| **Agents** | 4 | test-specialist, quality-guardian, review-coordinator, forensic-specialist |
+| **Hooks** | 4 | Shell scripts for quality gates and file protection |
+| **Skills** | 4 | Internal analysis skills (context, security, performance, spec-template) |
+| **MCP** | 1 | GitHub server for PR/Issue automation |
+
+## Stow Package Structure
 
 ```
-~/dotfiles/
-└── claude/
-    └── .claude/
-        └── CLAUDE.md          # Framework configuration
-
-~/.claude/
-└── CLAUDE.md -> ../dotfiles/claude/.claude/CLAUDE.md  # Symlink
+~/dotfiles/claude/
+├── .claude/
+│   ├── CLAUDE.md
+│   ├── mcp.json
+│   ├── agents/
+│   │   ├── test-specialist.md
+│   │   ├── quality-guardian.md
+│   │   ├── review-coordinator.md
+│   │   └── forensic-specialist.md
+│   ├── commands/
+│   │   ├── agent.md
+│   │   ├── context.md
+│   │   ├── pr-summary.md
+│   │   ├── quality.md
+│   │   ├── security-scan.md
+│   │   ├── speckit.init.md
+│   │   ├── speckit.constitution.md
+│   │   ├── speckit.specify.md
+│   │   ├── speckit.plan.md
+│   │   ├── speckit.tasks.md
+│   │   ├── speckit.implement.md
+│   │   ├── speckit.analyze.md
+│   │   ├── speckit.clarify.md
+│   │   └── speckit.checklist.md
+│   ├── hooks/
+│   │   ├── quality-before-commit.sh
+│   │   ├── block-sensitive-files.sh
+│   │   ├── run-tests-after-edit.sh
+│   │   └── stop-quality-check.sh
+│   ├── rules/
+│   │   ├── code-quality.md
+│   │   ├── git-workflow.md
+│   │   ├── agent-workflow.md
+│   │   └── quality-tooling.md
+│   └── skills/
+│       ├── context-analysis.md
+│       ├── security-review.md
+│       ├── performance-audit.md
+│       └── spec-template.md
+├── .stow-local-ignore
+└── README.md
 ```
 
 ## Management Commands
 
-### Update Configuration
 ```bash
-# Edit the source file
+# Update config (edit source, symlinks auto-reflect changes)
 vim ~/dotfiles/claude/.claude/CLAUDE.md
 
-# Changes are automatically reflected via symlink
-# Commit changes to version control
-cd ~/dotfiles
-git add claude/.claude/CLAUDE.md
-git commit -m "update: enhance claude configuration"
+# Remove symlinks
+cd ~/dotfiles && stow -D claude
+
+# Reinstall symlinks (after adding new files)
+cd ~/dotfiles && stow -R claude
+
+# Setup on a new machine
+git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
+cd ~/dotfiles && stow claude
+# Then create settings.json manually (see step 3 above)
 ```
 
-### Remove Configuration
-```bash
-cd ~/dotfiles
-stow -D claude  # Removes symlinks
-```
+## Project-Specific Overrides
 
-### Reinstall Configuration
-```bash
-cd ~/dotfiles
-stow -R claude  # Remove and re-create symlinks
-```
-
-### Setup on New Machine
-```bash
-# Clone your dotfiles
-git clone git@github.com:yourusername/dotfiles.git ~/dotfiles
-
-# Apply all configurations
-cd ~/dotfiles
-stow claude
-
-# The framework is now ready to use
-```
-
-## Integration with Framework
-
-Once set up, the AI Development Framework will automatically use your global configuration for:
-
-- **Workflow Requirements**: 18-step process enforcement
-- **Quality Standards**: Code complexity and coverage limits  
-- **Git Configuration**: Commit message format and branch naming
-- **AI Collaboration**: Model selection and usage patterns
-- **Performance Benchmarks**: Response time and coverage targets
-
-## Customization
-
-### Project-Specific Overrides
-
-You can still override global settings per project:
+Projects can override global config by placing files in their own `.claude/` directory. Project-specific configurations take precedence over global ones.
 
 ```bash
 # In your project directory
 mkdir -p .claude
-echo "# Project-specific overrides" > .claude/CLAUDE.md
-# Add project-specific configurations
+echo "# Project-specific rules" > .claude/CLAUDE.md
 ```
-
-Project-specific configurations take precedence over global ones.
-
-### Personal Customization
-
-Edit your global configuration:
-
-```bash
-vim ~/dotfiles/claude/.claude/CLAUDE.md
-```
-
-Common customizations:
-- Update author email: `joaoariedi@gmail.com` → `your-email@example.com`
-- Adjust quality metrics (coverage %, complexity limits)
-- Add project-specific commands
-- Modify performance targets
 
 ## Troubleshooting
 
-### Existing Configuration Conflicts
-
-If you have existing `~/.claude/CLAUDE.md`:
-
+### Existing Config Conflicts
 ```bash
-# Backup existing configuration
-mv ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.backup
-
-# Then proceed with stow setup
-cd ~/dotfiles
-stow claude
+# Backup existing config
+mv ~/.claude ~/.claude.backup
+# Then run stow
+cd ~/dotfiles && stow claude
 ```
 
-### Symlink Issues
-
+### Stow Conflicts
 ```bash
-# Check for broken symlinks
-ls -la ~/.claude/CLAUDE.md
-
-# Recreate if needed
-cd ~/dotfiles
-stow -D claude  # Remove
-stow claude     # Recreate
+# Force restow (removes and recreates)
+cd ~/dotfiles && stow -R claude
 ```
 
-### Permission Issues
-
+### New Files Not Showing
+After adding new files to the dotfiles package, restow:
 ```bash
-# Ensure proper permissions
-chmod 644 ~/dotfiles/claude/.claude/CLAUDE.md
+cd ~/dotfiles && stow -R claude
 ```
-
-## Benefits
-
-### For Individual Developers
-- **Consistency**: Same configuration across all projects
-- **Backup**: Configuration versioned and backed up
-- **Portability**: Easy setup on new development machines
-
-### For Teams
-- **Standardization**: Share common configuration patterns
-- **Onboarding**: New team members get consistent setup
-- **Evolution**: Track and review configuration changes
 
 ---
 
-*This setup approach follows dotfiles best practices and integrates seamlessly with the AI Development Framework workflow.*
+*Last Updated: 2026-02-23*
