@@ -19,7 +19,7 @@ We needed to create a comprehensive framework for AI-assisted software developme
 We will implement an 18-step, 4-phase workflow structure:
 
 ### Phase 1: Planning & Context Setup (Steps 1-4)
-- **Context Preparation**: Maintain PROJECT_CONTEXT.md for AI consistency
+- **Context Preparation**: Use `/context` command or `Explore` agent for AI consistency
 - **Detailed Planning**: Comprehensive PLAN_*.md with risk assessment
 - **Documentation**: ADRs and success metrics
 - **Refinement**: Iterative improvement before implementation

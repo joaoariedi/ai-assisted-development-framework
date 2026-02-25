@@ -1,4 +1,4 @@
-# AI Development Framework v3.1 - Agent-Enhanced
+# AI Development Framework v4.0
 
 ## Custom Agents
 
