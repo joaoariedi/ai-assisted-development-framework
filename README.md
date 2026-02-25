@@ -87,7 +87,7 @@ Tests written before implementation code (Red-Green cycle). Failing test first, 
 4 hooks enforce quality automatically (lint, file protection, test runs, reminders). `quality-guardian` agent validates before commit/PR/merge. Code quality limits enforced: functions <50 lines, files <500 lines, complexity <10.
 
 ### ⚙️ Minimal Configuration
-4 custom agents (down from 9 in v3.1) — only where built-in agents fall short. Built-in agents handle planning, exploration, and general implementation. TaskCreate/TaskUpdate for tracking. Rules and skills auto-loaded via dotfiles symlinks.
+4 custom agents — only where built-in agents fall short. Built-in agents handle planning, exploration, and general implementation. TaskCreate/TaskUpdate for tracking. Rules and skills auto-loaded via dotfiles symlinks.
 
 ---
 
@@ -266,20 +266,6 @@ Four specialized agents with no built-in equivalent:
 
 > For general tasks, Claude Code uses built-in agents: `Explore` 🔎 (codebase search), `Plan` 📐 (architecture), `general-purpose` 🤖 (implementation).
 
-### 🔀 Architecture Evolution (v3.1 → v4.0)
-
-| v3.1 Agent | v4.0 Status | Replacement |
-|-----------|-------------|-------------|
-| framework-orchestrator | ❌ Removed | Claude Code handles orchestration natively |
-| context-analyst | ❌ Removed | Built-in `Explore` agent + `/context` command |
-| plan-architect | ❌ Removed | Built-in `Plan` agent + EnterPlanMode |
-| implementation-engineer | ❌ Removed | Built-in `general-purpose` agent |
-| metrics-collector | ❌ Removed | Auto-memory + TaskList for tracking |
-| test-specialist | ✅ **Kept** | No built-in equivalent for test pattern analysis |
-| quality-guardian | ✅ **Kept** | No built-in equivalent for multi-tool quality gates |
-| review-coordinator | ✅ **Kept** | No built-in equivalent for PR workflow management |
-| forensic-specialist | ✅ **Kept** | No built-in equivalent for security forensics |
-
 ### 🔗 Agent + Spec-Kit Interaction
 
 - 🧪 **test-specialist**: Referenced by `/speckit.implement` for test patterns and conventions
@@ -410,21 +396,6 @@ Created by `/speckit.init`. Commit to version control.
 ├── .stow-local-ignore          # excludes README from stow
 └── README.md
 ```
-
----
-
-## 📅 Version History
-
-| Version | Date | Highlights |
-|---------|------|------------|
-| **v4.0.1** | 2026-02-25 | 🔧 Pre-flight helper script, all commands routed through `speckit-helper.sh` |
-| **v4.0.0** | 2026-02-23 | 🚀 Spec-kit SDD pipeline, simplified to 4 agents, TaskCreate API |
-| **v3.1.0** | 2025-11-26 | ⚙️ Hooks, skills, expanded commands, MCP integration |
-| **v3.0.0** | 2025-09-04 | 🕵️ Agent-enhanced with Claude Code sub-agents |
-| **v2.0.0** | 2025-09-02 | 🔄 Enhanced 18-step workflow |
-| **v1.0.0** | 2025-09-02 | 🎉 Initial 11-step framework |
-
-See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
