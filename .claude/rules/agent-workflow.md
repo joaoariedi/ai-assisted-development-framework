@@ -1,5 +1,26 @@
 # Development Workflow
 
+## Phase 0: Multi-Environment Setup (Optional)
+
+### Remote Control
+Continue local Claude Code sessions from any device:
+- Start work locally in terminal: `claude`
+- Resume the same session from phone/browser via claude.ai/code
+- Context, files, and conversation history carry over across surfaces
+- Useful for monitoring long-running tasks or reviewing results on the go
+
+### Teleport
+Move sessions between surfaces:
+- Start a task on web (claude.ai/code) or mobile
+- Pull into local terminal: `/teleport`
+- Full context transfers — no re-explaining needed
+- Ideal for starting tasks during commute, finishing at workstation
+
+### When to Use
+- Long-running implementations you want to monitor from mobile
+- Starting research/planning on web, then implementing locally
+- Reviewing PR feedback on mobile, then switching to terminal to fix
+
 ## Phase 1: Planning & Context (Steps 1-4)
 
 ### Step 1: Context Preparation
@@ -68,6 +89,39 @@
 - Verify all acceptance criteria met
 - Use `review-coordinator` agent for PR creation if needed
 - Only commit when user explicitly requests it
+
+## Agent Teams (Experimental)
+
+Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json (already enabled).
+
+### When to Use Agent Teams
+- Multi-service features requiring parallel work (API + frontend + worker)
+- Large refactoring across many files with independent changes
+- Parallel test creation across modules
+- Research + implementation happening simultaneously
+
+### Team Workflow
+1. **TeamCreate** — create a named team with shared task list
+2. **TaskCreate** — break work into tasks with clear ownership boundaries
+3. **Task (spawn teammates)** — launch specialized agents with `team_name` parameter
+4. **TaskUpdate** — assign tasks to teammates via `owner` field
+5. **SendMessage** — coordinate between agents (DM or broadcast)
+6. **SendMessage (shutdown_request)** — gracefully shut down teammates when done
+7. **TeamDelete** — clean up team resources after completion
+
+### Team Composition Patterns
+| Pattern | Lead | Teammates | Use Case |
+|---------|------|-----------|----------|
+| **Parallel impl** | general-purpose | 2-3 general-purpose | Multi-service feature |
+| **Test-driven** | general-purpose | test-specialist | TDD with parallel test writing |
+| **Full pipeline** | general-purpose | test-specialist, quality-guardian, review-coordinator | End-to-end delivery |
+| **Research + build** | general-purpose | Explore agent | Deep codebase research while implementing |
+
+### Rules
+- Teammates share a task list — use TaskList to check progress
+- Prefer DMs (`type: "message"`) over broadcasts to reduce cost
+- Teammates go idle between turns — this is normal, send a message to wake them
+- Always shut down teammates gracefully before TeamDelete
 
 ## Phase 4: Post-Implementation (Steps 17-18) - Optional
 

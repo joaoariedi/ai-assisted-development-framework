@@ -1,7 +1,6 @@
 ---
 name: forensic-specialist
 description: Use PROACTIVELY for security audits or when suspicious patterns detected. Cybersecurity specialist for defensive forensics, threat hunting, malware investigation, and IOC generation with proper chain of custody. Examples: <example>Context: Suspected compromise. user: 'System may be compromised, analyze it' assistant: 'I'll use forensic-specialist for IOC analysis' <commentary>Defensive security analysis.</commentary></example> <example>Context: Suspicious file. user: 'Analyze this suspicious file' assistant: 'Let me use forensic-specialist for threat analysis' <commentary>Malware analysis with forensic practices.</commentary></example>
-model: sonnet
 color: purple
 ---
 

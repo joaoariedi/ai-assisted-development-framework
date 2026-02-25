@@ -28,6 +28,16 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 8. Use `git -C <directory>` instead of `cd <directory> && git` to avoid zoxide conflicts
 9. Version declaration is deprecated in docker compose, do not add it
 
+## Performance & Model Selection
+- **Fast Mode**: Toggle with `/fast` for faster Opus 4.6 output on quick iterations, bug fixes, and exploration
+- Agents default to adaptive model selection — override with `model:` in agent frontmatter only when needed
+- Use `haiku` for lightweight tasks (search, simple edits); `sonnet` for standard work; `opus` for complex architecture
+
+## Multi-Environment Workflows
+- **Remote Control**: Continue local sessions from any device via claude.ai/code
+- **Teleport**: Pull cloud/web sessions into local terminal with `/teleport`
+- Sessions maintain full context across surfaces (terminal, IDE, web, mobile)
+
 ## Tool Usage
 - Use Read to understand existing code before suggesting modifications
 - Use Grep to find similar implementations
