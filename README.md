@@ -82,7 +82,7 @@ The recommended workflow for building a feature from scratch using the spec-kit 
 > /context
 ```
 
-Outputs tech stack, architecture, test framework, build tools, key dependencies, recent git activity.
+Scans the project to detect tech stack, test frameworks, build tools, linters, key dependencies, and recent git activity. Gives you (and Claude) a snapshot of the codebase before any work begins. Run once per project or when switching context.
 
 ### 🏗️ Step 2 — Bootstrap Spec-Kit *(once per project)*
 
@@ -90,7 +90,7 @@ Outputs tech stack, architecture, test framework, build tools, key dependencies,
 > /speckit.init
 ```
 
-Creates `.specify/` directory with templates and a skeleton constitution.
+Creates the `.specify/` directory with `memory/`, `templates/`, and `specs/` subdirectories. This is the scaffolding that all other speckit commands depend on. Run once per project, commit it so the team shares the same structure:
 
 ```
 > git add .specify/ && git commit -m "chore: initialize spec-kit scaffolding"
@@ -102,7 +102,7 @@ Creates `.specify/` directory with templates and a skeleton constitution.
 > /speckit.constitution
 ```
 
-Reads README, config files, and `.claude/rules/` to propose governance principles (tech stack, architecture, testing philosophy).
+Reads your README, config files, and `.claude/rules/` to propose 5–7 governance principles — tech stack decisions, architecture constraints, testing philosophy, dependency policy. Every plan is later validated against these.
 
 ### ✍️ Step 4 — Write the Specification
 
@@ -110,11 +110,14 @@ Reads README, config files, and `.claude/rules/` to propose governance principle
 > /speckit.specify add user authentication with OAuth2
 ```
 
-What happens:
-1. Generates a branch name (e.g., `003-user-auth-oauth2`)
-2. Creates `.specify/specs/003-user-auth-oauth2/spec.md` with user scenarios, functional requirements, and success criteria
-3. Auto-generates `checklists/requirements.md`
-4. Creates git branch `feature/003-user-auth-oauth2`
+Takes a feature description and generates a structured specification:
+
+- **User scenarios** — Given/When/Then format with P1/P2/P3 priorities
+- **Functional requirements** — FR-001, FR-002, etc.
+- **Success criteria** — SC-001, SC-002, etc.
+- **Requirements checklist** — auto-generated in `checklists/`
+
+Creates a feature branch and a dedicated directory under `.specify/specs/<branch>/`.
 
 ### 🔍 Step 5 — Resolve Ambiguities *(optional)*
 
@@ -122,7 +125,7 @@ What happens:
 > /speckit.clarify
 ```
 
-Scans spec against 9 categories (scope, error handling, security, edge cases...) and asks up to 5 targeted multiple-choice questions.
+Scans the spec against 9 categories: scope boundaries, user roles, data lifecycle, error handling, edge cases, performance, security, integration, and migration. Asks up to 5 targeted multiple-choice questions. Records answers as numbered clarifications (CLR-001+) and removes `[NEEDS CLARIFICATION]` markers from the spec.
 
 ### 📐 Step 6 — Create the Plan
 
@@ -130,7 +133,7 @@ Scans spec against 9 categories (scope, error handling, security, edge cases...)
 > /speckit.plan
 ```
 
-Identifies affected files, designs data model and API contracts, verifies constitution compliance. Writes `plan.md`.
+Researches the codebase to resolve any remaining unknowns, identifies affected files, designs data model changes and API contracts, and writes `plan.md`. Every decision is checked against the constitution. Outputs a risk/mitigation table and a quick-start section for implementation.
 
 ### 📋 Step 7 — Generate the Task List
 
@@ -138,14 +141,23 @@ Identifies affected files, designs data model and API contracts, verifies consti
 > /speckit.tasks
 ```
 
-Generates phased tasks (Setup → Foundational → User Stories → Polish), marks parallelizable tasks with `[P]`, creates entries in Claude Code task tracker.
+Reads both `spec.md` and `plan.md` to generate phased tasks: **Setup → Foundational → User Stories (by priority) → Polish**. Each task references a requirement (FR/US), includes a target file path, and marks parallelizable tasks with `[P]`. Creates matching entries in the Claude Code task tracker with dependencies between phases.
 
-### ✅ Step 8 — Validate *(optional)*
+### ✅ Step 8a — Pre-Implementation Gate *(optional)*
 
 ```
-> /speckit.checklist    # requirement quality checklists
-> /speckit.analyze      # read-only consistency analysis
+> /speckit.checklist
 ```
+
+Generates requirement quality checklists that validate specs are well-formed *before* implementation starts. Checks completeness, consistency, testability, clarity, and feasibility. Also generates UX, API, and security checklists when relevant to the feature.
+
+### 🔬 Step 8b — Consistency Check *(optional)*
+
+```
+> /speckit.analyze
+```
+
+Read-only pass across all artifacts. Runs 6 detection passes: duplication, ambiguity, underspecification, constitution alignment, coverage gaps (every FR mapped to a task), and inconsistency detection. Outputs a severity-ranked findings report with a coverage mapping table.
 
 ### 🧪 Step 9 — Implement with TDD
 
@@ -153,17 +165,19 @@ Generates phased tasks (Setup → Foundational → User Stories → Polish), mar
 > /speckit.implement
 ```
 
-For each task: write failing test → verify fail → implement → verify pass → check regressions. Quality gate between phases.
+Executes tasks in order using strict Red-Green cycles: write failing test → verify failure → implement minimum code → verify pass → check regressions. Runs quality checks between phases. Produces a completion report mapping every requirement to passing tests.
 
 ### 🚀 Step 10 — Ship
 
 ```
-> /quality              # lint + types + format + tests
-> /security-scan        # scan staged changes
+> /quality              # spawns quality-guardian: lint, types, format, tests
+> /security-scan        # scan staged changes for secrets, SQLi, XSS
 > commit this           # Claude commits with semantic message
 > push it
-> /pr-summary           # generates PR description
+> /pr-summary           # generates PR description from branch diff
 ```
+
+The `/quality` command spawns the quality-guardian agent to run all available checks: linting, type checking, formatting, full test suite, and complexity metrics. This is the last gate before committing.
 
 ### 📊 Pipeline at a Glance
 
