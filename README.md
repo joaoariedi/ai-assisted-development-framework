@@ -1,18 +1,19 @@
-# AI Development Framework v4.0
+# 🤖 AI Development Framework v4.0
 
-> A systematic Claude Code configuration for spec-driven development (SDD) with quality gates, custom agents, automated hooks, and a full specification pipeline.
+> A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, and a full specification pipeline.
 
-## Quick Start
+---
 
-### 1. Install via Dotfiles
+## ⚡ Quick Start
+
+### 1️⃣ Install via Dotfiles
 
 ```bash
 # Clone the dotfiles repo (or your own fork)
 git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
 
 # Symlink Claude Code config into ~/.claude/
-cd ~/dotfiles
-stow claude
+cd ~/dotfiles && stow claude
 
 # Verify symlinks
 ls -la ~/.claude/
@@ -25,13 +26,18 @@ ls -la ~/.claude/
 # mcp.json  → ../dotfiles/claude/.claude/mcp.json
 ```
 
-### 2. Create Machine-Local Settings
+### 2️⃣ Create Machine-Local Settings
 
-`settings.json` contains hooks and env vars. It's machine-specific and not managed by stow:
+`settings.json` contains hooks and env vars. It's machine-specific and **not managed by stow**:
 
 ```bash
 cat > ~/.claude/settings.json << 'EOF'
 {
+  "permissions": {
+    "allow": [
+      "Bash($HOME/.claude/hooks/speckit-helper.sh:*)"
+    ]
+  },
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
@@ -51,7 +57,9 @@ cat > ~/.claude/settings.json << 'EOF'
 EOF
 ```
 
-### 3. Verify Installation
+> ⚠️ **Important**: The `speckit-helper.sh` permission is required for all spec-kit commands to work. Claude Code blocks `$()`, `||`, and `|` operators in pre-flight commands, so all logic is routed through the helper script.
+
+### 3️⃣ Verify Installation
 
 ```bash
 cd ~/any-project
@@ -64,39 +72,39 @@ After `stow claude`, every new Claude Code session loads the rules, agents, comm
 
 ---
 
-## Feature Development Cycle
+## 🔄 Feature Development Cycle
 
 The recommended workflow for building a feature from scratch using the spec-kit pipeline.
 
-### Step 1 — Orient
+### 🧭 Step 1 — Orient
 
 ```
 > /context
 ```
 
-Outputs tech stack, architecture, test framework, build tools, key dependencies, recent git activity. Run once per project or when switching context.
+Outputs tech stack, architecture, test framework, build tools, key dependencies, recent git activity.
 
-### Step 2 — Bootstrap Spec-Kit (once per project)
+### 🏗️ Step 2 — Bootstrap Spec-Kit *(once per project)*
 
 ```
 > /speckit.init
 ```
 
-Creates a `.specify/` directory with templates and a skeleton constitution. Commit it so the team shares the same spec context:
+Creates `.specify/` directory with templates and a skeleton constitution.
 
 ```
 > git add .specify/ && git commit -m "chore: initialize spec-kit scaffolding"
 ```
 
-### Step 3 — Define Project Principles (once per project)
+### 📜 Step 3 — Define Project Principles *(once per project)*
 
 ```
 > /speckit.constitution
 ```
 
-Reads README, config files, and `.claude/rules/` to propose 5 governance principles (tech stack, architecture, testing philosophy). Confirm or customize interactively.
+Reads README, config files, and `.claude/rules/` to propose governance principles (tech stack, architecture, testing philosophy).
 
-### Step 4 — Write the Specification
+### ✍️ Step 4 — Write the Specification
 
 ```
 > /speckit.specify add user authentication with OAuth2
@@ -104,50 +112,50 @@ Reads README, config files, and `.claude/rules/` to propose 5 governance princip
 
 What happens:
 1. Generates a branch name (e.g., `003-user-auth-oauth2`)
-2. Creates `.specify/specs/003-user-auth-oauth2/spec.md` with user scenarios (Given/When/Then, P1/P2/P3), functional requirements (FR-001+), and success criteria (SC-001+)
+2. Creates `.specify/specs/003-user-auth-oauth2/spec.md` with user scenarios, functional requirements, and success criteria
 3. Auto-generates `checklists/requirements.md`
 4. Creates git branch `feature/003-user-auth-oauth2`
 
-### Step 5 — Resolve Ambiguities (optional)
+### 🔍 Step 5 — Resolve Ambiguities *(optional)*
 
 ```
 > /speckit.clarify
 ```
 
-Scans the spec against 9 categories (scope, error handling, security, edge cases, etc.) and asks up to 5 targeted multiple-choice questions. Answers are recorded in a `## Clarifications` section.
+Scans spec against 9 categories (scope, error handling, security, edge cases...) and asks up to 5 targeted multiple-choice questions.
 
-### Step 6 — Create the Plan
+### 📐 Step 6 — Create the Plan
 
 ```
 > /speckit.plan
 ```
 
-Resolves remaining clarifications by reading the codebase, identifies affected files, designs data model and API contracts, verifies constitution compliance. Writes `plan.md`.
+Identifies affected files, designs data model and API contracts, verifies constitution compliance. Writes `plan.md`.
 
-### Step 7 — Generate the Task List
+### 📋 Step 7 — Generate the Task List
 
 ```
 > /speckit.tasks
 ```
 
-Reads both `spec.md` and `plan.md`, generates phased tasks (Setup, Foundational, User Stories by priority, Polish), marks parallelizable tasks with `[P]`, and creates matching entries in the Claude Code task tracker with dependencies.
+Generates phased tasks (Setup → Foundational → User Stories → Polish), marks parallelizable tasks with `[P]`, creates entries in Claude Code task tracker.
 
-### Step 8 — Validate (optional)
+### ✅ Step 8 — Validate *(optional)*
 
 ```
 > /speckit.checklist    # requirement quality checklists
 > /speckit.analyze      # read-only consistency analysis
 ```
 
-### Step 9 — Implement with TDD
+### 🧪 Step 9 — Implement with TDD
 
 ```
 > /speckit.implement
 ```
 
-For each task: write failing test, verify fail, implement, verify pass, check for regressions. Quality gate runs between phases. Completion report maps every requirement to passing tests.
+For each task: write failing test → verify fail → implement → verify pass → check regressions. Quality gate between phases.
 
-### Step 10 — Ship
+### 🚀 Step 10 — Ship
 
 ```
 > /quality              # lint + types + format + tests
@@ -157,113 +165,114 @@ For each task: write failing test, verify fail, implement, verify pass, check fo
 > /pr-summary           # generates PR description
 ```
 
-### Pipeline at a Glance
+### 📊 Pipeline at a Glance
 
 ```
-/context                                    # orient
-/speckit.init                               # bootstrap (once per project)
-/speckit.constitution                       # principles (once per project)
-/speckit.specify <feature description>      # write spec
-/speckit.clarify                            # resolve ambiguities
-/speckit.plan                               # design
-/speckit.tasks                              # break down work
-/speckit.checklist                          # pre-implementation gate
-/speckit.analyze                            # consistency check
-/speckit.implement                          # TDD execution
-/quality                                    # final quality gate
+/context                              → 🧭 orient
+/speckit.init                         → 🏗️ bootstrap (once)
+/speckit.constitution                 → 📜 principles (once)
+/speckit.specify <feature>            → ✍️ write spec
+/speckit.clarify                      → 🔍 resolve ambiguities
+/speckit.plan                         → 📐 design
+/speckit.tasks                        → 📋 break down work
+/speckit.checklist                    → ✅ pre-impl gate
+/speckit.analyze                      → 🔬 consistency check
+/speckit.implement                    → 🧪 TDD execution
+/quality                              → 🛡️ final quality gate
 ```
 
 ---
 
-## All Slash Commands
+## 🛠️ All Slash Commands
 
-| Command | Arguments | Description |
-|---------|-----------|-------------|
-| `/agent` | `<task>` | Start a full development workflow with planning and task tracking |
-| `/context` | --- | Analyze project tech stack, tools, and structure |
-| `/pr-summary` | --- | Generate PR description from current branch diff |
-| `/quality` | --- | Run comprehensive quality checks (lint, types, tests) |
-| `/security-scan` | --- | Scan staged changes for security issues |
-| `/speckit.init` | --- | Bootstrap `.specify/` directory in current project |
-| `/speckit.constitution` | --- | Create/update project governance principles |
+| Command | Args | Description |
+|---------|------|-------------|
+| `/agent` | `<task>` | Start full development workflow with planning and task tracking |
+| `/context` | — | Analyze project tech stack, tools, and structure |
+| `/pr-summary` | — | Generate PR description from current branch diff |
+| `/quality` | — | Run comprehensive quality checks (lint, types, tests) |
+| `/security-scan` | — | Scan staged changes for security issues |
+| `/speckit.init` | — | Bootstrap `.specify/` directory in current project |
+| `/speckit.constitution` | — | Create/update project governance principles |
 | `/speckit.specify` | `<feature>` | Generate spec with scenarios, requirements, success criteria |
-| `/speckit.plan` | --- | Generate implementation plan from spec (auto-detects branch) |
-| `/speckit.tasks` | --- | Generate phased task list from plan and spec |
-| `/speckit.implement` | --- | Execute TDD implementation with quality gates |
-| `/speckit.analyze` | --- | Read-only cross-artifact consistency analysis |
-| `/speckit.clarify` | --- | Scan spec for ambiguities, ask targeted questions |
-| `/speckit.checklist` | --- | Generate requirement quality checklists |
+| `/speckit.plan` | — | Generate implementation plan from spec |
+| `/speckit.tasks` | — | Generate phased task list from plan and spec |
+| `/speckit.implement` | — | Execute TDD implementation with quality gates |
+| `/speckit.analyze` | — | Read-only cross-artifact consistency analysis |
+| `/speckit.clarify` | — | Scan spec for ambiguities, ask targeted questions |
+| `/speckit.checklist` | — | Generate requirement quality checklists |
 
 ---
 
-## Custom Agents
+## 🕵️ Custom Agents
 
 Four specialized agents with no built-in equivalent:
 
-| Agent | When to Use |
-|-------|-------------|
-| `test-specialist` | After implementation — creates comprehensive test suites following existing patterns |
-| `quality-guardian` | Before any commit/PR/merge — runs lint, type checks, security scans, performance validation |
-| `review-coordinator` | PR creation — generates descriptions, manages review workflow |
-| `forensic-specialist` | Incident response — threat hunting, IOC generation, chain of custody |
+| Agent | Role | When to Use |
+|-------|------|-------------|
+| 🧪 `test-specialist` | Testing | After implementation — creates comprehensive test suites |
+| 🛡️ `quality-guardian` | QA | Before any commit/PR/merge — lint, types, security, perf |
+| 📝 `review-coordinator` | PR Mgmt | PR creation, review workflow, merge management |
+| 🔒 `forensic-specialist` | Security | Incident response, threat hunting, IOC generation |
 
-For general tasks, Claude Code uses built-in agents automatically: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
+> For general tasks, Claude Code uses built-in agents: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
 ---
 
-## Hooks (Automatic)
+## ⚙️ Hooks (Automatic)
 
-Shell-script hooks run automatically via `settings.json` configuration:
+Shell-script hooks run automatically via `settings.json`:
 
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
-| `quality-before-commit.sh` | Before `git commit` | Runs language-specific linter, blocks commit on errors |
-| `block-sensitive-files.sh` | Before editing files | Blocks writes to `.env`, `*.key`, `*.pem`, `credentials*` |
-| `run-tests-after-edit.sh` | After editing source files | Auto-runs tests (throttled to 15s intervals) |
-| `stop-quality-check.sh` | Session stop | Reminds if tests haven't been run recently |
+| 🔍 `quality-before-commit.sh` | Before `git commit` | Runs linter, blocks commit on errors |
+| 🔒 `block-sensitive-files.sh` | Before editing files | Blocks writes to `.env`, `*.key`, `*.pem` |
+| 🧪 `run-tests-after-edit.sh` | After editing source | Auto-runs tests (throttled 15s) |
+| 📊 `stop-quality-check.sh` | Session stop | Reminds if tests haven't run recently |
+| 🔧 `speckit-helper.sh` | Pre-flight commands | Routes all `!` backtick logic to avoid permission errors |
 
 ---
 
-## Rules
+## 📏 Rules
 
 Modular policies loaded into the system prompt automatically:
 
 | Rule | Covers |
 |------|--------|
-| `code-quality.md` | Function/file size limits, testing stance, documentation policy |
-| `git-workflow.md` | Commit format (`<type>: <desc>`), branch naming, staging, co-authoring |
-| `agent-workflow.md` | 18-step development workflow with spec-kit pipeline integration |
-| `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go) |
+| 📝 `code-quality.md` | Function/file size limits, testing, documentation policy |
+| 🔀 `git-workflow.md` | Commit format (`<type>: <desc>`), branch naming, co-authoring |
+| 🔄 `agent-workflow.md` | 18-step development workflow with spec-kit integration |
+| 🔧 `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go) |
 
 ---
 
-## Skills (Internal)
+## 🧠 Skills (Internal)
 
 Used by agents and commands internally — not invoked directly:
 
 | Skill | Purpose |
 |-------|---------|
-| `context-analysis` | Project structure analysis methodology |
-| `security-review` | Code security checklist (secrets, SQLi, XSS, auth) |
-| `performance-audit` | N+1 queries, blocking I/O, memory leaks, O(n^2) detection |
-| `spec-template` | Generates structured Given/When/Then specifications |
+| 🔎 `context-analysis` | Project structure analysis methodology |
+| 🔒 `security-review` | Code security checklist (secrets, SQLi, XSS, auth) |
+| ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks detection |
+| 📄 `spec-template` | Generates structured Given/When/Then specifications |
 
 ---
 
-## Task Management
+## 📋 Task Management
 
 The framework uses Claude Code's built-in task tracker:
 
 | Tool | Usage |
 |------|-------|
 | `TaskCreate` | Mandatory for any task with >2 steps |
-| `TaskUpdate` | Mark exactly ONE task `in_progress` at a time; mark `completed` immediately after |
+| `TaskUpdate` | Mark ONE task `in_progress` at a time; `completed` immediately after |
 | `TaskGet` | Read full task details before starting work |
 | `TaskList` | Check progress and find next available tasks |
 
 ---
 
-## MCP Integration
+## 🔌 MCP Integration
 
 ```json
 {
@@ -280,7 +289,7 @@ The framework uses Claude Code's built-in task tracker:
 
 ---
 
-## Quality Standards
+## 📊 Quality Standards
 
 ```
 Functions:   < 50 lines
@@ -292,21 +301,21 @@ Enforced by `code-quality.md` rule and `quality-guardian` agent. Test coverage f
 
 ---
 
-## `.specify/` Directory (per project)
+## 📁 `.specify/` Directory *(per project)*
 
 Created by `/speckit.init`. Commit to version control.
 
 ```
 .specify/
 ├── memory/
-│   └── constitution.md         # project principles
+│   └── constitution.md         # 📜 project principles
 ├── templates/
-│   ├── spec.md                 # specification template
-│   ├── plan.md                 # plan template
-│   ├── tasks.md                # task list template
-│   └── checklist.md            # checklist template
+│   ├── spec.md                 # ✍️ specification template
+│   ├── plan.md                 # 📐 plan template
+│   ├── tasks.md                # 📋 task list template
+│   └── checklist.md            # ✅ checklist template
 └── specs/
-    └── 003-feature-name/       # one directory per feature branch
+    └── 003-feature-name/       # 🔀 one directory per feature branch
         ├── spec.md             # specification
         ├── plan.md             # implementation plan
         ├── tasks.md            # phased task list
@@ -316,25 +325,25 @@ Created by `/speckit.init`. Commit to version control.
 
 ---
 
-## Dotfiles Package Structure
+## 📦 Dotfiles Package Structure
 
 ```
 ~/dotfiles/claude/
 ├── .claude/
-│   ├── CLAUDE.md               # core config (loaded into system prompt)
-│   ├── mcp.json                # MCP servers (GitHub)
-│   ├── agents/                 # 4 custom agents
-│   ├── commands/               # 14 slash commands (5 standard + 9 speckit)
-│   ├── hooks/                  # 4 lifecycle hooks (shell scripts)
-│   ├── rules/                  # 4 modular policy files
-│   └── skills/                 # 4 internal skills
+│   ├── CLAUDE.md               # 🧠 core config (loaded into system prompt)
+│   ├── mcp.json                # 🔌 MCP servers (GitHub)
+│   ├── agents/                 # 🕵️ 4 custom agents
+│   ├── commands/               # 🛠️ 15 slash commands (5 standard + 9 speckit + agent)
+│   ├── hooks/                  # ⚙️ 5 lifecycle hooks (shell scripts)
+│   ├── rules/                  # 📏 4 modular policy files
+│   └── skills/                 # 🧠 4 internal skills
 ├── .stow-local-ignore          # excludes README from stow
 └── README.md
 ```
 
 ---
 
-## Files Reference
+## 📚 Files Reference
 
 | File | Purpose |
 |------|---------|
@@ -347,24 +356,25 @@ Created by `/speckit.init`. Commit to version control.
 
 ---
 
-## Version History
+## 📅 Version History
 
-- **v4.0.0** (2026-02-23): Spec-kit SDD pipeline, simplified to 4 agents, TaskCreate API, actual hook scripts
-- **v3.1.0** (2025-11-26): Hooks, skills, expanded commands, MCP integration, proactive triggers
-- **v3.0.0** (2025-09-04): Agent-enhanced with Claude Code sub-agents
-- **v2.0.0** (2025-09-02): Enhanced 18-step workflow
-- **v1.0.0** (2025-09-02): Initial 11-step framework
+| Version | Date | Highlights |
+|---------|------|------------|
+| **v4.0.1** | 2026-02-25 | Pre-flight helper script, all commands routed through `speckit-helper.sh` |
+| **v4.0.0** | 2026-02-23 | Spec-kit SDD pipeline, simplified to 4 agents, TaskCreate API |
+| **v3.1.0** | 2025-11-26 | Hooks, skills, expanded commands, MCP integration |
+| **v3.0.0** | 2025-09-04 | Agent-enhanced with Claude Code sub-agents |
+| **v2.0.0** | 2025-09-02 | Enhanced 18-step workflow |
+| **v1.0.0** | 2025-09-02 | Initial 11-step framework |
 
 See [CHANGELOG.md](CHANGELOG.md) for details.
 
 ---
 
-## License
+## 📄 License
 
-MIT License - see [LICENSE](LICENSE)
+MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.0.0
-**Last Updated**: 2026-02-23
-**Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit
+**Framework Version**: 4.0.1 &nbsp;|&nbsp; **Last Updated**: 2026-02-25 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit

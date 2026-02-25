@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "github": {
+      "transport": "http",
+      "url": "https://api.githubcopilot.com/mcp/v1",
+      "scope": "user",
+      "description": "GitHub PR/Issue automation for review-coordinator agent"
+    }
+  }
+}

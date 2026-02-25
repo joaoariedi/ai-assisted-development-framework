@@ -34,6 +34,6 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 - Use Glob to discover project structure
 - Use Bash only for system commands and terminal operations
 - Use EnterPlanMode/ExitPlanMode for complex features requiring user approval
-- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: specify -> plan -> tasks -> implement
+- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: specify → plan → tasks → implement
 
 See `.claude/rules/` for detailed policies on code quality, git workflow, agent coordination, and language-specific tooling.
