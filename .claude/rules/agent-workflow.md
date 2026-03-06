@@ -27,6 +27,7 @@ Move sessions between surfaces:
 - Use built-in `Explore` agent or `/context` command for project analysis
 - Auto-detect tech stack from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`
 - Identify existing patterns, conventions, and quality tools
+- Use `ultrathink` for complex architectural analysis or ambiguous requirements
 
 ### Step 2: Create Task List & Plan
 - Use TaskCreate for comprehensive task breakdown with acceptance criteria
@@ -83,6 +84,7 @@ Move sessions between surfaces:
 
 ### Step 13-14: Self-Review & Issue Resolution
 - Review for security, performance, maintainability
+- Use `ultrathink` for complex debugging, race conditions, or security-sensitive reviews
 - Fix quality check failures, re-run tests
 
 ### Step 15-16: Final Validation & Completion

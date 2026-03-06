@@ -30,6 +30,8 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 
 ## Performance & Model Selection
 - **Fast Mode**: Toggle with `/fast` for faster Opus 4.6 output on quick iterations, bug fixes, and exploration
+- **Ultrathink**: Type `ultrathink` in any prompt to bump that turn to high reasoning effort (reverts after response)
+- Effort levels: `max` (via `/model` only) > `high` (ultrathink keyword) > `medium` (default) > `low`
 - Agents default to adaptive model selection — override with `model:` in agent frontmatter only when needed
 - Use `haiku` for lightweight tasks (search, simple edits); `sonnet` for standard work; `opus` for complex architecture
 
