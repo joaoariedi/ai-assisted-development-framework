@@ -371,7 +371,7 @@ Created by `/speckit.init`. Commit to version control.
 │   ├── tasks.md                # 📋 task list template
 │   └── checklist.md            # ✅ checklist template
 └── specs/
-    └── 003-feature-name/       # 🔀 one directory per feature branch
+    └── feature-name/            # 🔀 one directory per feature (kebab-case, no numbering)
         ├── spec.md             # specification
         ├── plan.md             # implementation plan
         ├── tasks.md            # phased task list

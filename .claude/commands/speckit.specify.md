@@ -26,9 +26,9 @@ Generate a structured specification for: **$ARGUMENTS**
 1. **Verify `.specify/` exists** — if not, tell the user to run `/speckit.init` first
 
 2. **Generate branch name**
-   - Format: `NNN-short-description` (2-4 words, kebab-case)
-   - NNN = next sequential number (check existing `specs/` directories)
-   - Example: `003-chat-system`, `004-user-auth`
+   - Format: `short-description` (2-4 words, kebab-case, no sequential numbering)
+   - Must be unique among existing `specs/` directories
+   - Example: `chat-system`, `user-auth`, `fxblue-auto-download`
 
 3. **Create spec directory**: `.specify/specs/<branch-name>/`
 
