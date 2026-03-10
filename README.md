@@ -289,6 +289,17 @@ Shell-script hooks run automatically via `settings.json`:
 
 ---
 
+## 🗜️ Compact Instructions
+
+CLAUDE.md includes built-in compact instructions that guide both manual (`/compact`) and automatic compaction:
+
+- **Keep**: architectural decisions, key file paths, lessons learned, debugging insights, user preferences, task progress, error patterns and their solutions, API/config conventions discovered
+- **Drop**: full code blocks, raw tool output, file contents, search results, intermediate exploration steps
+
+These instructions are part of CLAUDE.md and survive compaction natively — no custom slash command needed.
+
+---
+
 ## 📏 Rules
 
 Modular policies loaded into the system prompt automatically:
@@ -405,4 +416,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.0.1 &nbsp;|&nbsp; **Last Updated**: 2026-02-25 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit
+**Framework Version**: 4.0.2 &nbsp;|&nbsp; **Last Updated**: 2026-03-10 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit
