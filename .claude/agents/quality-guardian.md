@@ -39,25 +39,34 @@ Your primary responsibility is to serve as the quality gate for all code changes
    - Analyze code maintainability and technical debt
 
 4. **Security Assessment**
-   - Apply the `security-review` skill methodology for code security checks
-   - Run `semgrep scan` for cross-language pattern-based SAST (if available)
-   - Validate input sanitization and output encoding
-   - Assess authentication and authorization implementations
-   - **Supply chain checks**: run language-specific SCA tools:
-     - Go: `govulncheck ./...` (reachability-based — only flags vulnerabilities in actually-called code)
-     - JS/TS: `npm audit` or Snyk
-     - Python: `pip-audit` or `safety check`
-     - Rust: `cargo audit`
-     - Java: OWASP Dependency-Check or Snyk
+   - Apply the `security-review` skill methodology (secrets, SAST, SQLi, XSS, auth, supply chain)
+   - The skill contains the full per-language SCA tool list — delegate to it rather than duplicating
+   - Additionally validate input sanitization and output encoding in changed code
    - For release builds: generate SBOM with `syft`, scan with `grype` or `trivy`
+   - Follow `llm-security.md` rules for OWASP LLM-specific mitigations
 
 5. **Performance Validation**
-   - Apply the `performance-audit` skill methodology for performance-sensitive code
-   - Check for N+1 queries, blocking I/O, memory leaks, and O(n²) patterns
+   - Apply the `performance-audit` skill methodology (N+1, blocking I/O, memory leaks, complexity)
    - Run available benchmarks if project provides them
    - Flag performance regressions in critical paths
 
-6. **Regression Prevention**
+6. **Architectural Pattern Validation**
+   - Check for SOLID principle violations in changed/new code:
+     - **Single Responsibility (SRP)**: Flag classes or modules with >3 unrelated responsibilities
+     - **Open-Closed (OCP)**: Identify code requiring modification to add new behavior.
+       Evaluate: "If a new variant of X is added, does this code need an if/else or switch addition?
+       If yes, suggest strategy/template pattern or polymorphism."
+     - **Liskov Substitution (LSP)**: Check that subclasses don't weaken preconditions or strengthen postconditions
+     - **Interface Segregation (ISP)**: Flag interfaces or protocols with >7 methods that could be split
+     - **Dependency Inversion (DIP)**: Identify concrete class dependencies that should be abstractions.
+       Evaluate: "Does this module import and instantiate its own dependencies?
+       If yes, suggest constructor injection or factory pattern."
+   - Focus on OCP and DIP as highest-impact violations
+   - Only check changed or new code, not pre-existing patterns
+   - This is an advisory check — do not block progression for minor violations
+   - Provide specific refactoring suggestions with concrete code structure examples
+
+7. **Regression Prevention**
    - Run comprehensive test suites to prevent regressions
    - Validate existing functionality remains intact
    - Check for breaking changes in APIs and interfaces

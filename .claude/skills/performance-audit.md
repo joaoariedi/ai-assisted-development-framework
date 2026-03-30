@@ -5,6 +5,7 @@ description: |
   optimizing critical code paths. Read-only analysis
   with optional benchmarking via Bash.
 allowed-tools: Read, Grep, Glob, Bash
+disable-model-invocation: true
 ---
 
 # Performance Audit Skill

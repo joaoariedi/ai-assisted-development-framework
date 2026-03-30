@@ -5,6 +5,7 @@ description: |
   feature description. Use when you need to formalize requirements
   before implementation. Auto-invoked by spec-driven workflow.
 user-invocable: false
+disable-model-invocation: true
 allowed-tools: Read, Grep, Glob
 ---
 
