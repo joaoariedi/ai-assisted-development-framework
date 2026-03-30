@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v4.0
+# 🤖 AI Development Framework v4.1
 
 > A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, and a full specification pipeline.
 
@@ -84,7 +84,7 @@ Each feature is developed in a dedicated branch. Spec-kit auto-generates branch 
 Tests written before implementation code (Red-Green cycle). Failing test first, then minimum code to pass. Full suite must pass with no regressions after each task.
 
 ### 🛡️ Automated Quality Gates
-4 hooks enforce quality automatically (lint, file protection, test runs, reminders). `quality-guardian` agent validates before commit/PR/merge. Code quality limits enforced: functions <50 lines, files <500 lines, complexity <10.
+4 hooks enforce quality automatically (lint, secrets detection, file protection, test runs, reminders). `quality-guardian` agent validates before commit/PR/merge with mandatory secrets scanning, cross-language SAST (Semgrep), and supply chain checks (govulncheck, npm audit, cargo audit). Code quality limits enforced: functions <50 lines, files <500 lines, complexity <10.
 
 ### ⚙️ Minimal Configuration
 4 custom agents — only where built-in agents fall short. Built-in agents handle planning, exploration, and general implementation. TaskCreate/TaskUpdate for tracking. Rules and skills auto-loaded via dotfiles symlinks.
@@ -281,7 +281,7 @@ Shell-script hooks run automatically via `settings.json`:
 
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
-| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` (intercepts `git commit`) | Runs language-specific linter (ESLint, ruff, clippy, go vet), blocks commit on errors |
+| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` (intercepts `git commit`) | Runs gitleaks secrets detection + language-specific linters (ESLint, ruff, clippy, go vet, Spotless), blocks commit on errors |
 | 🔒 `block-sensitive-files.sh` | PreToolUse on `Edit\|Write` | Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*` |
 | 🧪 `run-tests-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-runs test suite after source file edits (throttled 15s, non-blocking) |
 | 📊 `stop-quality-check.sh` | Stop event | Reminds if source files were edited but tests not run (60s window) |
@@ -309,7 +309,8 @@ Modular policies loaded into the system prompt automatically:
 | 📝 `code-quality.md` | Function/file size limits, testing, documentation policy |
 | 🔀 `git-workflow.md` | Commit format (`<type>: <desc>`), branch naming, co-authoring |
 | 🔄 `agent-workflow.md` | 18-step development workflow with spec-kit integration |
-| 🔧 `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go) |
+| 🔧 `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go, Java) with tiered validation strategy |
+| 🔐 `pipeline-security.md` | Managed ASPM services, open-source security tools, and strategic selection guide |
 
 ---
 
@@ -320,7 +321,7 @@ Used by agents and commands internally — not invoked directly:
 | Skill | Purpose |
 |-------|---------|
 | 🔎 `context-analysis` | Project structure analysis methodology |
-| 🔒 `security-review` | Code security checklist (secrets, SQLi, XSS, auth) |
+| 🔒 `security-review` | Code security checklist (secrets, SAST, SQLi, XSS, auth, supply chain SCA) |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks detection |
 | 📄 `spec-template` | Generates structured Given/When/Then specifications |
 
@@ -402,7 +403,7 @@ Created by `/speckit.init`. Commit to version control.
 │   ├── agents/                 # 🕵️ 4 custom agents
 │   ├── commands/               # 🛠️ 14 slash commands (5 standard + 9 speckit)
 │   ├── hooks/                  # ⚙️ 5 lifecycle hooks (shell scripts)
-│   ├── rules/                  # 📏 4 modular policy files
+│   ├── rules/                  # 📏 5 modular policy files
 │   └── skills/                 # 🧠 4 internal skills
 ├── .stow-local-ignore          # excludes README from stow
 └── README.md
@@ -416,4 +417,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.0.2 &nbsp;|&nbsp; **Last Updated**: 2026-03-10 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit
+**Framework Version**: 4.1.0 &nbsp;|&nbsp; **Last Updated**: 2026-03-30 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit

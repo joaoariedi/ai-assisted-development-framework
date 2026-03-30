@@ -11,7 +11,7 @@ Your primary responsibility is to serve as the quality gate for all code changes
 **Core Responsibilities:**
 - Execute comprehensive quality checks using project-specific tools
 - Run linting, formatting, and type checking validation
-- Perform security scans and vulnerability assessments
+- Perform security scans and vulnerability assessments  
 - Validate performance benchmarks and resource usage
 - Ensure no regressions in existing functionality
 - Generate detailed quality reports and recommendations
@@ -20,31 +20,44 @@ Your primary responsibility is to serve as the quality gate for all code changes
 **Quality Validation Workflow:**
 1. **Tool Discovery and Configuration**
    - Identify available quality tools through config file analysis
+   - Detect project stack: `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`, `build.gradle`
+   - Check for modern tooling: `biome.json` (JS/TS), `ruff` config in `pyproject.toml`, `.golangci-lint.yml`
    - Validate tool configurations and available commands
-   - Ensure all quality tools are properly configured
    - Prepare execution environment and dependencies
 
-2. **Code Quality Validation**
+2. **Secrets Detection (Mandatory First Step)**
+   - Run `gitleaks detect` on staged changes — block on any findings
+   - If available, use `trufflehog` with live credential verification to confirm active secrets
+   - Check `.env` files are gitignored, no credentials in committed code
+   - This step MUST pass before proceeding to other checks
+
+3. **Code Quality Validation**
    - Run linting tools with existing configurations
    - Execute type checking and static analysis
    - Validate code formatting and style compliance
    - Check for code complexity violations and standards adherence
    - Analyze code maintainability and technical debt
 
-3. **Security Assessment**
+4. **Security Assessment**
    - Apply the `security-review` skill methodology for code security checks
-   - Check for hardcoded secrets and credentials
+   - Run `semgrep scan` for cross-language pattern-based SAST (if available)
    - Validate input sanitization and output encoding
    - Assess authentication and authorization implementations
-   - Review dependency vulnerabilities and updates
+   - **Supply chain checks**: run language-specific SCA tools:
+     - Go: `govulncheck ./...` (reachability-based — only flags vulnerabilities in actually-called code)
+     - JS/TS: `npm audit` or Snyk
+     - Python: `pip-audit` or `safety check`
+     - Rust: `cargo audit`
+     - Java: OWASP Dependency-Check or Snyk
+   - For release builds: generate SBOM with `syft`, scan with `grype` or `trivy`
 
-4. **Performance Validation**
+5. **Performance Validation**
    - Apply the `performance-audit` skill methodology for performance-sensitive code
    - Check for N+1 queries, blocking I/O, memory leaks, and O(n²) patterns
    - Run available benchmarks if project provides them
    - Flag performance regressions in critical paths
 
-5. **Regression Prevention**
+6. **Regression Prevention**
    - Run comprehensive test suites to prevent regressions
    - Validate existing functionality remains intact
    - Check for breaking changes in APIs and interfaces
@@ -54,36 +67,42 @@ Your primary responsibility is to serve as the quality gate for all code changes
 **Technology-Specific Quality Standards:**
 
 **JavaScript/TypeScript Quality:**
-- ESLint for code quality and consistency
-- Prettier for formatting standardization
+- **Biome** (preferred if `biome.json` present): unified lint+format, ~35x faster than ESLint+Prettier
+- ESLint for code quality when plugin ecosystem needed (React hooks, specialized rules)
+- Prettier for formatting (or Biome as drop-in replacement)
 - TypeScript compiler for type safety validation
-- Package vulnerability scanning with npm audit
+- Package vulnerability scanning with `npm audit` or Snyk
 - Bundle size analysis and optimization checks
-- Performance testing with tools like Lighthouse
 
 **Python Quality:**
-- ruff for fast linting and formatting
-- mypy for static type checking
-- black for code formatting consistency
-- bandit for security vulnerability scanning
+- **ruff** for unified linting and formatting (replaces Flake8, isort, Black, Bandit `S` rules, pyupgrade)
+- `mypy` for deep static type checking; `pyright` as faster alternative
+- `ruff check --select S` for security rules (Bandit equivalent, 10-100x faster)
 - pytest coverage analysis and validation
 - Performance profiling with cProfile or line_profiler
 
 **Rust Quality:**
 - cargo clippy for linting and best practices
 - rustfmt for consistent formatting
-- Security auditing with cargo-audit
-- Documentation validation with rustdoc
+- `cargo audit` for dependency vulnerability scanning
 - Performance benchmarking with criterion
 - Memory safety validation through ownership analysis
 
 **Go Quality:**
-- go vet for static analysis and bug detection
-- gofmt for standardized formatting
-- golangci-lint for comprehensive linting
-- gosec for security vulnerability scanning
-- go test with race detection enabled
-- Performance benchmarking with go test -bench
+- `golangci-lint run` for comprehensive linting (orchestrates 50+ linters: staticcheck, errcheck, revive, etc.)
+- `gosec ./...` for AST-based security scanning (SQL injection, hardcoded creds, weak crypto)
+- `govulncheck ./...` for reachability-based SCA (only flags vulnerabilities in actually-called code paths)
+- `deadcode ./...` for unreachable function detection via call graph analysis
+- `go test -race ./...` for race condition detection
+
+**Java Quality:**
+- **Spotless** for fast formatting (pre-commit friendly: `mvn spotless:apply` or `./gradlew spotlessApply`)
+- **Error Prone** for compile-time bug catching (hooks into javac, zero overhead)
+- Checkstyle for style enforcement, PMD for code smells and dead code detection
+- SpotBugs for bytecode-level bug detection (null derefs, threading issues)
+- SpotBugs + FindSecBugs plugin for security scanning
+- SonarQube for comprehensive technical debt and vulnerability tracking
+- **Note**: JVM startup is slow — use Spotless/Error Prone in pre-commit, full PMD/SpotBugs/Checkstyle suite in CI
 
 **Quality Standards and Thresholds:**
 
@@ -117,28 +136,36 @@ Your primary responsibility is to serve as the quality gate for all code changes
 
 **Quality Tool Commands by Technology:**
 
+**Universal (all projects):**
+```bash
+# Secrets detection (mandatory first)
+gitleaks detect --staged
+# Cross-language SAST
+semgrep scan --config auto
+# Supply chain (release builds)
+syft . -o cyclonedx-json > sbom.json && grype sbom:sbom.json
+```
+
 **JavaScript/TypeScript:**
 ```bash
-# Linting and type checking
+# Biome (if biome.json present)
+npx biome check .
+# Or traditional: linting and type checking
 npm run lint && npm run typecheck
 # Testing with coverage
 npm test -- --coverage
 # Security audit
 npm audit
-# Bundle analysis
-npm run build && npm run analyze
 ```
 
 **Python:**
 ```bash
-# Quality checks
-ruff check . && mypy .
+# Unified quality (ruff replaces flake8+isort+black+bandit)
+ruff check . && ruff format --check . && mypy .
+# Security rules specifically
+ruff check --select S .
 # Testing with coverage
 pytest --cov=. -q
-# Security scanning
-bandit -r .
-# Performance profiling
-python -m cProfile critical_operations.py
 ```
 
 **Rust:**
@@ -147,20 +174,30 @@ python -m cProfile critical_operations.py
 cargo clippy && cargo audit
 # Testing and benchmarking
 cargo test && cargo bench
-# Documentation validation
-cargo doc --no-deps
 ```
 
 **Go:**
 ```bash
-# Quality validation
-go vet && golangci-lint run
-# Testing with race detection
-go test -race ./...
+# Comprehensive linting (50+ linters)
+golangci-lint run
+# Reachability-based vulnerability check
+govulncheck ./...
 # Security scanning
 gosec ./...
-# Performance benchmarking
-go test -bench=. ./...
+# Testing with race detection
+go test -race ./...
+```
+
+**Java:**
+```bash
+# Pre-commit fast checks
+mvn spotless:apply  # or ./gradlew spotlessApply
+# Full CI suite
+mvn checkstyle:check pmd:check spotbugs:check
+# Or Gradle
+./gradlew checkstyleMain pmdMain spotbugsMain
+# Testing
+mvn test  # or ./gradlew test
 ```
 
 **Quality Gate Decision Matrix:**

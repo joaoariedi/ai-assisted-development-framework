@@ -5,6 +5,26 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.0] - 2026-03-30
+
+### Added
+- **Pipeline Security Rules** (`pipeline-security.md`): New rules file with managed ASPM service catalog (Snyk, Aikido, Checkmarx, Veracode, Corgea, Cycode), open-source tool reference (Semgrep, OWASP ZAP, Gitleaks, TruffleHog, Knip, deadcode), and strategic selection guide by team size/budget and pipeline tier
+- **Java Ecosystem Support**: Full tooling across all quality files — Checkstyle, PMD, SpotBugs, Spotless (pre-commit), Error Prone (compile-time), FindSecBugs, SonarQube
+- **Universal Security Tools**: Gitleaks secrets detection, Semgrep cross-language SAST, Syft/Grype SBOM generation, Trivy all-in-one scanning
+- **Tiered Validation Strategy**: 3-tier approach in quality-tooling.md — Tier 1 pre-commit (<5s), Tier 2 PR/CI (deep semantic), Tier 3 release (compliance/SBOM)
+- **Mandatory Secrets Detection**: quality-guardian now requires gitleaks scan as first step before all other checks
+- **Supply Chain Checks**: Language-specific SCA in quality-guardian and security-review — govulncheck (Go reachability), npm audit, pip-audit, cargo audit, OWASP Dependency-Check (Java)
+
+### Enhanced
+- **quality-guardian agent**: Added secrets detection mandatory first step, Semgrep SAST, supply chain SCA per language, Java quality standards, Biome option for JS/TS, govulncheck reachability analysis, SBOM generation for releases
+- **quality-tooling.md**: Added Universal section, Biome as JS/TS alternative (~35x faster), pyright as mypy alternative, ruff as unified Python toolchain, golangci-lint (50+ linters), govulncheck, deadcode, Java ecosystem, tiered strategy
+- **security-review skill**: Added Semgrep SAST step, secrets tool recommendations (gitleaks/trufflehog), supply chain & dependency section with reachability analysis, refined severity definitions with examples
+- **security-scan command**: Added automated tool checks section (gitleaks, Semgrep, govulncheck, npm audit, pip-audit, cargo audit), enhanced severity descriptions
+- **quality command**: Added secrets detection step, security & supply chain step, Java support, Biome/pyright alternatives, updated report format with Secrets and Security rows
+- **quality-before-commit.sh**: Added gitleaks secrets detection (mandatory, runs first), Java project support via Spotless (Maven/Gradle)
+
+---
+
 ## [4.0.2] - 2026-03-10
 
 ### Added

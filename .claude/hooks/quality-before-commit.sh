@@ -16,6 +16,13 @@ fi
 
 ERRORS=""
 
+# Universal: Secrets detection (mandatory, runs first)
+if command -v gitleaks &>/dev/null; then
+  if ! gitleaks detect --staged --no-banner -q 2>/dev/null; then
+    ERRORS="${ERRORS}Secrets detected in staged files! "
+  fi
+fi
+
 # JavaScript/TypeScript projects
 if [ -f "$CWD/package.json" ]; then
   if npm --prefix "$CWD" run lint --if-present 2>&1 | grep -q "error"; then
@@ -49,6 +56,21 @@ if [ -f "$CWD/go.mod" ]; then
   if command -v go &>/dev/null; then
     if ! (cd "$CWD" && go vet ./... 2>/dev/null); then
       ERRORS="${ERRORS}Go vet errors found. "
+    fi
+  fi
+fi
+
+# Java projects (Spotless is fast enough for pre-commit; skip full PMD/SpotBugs)
+if [ -f "$CWD/pom.xml" ]; then
+  if command -v mvn &>/dev/null; then
+    if ! mvn -f "$CWD/pom.xml" spotless:check -q 2>/dev/null; then
+      ERRORS="${ERRORS}Java formatting issues (run mvn spotless:apply). "
+    fi
+  fi
+elif [ -f "$CWD/build.gradle" ] || [ -f "$CWD/build.gradle.kts" ]; then
+  if [ -f "$CWD/gradlew" ]; then
+    if ! "$CWD/gradlew" -p "$CWD" spotlessCheck -q 2>/dev/null; then
+      ERRORS="${ERRORS}Java formatting issues (run ./gradlew spotlessApply). "
     fi
   fi
 fi

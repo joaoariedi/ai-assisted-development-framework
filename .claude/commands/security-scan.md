@@ -17,10 +17,20 @@ Focus on staged and unstaged changes:
 - [ ] Auth/authz patterns follow existing project conventions
 - [ ] New dependencies checked for known vulnerabilities
 
+## Automated Tool Checks (if available)
+- **Secrets**: `gitleaks detect --staged` — scans for 150+ secret types
+- **SAST**: `semgrep scan --config auto` — cross-language pattern-based security analysis
+- **SCA**: language-specific dependency scanning:
+  - Go: `govulncheck ./...` (reachability-based — only flags actually-called vulnerable code)
+  - JS/TS: `npm audit`
+  - Python: `pip-audit`
+  - Rust: `cargo audit`
+  - Java: OWASP Dependency-Check
+
 ## Report Format
-- **CRITICAL**: Block merge immediately
-- **HIGH**: Require remediation before merge
-- **MEDIUM**: Document and track
+- **CRITICAL**: Block merge immediately (active secrets, exploitable RCE)
+- **HIGH**: Require remediation before merge (SQLi, auth bypass, reachable CVEs)
+- **MEDIUM**: Document and track (XSS, missing validation)
 - **LOW**: Note for future improvement
 
 Note: For full incident response, threat hunting, or forensic investigation, use the `forensic-specialist` agent instead.
