@@ -88,3 +88,45 @@ Artifact integrity and supply chain verification:
 - Container: `trivy image <image>`
 - Signing: Sigstore for artifact provenance
 - Monitoring: Dependency-Track or SonarQube for continuous tracking
+
+## Structured Hook Alternatives
+
+### Lefthook (Recommended for Teams)
+- Declarative YAML configuration (`lefthook.yml`) vs imperative bash scripts
+- Parallel execution of independent checks at pre-commit
+- `{staged_files}` variable for incremental, staged-files-only linting
+- Glob filtering: only lint files matching `*.rb`, `*.py`, etc.
+- Install: `npm install lefthook --save-dev` or `brew install lefthook`
+- Example:
+  ```yaml
+  pre-commit:
+    parallel: true
+    commands:
+      lint:
+        run: bundle exec rubocop {staged_files}
+        glob: "*.rb"
+      secrets:
+        run: gitleaks detect --staged
+  pre-push:
+    commands:
+      tests:
+        run: bundle exec rails test
+  ```
+
+### Pre-commit vs Pre-push Separation
+- **Pre-commit** (< 5 seconds): formatting, staged-file linting, secrets detection
+- **Pre-push** (thorough): full test suite, comprehensive lint, dependency audit
+- Rationale: fast pre-commit reduces friction; thorough pre-push catches deeper issues
+
+### Staged-Files-Only Linting
+- At pre-commit, lint ONLY staged files — not the entire project
+- Prevents slow pre-commit hooks that discourage frequent commits
+- Most tools support file list input: `ruff check <files>`, `eslint <files>`, `rubocop <files>`
+
+## CI/CD Best Practices
+- **`cancel-in-progress` concurrency**: Cancel redundant CI runs when new commits push to same branch
+- **`fail-fast: false`** for cross-platform matrices: ensures visibility into all platform failures
+- **`continue-on-error`** for dependency freshness: non-blocking `bundle outdated` / `npm outdated`
+- **Screenshot artifacts on test failure**: `actions/upload-artifact` with `if: failure()` for system tests
+- **Dependabot for github-actions**: not just language packages — keep CI actions up to date
+- **Smart cache keys**: hash config files + lockfiles for cache invalidation (e.g., rubocop config + Gemfile.lock)

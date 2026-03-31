@@ -130,3 +130,45 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json (already enab
 ### Step 17-18: Retrospective
 - Note lessons learned in auto-memory
 - Record useful patterns discovered
+
+## CLAUDE.md Template Guidance
+
+When creating or updating `CLAUDE.md` files for projects, include these sections as applicable:
+
+### Cross-Cutting Change Maps
+Document files that must change together to prevent partial updates:
+```
+If you change X, also update Y and Z:
+- Cache paths: update both server/cache.go AND server/worker/page_cache.py
+- Job payloads: update handlers.go, consumer.py, AND provider.dart
+- API contracts: update schema.graphql AND generated types
+```
+
+### "What NOT to Change" Guardrails
+Explicitly list things AI agents should never modify:
+```
+NEVER:
+- Remove the FTS5 virtual table from the schema
+- Change csp: null in tauri.conf.json
+- Modify migration files that have already shipped
+- Edit generated files under src/generated/
+```
+
+### Trust Boundary Documentation
+List hostile input surfaces so agents apply proper validation:
+```
+Trust boundaries (sanitize all input from these sources):
+- Image uploads to POST /api/v1/jobs (user-controlled content)
+- Metadata fields (title, chapter) — sanitize before storage
+- WebSocket clients — validate subscription requests
+- Anything persisted under cache/ — treat as untrusted
+```
+
+### Security Posture Statement
+Acknowledge what kind of app it is to calibrate security decisions:
+```
+This is a public-facing web app with user authentication.
+Security posture: production-grade (rate limiting, CSP, CSRF, encrypted sessions).
+```
+
+These patterns are derived from production repos and significantly reduce AI agent errors in cross-cutting changes.

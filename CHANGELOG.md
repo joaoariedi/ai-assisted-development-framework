@@ -5,6 +5,30 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-03-31
+
+### Added
+- **`verification-before-completion` skill**: Evidence-first completion gate with Iron Law ("NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE"), rationalization prevention table, and fresh-evidence requirements. Auto-invoked before task completion.
+- **`systematic-debugging` skill**: 4-phase root cause investigation (read errors → reproduce → gather evidence → fix) with Iron Law ("NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST"), defense-in-depth pattern, and anti-pattern guidance.
+- **`code-reviewer` agent**: Two-stage pre-PR review specialist. Stage 1 validates spec compliance against plan/spec artifacts. Stage 2 checks SOLID principles, architecture, error handling, security, and naming. Produces structured review report with verdict.
+- **`/speckit.brainstorm` command**: Socratic design exploration before specification. Uses a hard gate (no code until design is approved), structured clarifying questions (one per message, multiple-choice preferred), proposes 2-3 approaches with trade-offs, writes a design document, and includes inline self-review. Inspired by obra/superpowers brainstorming skill.
+- **`/speckit.fix` command**: Quick-fix bypass for trivial changes (typos, config, style) that skip the full SDD pipeline. Includes triviality gate with explicit criteria to prevent misuse.
+- **`/speckit.review` command**: Read-only plan review gate that challenges scope, architecture, design, tests, performance, and constitution compliance before task generation. Slots between `/speckit.plan` and `/speckit.tasks`.
+- **`/speckit.baseline` command**: Reverse-engineer specs from existing code for brownfield projects. Analyzes source files, extracts behaviors, generates spec.md with coverage gap analysis and source file references.
+- **Development Lifecycle section** in README with three workflow paths: Quick Fix, Standard SDD, and Brownfield
+- **The Four Balances** philosophy: security + performance + maintainability + efficacy as framework design principles
+- **Iron Law enforcement pattern**: Non-negotiable rules in skills with rationalization prevention tables (inspired by obra/superpowers)
+
+### Enhanced
+- **`code-quality.md`**: Added verification-before-completion requirement, security-specific test files recommendation (`*_security_test.*` convention), Iron Law enforcement pattern
+- **`quality-tooling.md`**: Added lefthook recommendation as structured hook alternative (YAML, parallel execution, staged-files-only), pre-commit vs pre-push separation strategy, CI/CD best practices (cancel-in-progress, fail-fast:false, screenshot artifacts, Dependabot for github-actions, smart cache keys)
+- **`agent-workflow.md`**: Added CLAUDE.md template guidance for cross-cutting change maps, "What NOT to change" guardrails, trust boundary documentation, and security posture statements (patterns from production repos)
+- **`speckit-helper.sh`**: Added helper functions for new commands: `check-plan-review`, `detect-existing-code`, `trivial-change-check`
+- **`CLAUDE.md`**: Updated agent table to include code-reviewer (5 agents), added speckit.fix/review/baseline to SDD workflow, version bump to v4.3
+- **`README.md`**: Major restructure with Development Lifecycle (3 paths), Four Balances table, updated component counts (5 agents, 6 skills, 17 commands), Iron Laws integration
+
+---
+
 ## [4.1.0] - 2026-03-30
 
 ### Added

@@ -108,13 +108,35 @@ case "$1" in
     git diff --stat main...HEAD 2>/dev/null || git diff --stat HEAD~1
     ;;
 
+  # --- New commands for speckit.review, speckit.baseline, speckit.fix ---
+  check-plan-review)
+    test -f ".specify/specs/$BRANCH/plan.md" && echo "PLAN_EXISTS: $BRANCH" || echo "NO_PLAN"
+    grep -q "^## Reviewed" ".specify/specs/$BRANCH/plan.md" 2>/dev/null && echo "PLAN_REVIEWED" || echo "PLAN_NOT_REVIEWED"
+    ;;
+  detect-existing-code)
+    SRC_COUNT=$(find . -maxdepth 4 -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.java" -o -name "*.rb" -o -name "*.kt" -o -name "*.swift" -o -name "*.c" -o -name "*.cpp" \) ! -path "*/node_modules/*" ! -path "*/.git/*" ! -path "*/vendor/*" ! -path "*/target/*" 2>/dev/null | wc -l)
+    echo "SOURCE_FILES: $SRC_COUNT"
+    find . -maxdepth 2 -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" -o -name "*.rs" -o -name "*.go" -o -name "*.java" -o -name "*.rb" \) ! -path "*/node_modules/*" ! -path "*/.git/*" 2>/dev/null | sed 's|/[^/]*$||' | sort -u | head -10
+    ;;
+  trivial-change-check)
+    STAGED=$(git diff --cached --name-only 2>/dev/null | wc -l)
+    UNSTAGED=$(git diff --name-only 2>/dev/null | wc -l)
+    TOTAL=$((STAGED + UNSTAGED))
+    echo "STAGED_FILES: $STAGED"
+    echo "UNSTAGED_FILES: $UNSTAGED"
+    echo "TOTAL_CHANGED: $TOTAL"
+    git diff --name-only 2>/dev/null | head -10
+    git diff --cached --name-only 2>/dev/null | head -10
+    ;;
+
   *)
     echo "Unknown command: $1"
     echo "Usage: speckit-helper.sh <command>"
     echo "Commands: branch, check-git-root, spec, plan, check-spec, check-plan,"
     echo "  check-artifacts, all-artifacts, clarifications, checklists, checklists-dir,"
     echo "  checklists-content, constitution, list-specs, list-specs-dir, check-specify-dir,"
-    echo "  detect-stack, detect-test-framework, list-config-files, list-rules, readme-head"
+    echo "  detect-stack, detect-test-framework, list-config-files, list-rules, readme-head,"
+    echo "  check-plan-review, detect-existing-code, trivial-change-check"
     exit 1
     ;;
 esac

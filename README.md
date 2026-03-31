@@ -1,6 +1,6 @@
-# 🤖 AI Development Framework v4.2
+# 🤖 AI Development Framework v4.3
 
-> A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline.
+> A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline. Balances **security**, **performance**, **maintainability**, and **efficacy** at every step.
 
 ---
 
@@ -78,19 +78,33 @@ After `stow claude`, every new Claude Code session loads the rules, agents, comm
 
 ---
 
-## 🧬 How It Works
+## 🧬 Development Lifecycle
 
-### 📋 Spec-Driven Development
+The framework provides three workflow paths. Choose the one that matches your task:
 
-Features start with a formal specification — user scenarios, functional requirements, success criteria — before any code is written. The spec-kit pipeline takes you from idea to implementation:
+### ⚡ Quick Fix Path (trivial changes)
+
+For typos, config updates, formatting fixes, and dependency bumps:
+
+```
+/speckit.fix "fix typo in error message"   → apply fix → verify → commit
+```
+
+The triviality gate ensures only genuinely trivial changes bypass the full pipeline. If your change modifies logic, APIs, or schemas, you'll be redirected to the Standard path.
+
+### 📋 Standard SDD Path (features, refactors, bug fixes)
+
+The full spec-driven development pipeline from idea to implementation:
 
 ```
 /context              → 🧭 orient (detect stack, tools, structure)
 /speckit.init         → 🏗️ bootstrap (once per project)
 /speckit.constitution → 📜 define principles (once per project)
+/speckit.brainstorm   → 💡 Socratic design exploration (refine the idea) ← NEW
 /speckit.specify      → ✍️ write spec (scenarios, requirements, criteria)
 /speckit.clarify      → 🔍 resolve ambiguities (optional)
 /speckit.plan         → 📐 design (affected files, data model, API contracts)
+/speckit.review       → 🔎 challenge the plan (scope, architecture, tests) ← NEW
 /speckit.tasks        → 📋 generate task list (phased, with dependencies)
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
@@ -100,7 +114,31 @@ Features start with a formal specification — user scenarios, functional requir
 
 Specifications live in `.specify/specs/<branch>/` and are committed to version control. A constitution in `.specify/memory/constitution.md` defines project-level governance principles that every plan is validated against.
 
-### Automated Quality Gates
+### 🏗️ Brownfield Path (existing code)
+
+For projects with existing code that lack formal specifications:
+
+```
+/speckit.baseline     → 📊 reverse-engineer spec from code ← NEW
+/speckit.review       → 🔎 review the inferred spec/plan
+/speckit.tasks        → 📋 generate tasks for enhancements
+/speckit.implement    → 🧪 execute with quality gates
+```
+
+### ⚖️ The Four Balances
+
+Every decision in the framework balances four concerns:
+
+| Concern | How the Framework Addresses It |
+|---------|-------------------------------|
+| 🔒 **Security** | Hooks block sensitive files, gitleaks secrets scanning, OWASP LLM rules, forensic-specialist agent |
+| ⚡ **Performance** | performance-audit skill, quality-guardian benchmarks, CI optimization (cancel-in-progress, staged-files-only lint) |
+| 🏛️ **Maintainability** | SOLID principle checks, code quality limits, systematic-debugging skill, cross-cutting change maps |
+| 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, verification-before-completion skill |
+
+---
+
+## 🛡️ Automated Quality Gates
 
 Seven hooks enforce quality automatically — no manual intervention needed:
 
@@ -111,7 +149,7 @@ Seven hooks enforce quality automatically — no manual intervention needed:
 - 📊 **Reminders** — alerts if source files were edited but tests weren't run
 - 🔔 **Notifications** — desktop alerts when the agent needs human input (Linux/macOS)
 
-The `quality-guardian` agent validates before commit/PR/merge with secrets scanning, SAST, supply chain checks, SOLID architectural analysis, and performance validation.
+The `quality-guardian` agent validates before commit/PR/merge with secrets scanning, SAST, supply chain checks, SOLID architectural analysis, performance validation, and **Iron Law enforcement**.
 
 ### 🔐 Security Posture
 
@@ -122,6 +160,7 @@ The framework implements layered defenses against OWASP LLM vulnerabilities:
 | **Enforcement** | Hooks | Sensitive file blocking, secrets detection, pre-commit quality |
 | **Guidance** | Rules | OWASP LLM Top 10, MCP security, code quality, SOLID principles |
 | **Analysis** | Skills & Agents | Security review, forensic investigation, quality gates |
+| **Efficacy** | Iron Laws | Verification-before-completion, systematic-debugging |
 
 MCP servers follow strict security posture — OAuth 2.1 for production, least privilege, input validation, and human-in-the-loop for high-impact actions.
 
@@ -172,7 +211,7 @@ See `context-management.md` rule for detailed guidance and project scaling strat
 
 ## 🕵️ Agents
 
-Four specialized agents with no built-in equivalent:
+Five specialized agents with no built-in equivalent:
 
 ### 🧪 test-specialist
 
@@ -192,7 +231,17 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 6. 🏛️ **Architectural pattern validation** — SOLID principle checks with chain-of-thought for OCP and DIP
 7. 🧪 Regression prevention (full test suite)
 
+Enforces Iron Laws from `verification-before-completion` and `systematic-debugging` skills.
+
 **When to use**: Before any commit, PR, or merge. Spawned automatically by `/quality`.
+
+### 🔍 code-reviewer
+
+Two-stage code review specialist. **Stage 1** validates spec compliance (implementation matches plan, all FRs addressed, no scope creep). **Stage 2** checks code quality (SOLID, architecture, error handling, security, naming, test coverage).
+
+Produces a structured review report with `APPROVE` / `REQUEST_CHANGES` / `NEEDS_DISCUSSION` verdict.
+
+**When to use**: Before PR creation, after implementation. Distinct from review-coordinator (which manages the PR lifecycle).
 
 ### 📝 review-coordinator
 
@@ -220,7 +269,7 @@ TeamCreate → TaskCreate → spawn teammates → SendMessage → shutdown → T
 |---------|----------|
 | **Parallel impl** | Multi-service feature (API + frontend + worker) |
 | **Test-driven** | TDD with parallel test writing |
-| **Full pipeline** | End-to-end: impl + tests + quality + PR |
+| **Full pipeline** | End-to-end: impl + tests + quality + review + PR |
 | **Research + build** | Deep codebase research while implementing |
 
 Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json above).
@@ -229,16 +278,18 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json abo
 
 ## 🧠 Skills
 
-Used by agents and commands internally. Two are auto-invocable, two require explicit invocation:
+Six skills used by agents and commands internally:
 
 | Skill | Purpose | Auto-invoked? |
 |-------|---------|---------------|
 | 🔎 `context-analysis` | Project structure detection, tech stack analysis | Yes — proactively on new codebases |
 | 🔒 `security-review` | Code security checklist (secrets, SAST, SQLi, XSS, auth, supply chain SCA) | Yes — proactively on PRs |
+| ✅ `verification-before-completion` | Evidence-first completion gate with Iron Law — must run proof commands before claiming done | Yes — proactively before completion |
+| 🐛 `systematic-debugging` | 4-phase root cause investigation (read → reproduce → evidence → fix) with Iron Law | Yes — proactively on bugs |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks, algorithm complexity | No — explicit only |
 | 📄 `spec-template` | Structured Given/When/Then specification generation | No — speckit pipeline only |
 
-Skills with `disable-model-invocation: true` won't be auto-invoked, keeping context cost at zero until explicitly triggered.
+The two new skills enforce **Iron Laws** — non-negotiable rules that prevent false completion claims and shotgun debugging. Each includes a rationalization prevention table to counter common excuses.
 
 ---
 
@@ -253,13 +304,17 @@ Skills with `disable-model-invocation: true` won't be auto-invoked, keeping cont
 | `/security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
 | `/speckit.init` | — | Bootstrap `.specify/` directory in current project |
 | `/speckit.constitution` | — | Create/update project governance principles |
+| `/speckit.brainstorm` | `<idea>` | Socratic design exploration before specification |
 | `/speckit.specify` | `<feature>` | Generate spec with scenarios, requirements, criteria |
-| `/speckit.plan` | — | Generate implementation plan from spec |
-| `/speckit.tasks` | — | Generate phased task list from plan and spec |
-| `/speckit.implement` | — | Execute TDD implementation with quality gates |
-| `/speckit.analyze` | — | Read-only cross-artifact consistency analysis |
 | `/speckit.clarify` | — | Scan spec for ambiguities, ask targeted questions |
+| `/speckit.plan` | — | Generate implementation plan from spec |
+| `/speckit.review` | — | Read-only plan review gate (scope, architecture, tests) |
+| `/speckit.tasks` | — | Generate phased task list from plan and spec |
 | `/speckit.checklist` | — | Generate requirement quality checklists |
+| `/speckit.analyze` | — | Read-only cross-artifact consistency analysis |
+| `/speckit.implement` | — | Execute TDD implementation with quality gates |
+| `/speckit.baseline` | `<module>` | Reverse-engineer spec from existing code (brownfield) |
+| `/speckit.fix` | `<description>` | Quick-fix bypass for trivial changes |
 
 ---
 
@@ -285,10 +340,10 @@ Modular policies loaded into every session automatically:
 
 | Rule | Covers |
 |------|--------|
-| 📝 `code-quality.md` | Function/file size limits, SOLID principles (SRP, OCP, DIP), testing, documentation |
+| 📝 `code-quality.md` | Function/file size limits, SOLID principles, testing, verification-before-completion, Iron Laws, security test files |
 | 🔀 `git-workflow.md` | Commit format, branch naming, co-authoring, staging |
-| 🔄 `agent-workflow.md` | 4-phase development workflow, Agent Teams, spec-kit integration |
-| 🔧 `quality-tooling.md` | Per-language tool detection (JS/TS, Python, Rust, Go, Java) with tiered validation |
+| 🔄 `agent-workflow.md` | 4-phase workflow, Agent Teams, CLAUDE.md template guidance (change maps, guardrails, trust boundaries) |
+| 🔧 `quality-tooling.md` | Per-language tools, tiered validation, lefthook, pre-commit/pre-push separation, CI best practices |
 | 🔐 `pipeline-security.md` | ASPM services, open-source security tools, strategic selection guide |
 | 🛡️ `llm-security.md` | OWASP LLM Top 10 mitigations (prompt injection, excessive agency, data leakage, supply chain) |
 | 🔌 `mcp-security.md` | MCP server auth, input validation, tool poisoning defense, server curation |
@@ -303,6 +358,7 @@ Functions:   < 50 lines
 Files:       < 500 lines
 Complexity:  < 10 (cyclomatic)
 SOLID:       OCP + DIP violations flagged in changed code
+Iron Laws:   verification-before-completion + systematic-debugging
 ```
 
 Enforced by `code-quality.md` rule and `quality-guardian` agent. Test coverage follows project-configured thresholds.
@@ -315,7 +371,7 @@ Each feature generates artifacts in `.specify/specs/<branch>/`:
 
 | Artifact | Generated By | Purpose |
 |----------|-------------|---------|
-| `spec.md` | `/speckit.specify` | User scenarios, functional requirements, success criteria |
+| `spec.md` | `/speckit.specify` or `/speckit.baseline` | User scenarios, functional requirements, success criteria |
 | `plan.md` | `/speckit.plan` | Design, affected files, constitution compliance |
 | `tasks.md` | `/speckit.tasks` | Phased task list with IDs and dependencies |
 | `research.md` | `/speckit.plan` | Resolved clarifications |
@@ -384,13 +440,30 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 ├── .claude/
 │   ├── CLAUDE.md               # core config (loaded into system prompt)
 │   ├── mcp.json                # MCP servers (GitHub)
-│   ├── agents/                 # 4 custom agents
-│   ├── commands/               # 14 slash commands (5 standard + 9 speckit)
+│   ├── agents/                 # 5 custom agents
+│   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
 │   ├── hooks/                  # 7 lifecycle hooks (shell scripts)
 │   ├── rules/                  # 8 modular policy files
-│   └── skills/                 # 4 internal skills
+│   └── skills/                 # 6 internal skills
 └── .stow-local-ignore          # excludes README from stow
 ```
+
+---
+
+## 🙏 Inspirations & Acknowledgments
+
+This framework was shaped by patterns observed in several projects:
+
+| Project | Author | Key Contributions |
+|---------|--------|-------------------|
+| [superpowers](https://github.com/obra/superpowers) | Jesse Vincent | Iron Laws, rationalization prevention tables, Socratic brainstorming with hard gate, verification-before-completion, systematic debugging methodology, evidence-first workflow |
+| [spec-kit](https://github.com/github/spec-kit) | GitHub | Spec-driven development (SDD) pipeline — the specify → plan → tasks → implement workflow that forms the framework's core |
+| [FrankYomik](https://github.com/akitaonrails/FrankYomik) | Fabio Akita | Cross-cutting change maps, trust boundary documentation, domain-first CLAUDE.md structure |
+| [FrankSherlock](https://github.com/akitaonrails/FrankSherlock) | Fabio Akita | "What NOT to change" guardrails, architecture-as-constraints pattern, `_`-prefixed research directories |
+| [FrankMD](https://github.com/akitaonrails/FrankMD) | Fabio Akita | AGENTS.md as tool-agnostic contributor guide, concise do/don't lists |
+| [FrankMega](https://github.com/akitaonrails/FrankMega) | Fabio Akita | Lefthook parallel hooks, security-specific test files, pre-commit vs pre-push separation, staged-files-only linting |
+| [speckit-agent-skills](https://github.com/dceoy/speckit-agent-skills) | dceoy | `speckit.baseline` concept — reverse-engineering specs from existing code |
+| [speckit-wiggum-toolkit](https://github.com/leonardoFu/speckit-wiggum-toolkit) | leonardoFu | `speckit.research` and `speckit.reflect` concepts — formalized research and retrospective phases |
 
 ---
 
@@ -400,4 +473,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.2.0 &nbsp;|&nbsp; **Last Updated**: 2026-03-30 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit, Agent Teams
+**Framework Version**: 4.3.0 &nbsp;|&nbsp; **Last Updated**: 2026-03-31 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit, Agent Teams

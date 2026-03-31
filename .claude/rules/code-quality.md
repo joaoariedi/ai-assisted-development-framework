@@ -34,3 +34,22 @@
 - No hardcoded secrets or credentials
 - Follow existing project conventions and patterns
 - Prefer editing existing files over creating new ones
+
+## Verification Before Completion
+- NEVER claim a task is complete without running proof commands (tests, lint, build)
+- Show actual output of verification commands — do not summarize or assume results
+- If verification reveals failures, fix them before claiming completion
+- Stale evidence (from a previous iteration) is not valid — re-run after every change
+- The `verification-before-completion` skill defines the full protocol and Iron Law
+
+## Security-Specific Test Files
+- For features involving auth, authorization, or data protection, create dedicated security test files
+- Naming: `*_security_test.*` or `*security*.test.*` (match project conventions)
+- Cover: auth bypass, privilege escalation, input sanitization, rate limiting, session management
+- Pattern: FrankMega maintains 5 dedicated security test files alongside standard tests
+
+## Iron Law Enforcement
+- Rules marked as "Iron Law" in skills are non-negotiable — cannot be overridden by convenience
+- Two Iron Laws exist: `verification-before-completion` and `systematic-debugging`
+- quality-guardian must enforce Iron Laws during quality gates
+- Iron Laws include rationalization prevention tables to counter common excuses

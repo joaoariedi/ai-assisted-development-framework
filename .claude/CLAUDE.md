@@ -1,4 +1,4 @@
-# AI Development Framework v4.0
+# AI Development Framework v4.3
 
 ## Custom Agents
 
@@ -6,6 +6,7 @@
 |-------|------|-------------|
 | **test-specialist** | Testing | After implementation, comprehensive tests |
 | **quality-guardian** | QA | Before any commit, PR, or merge |
+| **code-reviewer** | Code review | Before PR creation, spec compliance + quality |
 | **review-coordinator** | PR management | Creating PRs, managing review workflows |
 | **forensic-specialist** | Security | Security audits, suspicious patterns |
 
@@ -46,6 +47,8 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 - Use Glob to discover project structure
 - Use Bash only for system commands and terminal operations
 - Use EnterPlanMode/ExitPlanMode for complex features requiring user approval
-- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: specify → plan → tasks → implement
+- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: brainstorm → specify → plan → review → tasks → implement
+- For trivial changes (typos, config), use `/speckit.fix` to bypass the full pipeline
+- For brownfield projects, use `/speckit.baseline` to reverse-engineer specs from existing code
 
 See `.claude/rules/` for detailed policies on code quality, git workflow, agent coordination, and language-specific tooling.
