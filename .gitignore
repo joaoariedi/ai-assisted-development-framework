@@ -18,6 +18,9 @@ Thumbs.db
 *.bak
 .cache/
 
+# Claude Code local settings
+.claude/settings.local.json
+
 # Environment files
 .env
 .env.local
