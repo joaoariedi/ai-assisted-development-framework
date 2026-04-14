@@ -2,11 +2,39 @@
 
 Strategies for managing the LLM context window across sessions and project scales.
 
+## The "Dumb Zone" Threshold (40% Context Usage)
+
+LLM reasoning degrades non-linearly as the context window fills with tool output, intermediate
+search results, and stale turns. Beyond roughly **40% context usage** — the "Dumb Zone" —
+agents increasingly hallucinate file structure, re-read files they already read, produce
+generic rather than project-specific suggestions, and prematurely summarize.
+
+**Heuristic, not a hard gate.** The agent cannot reliably measure its own token usage
+mid-turn. Use the context-usage percentage shown in the Claude Code CLI header as the
+signal:
+
+| Context usage | State | Action |
+|---------------|-------|--------|
+| 0–40% | **Smart Zone** | Work normally. |
+| 40–60% | **Transition** | Finish the current coherent unit of work, then `/checkpoint` + `/compact` + `/clear`. Do not start a new phase here. |
+| 60%+ | **Dumb Zone** | Stop. Write a progress file, `/clear`, and resume from the checkpoint. Continuing past this point costs more than the reset. |
+
+**Cache-cost caveat.** Aggressive `/clear` cycles invalidate the prompt cache. Prefer
+**one decisive reset at ~40%** over many partial compactions. Target 1–2 resets per long
+session, not 5+.
+
+**Reduce the rate at which you reach 40%.** The fastest way to stay in the Smart Zone
+is to emit less token output per command. Use `rtk` (CLI output compression) when it is
+installed on the user's machine — see `quality-tooling.md` for the detection pattern and
+high-savings command list. RTK is optional and auto-detected; when absent, commands run
+normally without modification.
+
 ## Document & Clear Pattern
 
 Proactively externalize session state to prevent context degradation on long-running tasks.
 
 ### When to Checkpoint
+- At the 40% context-usage signal (primary trigger — see the Dumb Zone table above)
 - After completing a major task or development phase
 - When context window is saturating (repeated context, slower responses, premature summarization)
 - Before natural break points (waiting for user input, CI results, review feedback)

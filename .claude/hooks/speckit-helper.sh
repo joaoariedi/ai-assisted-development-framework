@@ -129,6 +129,31 @@ case "$1" in
     git diff --cached --name-only 2>/dev/null | head -10
     ;;
 
+  # --- RTK CLI output compression (optional, auto-detected) ---
+  rtk-available)
+    # Prints RTK_AVAILABLE or RTK_MISSING; always exits 0 so callers can
+    # branch on the output without tripping `set -e`.
+    if command -v rtk >/dev/null 2>&1; then
+      echo "RTK_AVAILABLE"
+    else
+      echo "RTK_MISSING"
+    fi
+    ;;
+  rtk-run)
+    # Run a command through rtk if available, otherwise run it plain.
+    # Usage: speckit-helper.sh rtk-run <cmd> [args...]
+    shift
+    if [ "$#" -eq 0 ]; then
+      echo "rtk-run: no command provided" >&2
+      exit 2
+    fi
+    if command -v rtk >/dev/null 2>&1; then
+      exec rtk "$@"
+    else
+      exec "$@"
+    fi
+    ;;
+
   *)
     echo "Unknown command: $1"
     echo "Usage: speckit-helper.sh <command>"
@@ -136,7 +161,8 @@ case "$1" in
     echo "  check-artifacts, all-artifacts, clarifications, checklists, checklists-dir,"
     echo "  checklists-content, constitution, list-specs, list-specs-dir, check-specify-dir,"
     echo "  detect-stack, detect-test-framework, list-config-files, list-rules, readme-head,"
-    echo "  check-plan-review, detect-existing-code, trivial-change-check"
+    echo "  check-plan-review, detect-existing-code, trivial-change-check,"
+    echo "  rtk-available, rtk-run"
     exit 1
     ;;
 esac

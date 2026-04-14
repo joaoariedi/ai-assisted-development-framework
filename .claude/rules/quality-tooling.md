@@ -13,6 +13,44 @@
 - **All-in-one scanning**: `trivy fs .` — combines SCA, secrets, IaC, and SBOM in one tool
 - Config files: `.gitleaks.toml`, `.semgrep.yml`, `.trivyignore`
 
+## CLI Output Compression (RTK) — Use When Available
+
+`rtk` is a CLI proxy that strips boilerplate, deduplicates repeated lines, and groups
+errors from common developer tools, typically reducing tool-output tokens by 60–90%.
+Token output is the single largest consumer of the context window in agent sessions,
+so this is the highest-leverage context-window optimization in the framework.
+
+**Detection first, fallback always.** RTK is an optional optimization — the framework
+never *requires* it. Before invoking, detect availability and fall back to the plain
+command if not installed:
+
+```bash
+# Inline pattern
+command -v rtk >/dev/null 2>&1 && rtk pytest -q || pytest -q
+
+# Or use the framework helper
+"$HOME/.claude/hooks/speckit-helper.sh" rtk-available \
+  && rtk pytest -q \
+  || pytest -q
+```
+
+Agents SHOULD prefer `rtk <cmd>` when `rtk-available` returns `RTK_AVAILABLE`, especially
+for these high-savings commands (per RTK's documented compression):
+
+| Command | Typical savings | Use case |
+|---------|-----------------|----------|
+| `rtk git add/commit/push/status` | 80–92% | Workflow sync noise |
+| `rtk git diff` | ~75% | Condensed hunks |
+| `rtk pytest` / `rtk go test` / `rtk cargo test` | ~90% | Failure-focused test output |
+| `rtk golangci-lint` / `rtk ruff check` | 80–85% | Grouped lint findings |
+| `rtk docker ps` / `rtk ls` / `rtk tree` | 80% | Directory and container summaries |
+| `rtk cat` / `rtk read` | ~70% | Strips boilerplate from file reads |
+
+**Do NOT install or assume rtk is present.** If it is missing on the user's machine,
+continue with the plain tool — this is a silent, non-blocking enhancement. Never add
+`rtk` as a required dependency in hooks, CI, or project scripts without the user's
+explicit opt-in.
+
 ## JavaScript/TypeScript
 - Config files: `package.json`, `.eslintrc*`, `tsconfig.json`, `biome.json`
 - Lint: `npm run lint` or `npx biome check .` (Biome: ~35x faster than ESLint+Prettier)
