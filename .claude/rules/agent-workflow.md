@@ -92,6 +92,49 @@ Move sessions between surfaces:
 - Use `review-coordinator` agent for PR creation if needed
 - Only commit when user explicitly requests it
 
+## One-Shot Subagents (Context Reduction)
+
+A one-shot subagent is dispatched for a single discrete operation — run a test, fetch a fact from another repo, triage a log — and returns **only a digest** to the main conversation. The subagent's full working context is thrown away; the main context sees a bounded summary. Done right, this is the single highest-leverage tool for staying in the "Smart Zone" (<40% context) on long sessions.
+
+### When to Use
+
+- The operation will produce large tool output (test suites, log files, foreign repos)
+- The main agent only needs the *conclusion*, not the transcript
+- The work is read-mostly and has a clean output contract
+- The same information would bloat the main context if fetched inline
+
+### When NOT to Use
+
+- The operation is small (a single Grep, a single file Read) — just do it inline
+- You need the intermediate state later in the same session — subagent context is discarded
+- You need to negotiate / iterate — subagents are one-round by design
+- The task requires mutations to the current project — one-shot subagents are read-only
+
+### Design Rules (Non-Negotiable)
+
+1. **Narrow trigger in `description`** — specific verb + noun. "Run the failing tests and report" — not "help with testing." The description is the main agent's only signal for when to dispatch.
+2. **Tool allowlist, not denylist** — set `tools:` frontmatter explicitly. Start with nothing, add only what the task needs. The default (all tools) is wrong for one-shot agents.
+3. **No side effects on the current project** — one-shot agents must never `Write`, `Edit`, or `git commit` in the main repo. If a mutation is needed, return a *proposal* and let the main agent execute it.
+4. **Output contract at the end of the system prompt** — a concrete template showing exactly what the agent must return. Every claim must carry a `path:line` citation. Example: the `<repo-scout-digest>` block in `.claude/agents/repo-scout.md`.
+5. **Model tier matches cost** — `model: haiku` for cheap fetches, `model: sonnet` for analysis, `opus` reserved for architectural reasoning. Don't default to opus.
+6. **Stop-early budget** — include a "if you're approaching your budget, return PARTIAL" instruction so the agent fails gracefully instead of truncating.
+7. **Prefer `general-purpose` for truly one-off work** — only create a new agent file when the pattern will recur. Every agent file adds discoverability noise to the main agent's decision surface.
+
+### Existing One-Shot Agents
+
+| Agent | Purpose | Input | Digest |
+|-------|---------|-------|--------|
+| **repo-scout** | Answer a targeted question about a repo OTHER than the current project | repo identifier (path or URL) + question | `<repo-scout-digest>` block with answer + citations + verdict |
+
+Add new one-shot agents to `.claude/agents/` following the `repo-scout.md` template. Reuse its output-contract discipline — that is where the context-reduction actually comes from.
+
+### Common Anti-Patterns
+
+- **Dumping raw tool output in the digest** — defeats the whole purpose. The digest must be distilled.
+- **Wide `description`** — agents with vague descriptions get invoked accidentally, increasing cost without benefit.
+- **Granting `Write`/`Edit` "just in case"** — one-shot agents are read-only. If you think you need mutation, use `general-purpose` or a team workflow instead.
+- **Recursive subagents** — a one-shot agent that dispatches other agents reintroduces the context bloat it was meant to prevent.
+
 ## Agent Teams (Experimental)
 
 Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in settings.json (already enabled).
