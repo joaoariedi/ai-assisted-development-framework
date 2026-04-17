@@ -74,7 +74,41 @@ claude
 > /speckit.init     # bootstraps .specify/ for spec-driven dev
 ```
 
-After `stow claude`, every new Claude Code session loads the rules, agents, commands, and skills automatically. See [dotfiles-setup.md](dotfiles-setup.md) for troubleshooting and stow management.
+After `stow claude`, every new Claude Code session loads the rules, agents, commands, and skills automatically. If you have an existing `~/.claude/` config, back it up first (`mv ~/.claude ~/.claude.backup`); to pick up newly-added files later, restow with `stow -R claude`.
+
+---
+
+## 🖥️ Reference Deployment
+
+This is the topology I run the framework on. The framework itself is host-agnostic — this section just documents one tested setup with explicit trust boundaries.
+
+### 🔀 Two-Machine Topology
+
+| Role | OS | Production Access | Always-On | Used For |
+|------|-----|-------------------|-----------|----------|
+| 💻 **Primary laptop** | Manjaro Linux | ✅ Full | ❌ No | Day-to-day dev, production deploys, attended sessions |
+| 🖧 **Always-on remote workstation** | Arch Linux | ❌ GitHub only | ✅ Yes | Long-running tasks, mobile resume target, off-hours work |
+
+Both machines share the **same dotfiles** (`stow claude`), so Claude Code behaviour is identical on each: same agents, hooks, skills, rules, MCPs. Only the per-host `settings.json` (env vars, hook timeouts) differs.
+
+### 🛡️ Trust Boundaries
+
+The blast-radius asymmetry is deliberate:
+
+- 🔐 **Production credentials live only on the laptop.** It is offline most of the time and physically attended.
+- 🌐 **The always-on workstation can reach GitHub but not production.** A compromise of the higher-exposure host (always online) cannot pivot into production systems.
+- 🔗 **Network is Tailscale-only.** Strict ACLs constrain which hosts can reach which services — no public IPs, no port-forwarding, no inbound exposure.
+- 👁️ **Wazuh monitors the whole stack** — file-integrity monitoring, auth events, command auditing — across both machines and any production hosts.
+
+### 🌐 Why the Topology Matters for AI Agents
+
+Claude Code's session-portability features pair naturally with this setup:
+
+- ▶️ Start a long-running task on the **always-on workstation** before stepping away
+- 🔄 Resume from the **laptop** later via `/teleport` (see [Multi-Environment Workflows](#-multi-environment-workflows))
+- 📱 Or — start on **mobile** (claude.ai/code), pull into the laptop terminal when home
+
+Critically, the always-on workstation can **autonomously work on GitHub repos** (review PR feedback, run CI, commit fixes) without ever holding production credentials. The laptop holds the keys; the always-on host holds the time.
 
 ---
 
@@ -135,6 +169,70 @@ Every decision in the framework balances four concerns:
 | ⚡ **Performance** | performance-audit skill, quality-guardian benchmarks, CI optimization (cancel-in-progress, staged-files-only lint) |
 | 🏛️ **Maintainability** | SOLID principle checks, code quality limits, systematic-debugging skill, cross-cutting change maps |
 | 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, verification-before-completion skill |
+
+---
+
+## 🔁 Request Flow & Stack Composition
+
+The framework composes 5 layers — **methodology** (spec-kit), **agent runtime** (Claude Code), specialised **sub-agents**, **integrations** (MCP, hooks, rtk, security CLIs), and **models** (Opus 4.7 / Sonnet 4.6 / Haiku 4.5) — with cross-cutting governance for quality, security, context, and memory. A single SDD request traverses every layer:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Dev as Developer
+    participant FW as L1 · Methodology<br/>(spec-kit)
+    participant CC as L2 · Claude Code<br/>(main agent)
+    participant Sub as L2 · Sub-Agent<br/>(test-specialist)
+    participant MCP as L3 · MCP / Hooks
+    participant RTK as L3 · rtk proxy
+    participant Mod as L4 · Opus 4.7
+
+    Dev->>FW: /speckit.brainstorm "user auth idea"
+    FW->>CC: socratic exploration
+    CC->>Mod: refine concept (Q&A)
+    Mod-->>CC: refined direction
+    CC-->>Dev: ✓ confirmed concept
+    Dev->>FW: /speckit.specify "user auth"
+    FW->>CC: invoke pipeline (spec → plan → tasks)
+    CC->>Mod: reason about spec
+    Mod-->>CC: spec draft + plan
+    CC->>Sub: dispatch (one-shot, isolated ctx)
+    Sub->>RTK: rtk pytest -q
+    RTK-->>Sub: compressed digest (≈10% tokens)
+    Sub->>Mod: analyse failing tests
+    Mod-->>Sub: fix proposal
+    Sub-->>CC: digest only (200 tok vs 5 000)
+    CC->>MCP: PreToolUse hook (gitleaks, sensitive-file block)
+    MCP-->>CC: ✓ safe to write
+    CC->>Mod: synthesise final patch
+    Mod-->>CC: code + tests
+    CC-->>Dev: spec + tests + commit ready
+```
+
+### What the flow reveals
+
+- **L1 (methodology) shapes thinking, not state.** spec-kit / `/speckit.brainstorm` defines structure but holds no conversation context.
+- **Sub-agents isolate context.** Dispatched in fresh contexts and discarded — only the digest returns. Primary defence against the >40% "Dumb Zone".
+- **rtk compresses CLI output (60–90%) before it reaches the main context** — the highest-leverage token optimisation in the framework.
+- **MCP / Hooks enforce safety boundaries** the model cannot bypass (gitleaks, sensitive-file block, format-after-edit).
+- **Models are stateless** — every layer above exists to give them the right context and route their output safely.
+
+### Currently In Use vs Available
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| spec-kit (SDD) | ✅ active | Full pipeline incl. `/speckit.brainstorm` → `specify` → `plan` → `tasks` → `implement` |
+| OpenSpec | ⚪ not adopted | Alternative spec workflow |
+| Superpowers | ⚪ pattern reference | Skill-pack architecture is the influence |
+| Claude Code | ✅ primary runtime | Opus 4.7 / 1M ctx default |
+| Codex · Opencode · Cursor · Aider | ⚪ alternatives | Same methodology layer would still apply |
+| MCP: github, voicemode | ✅ active | See `~/.claude/mcp.json` |
+| MCP: Semgrep, Snyk, SonarQube | ⚪ optional | Add only when CLI scans aren't enough |
+| **rtk** | ✅ available (auto-detected per machine) | 60–90% token reduction on common dev commands |
+| Fabric | ⚪ pattern reference | Reusable prompt-pattern library |
+| gitleaks · semgrep · trivy · ruff · gosec | ✅ via Bash | Quality / security CLIs |
+| Opus 4.7 / Sonnet 4.6 / Haiku 4.5 | ✅ via Anthropic | Model selection per task |
+| GPT · Gemini · Qwen · Llama | ⚪ alternatives | Foundation models from other providers |
 
 ---
 

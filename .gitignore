@@ -1,26 +1,36 @@
-# Planning files
-PLAN_*.md
-*PLAN*
+# Claude Code local settings (machine-specific, never committed)
+.claude/settings.json
+.claude/settings.local.json
 
-# IDE specific files
+# Claude Code session checkpoints (Document & Clear pattern)
+.claude/progress.md
+
+# Claude Code worktree isolation (transient agent work areas)
+.worktrees/
+
+# Spec-kit local caches (per-host, regenerable)
+.specify/cache/
+
+# Legacy planning files (pre-spec-kit)
+PLAN_*.md
+
+# Editor / IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS specific files
+# OS-specific
 .DS_Store
 Thumbs.db
 
-# Temporary files
+# Temporary
 *.tmp
 *.bak
 .cache/
 
-# Claude Code local settings
-.claude/settings.local.json
-
-# Environment files
+# Environment / secrets
 .env
-.env.local
+.env.*
+!.env.example
