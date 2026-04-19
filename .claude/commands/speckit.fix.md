@@ -10,10 +10,10 @@ Apply a quick fix for: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Change scope
-!`$HOME/.claude/hooks/speckit-helper.sh trivial-change-check`
+!`~/.claude/hooks/speckit-helper.sh trivial-change-check`
 
 ## Instructions
 

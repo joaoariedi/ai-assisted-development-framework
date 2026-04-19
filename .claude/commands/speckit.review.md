@@ -9,19 +9,19 @@ Review the implementation plan before generating tasks.
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Plan status
-!`$HOME/.claude/hooks/speckit-helper.sh check-plan-review`
+!`~/.claude/hooks/speckit-helper.sh check-plan-review`
 
 ### Load spec
-!`$HOME/.claude/hooks/speckit-helper.sh spec`
+!`~/.claude/hooks/speckit-helper.sh spec`
 
 ### Load plan
-!`$HOME/.claude/hooks/speckit-helper.sh plan`
+!`~/.claude/hooks/speckit-helper.sh plan`
 
 ### Constitution
-!`$HOME/.claude/hooks/speckit-helper.sh constitution`
+!`~/.claude/hooks/speckit-helper.sh constitution`
 
 ## Instructions
 

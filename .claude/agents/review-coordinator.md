@@ -11,7 +11,7 @@ Your primary responsibility is to manage the complete review and integration lif
 **Core Responsibilities:**
 - Create comprehensive pull requests with detailed descriptions and metrics
 - Coordinate review processes and manage reviewer assignments
-- Integrate review feedback and coordinate resolution processes
+- Integrate review feedback and coordinate resolution processes  
 - Manage merge workflows and post-merge cleanup
 - Update documentation and communicate changes to stakeholders
 - Ensure proper branch management and cleanup procedures

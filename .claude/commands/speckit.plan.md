@@ -9,16 +9,16 @@ Generate an implementation plan from the current branch's specification.
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Auto-detect spec branch
-!`$HOME/.claude/hooks/speckit-helper.sh check-spec`
+!`~/.claude/hooks/speckit-helper.sh check-spec`
 
 ### Available specs
-!`$HOME/.claude/hooks/speckit-helper.sh list-specs`
+!`~/.claude/hooks/speckit-helper.sh list-specs`
 
 ### Constitution
-!`$HOME/.claude/hooks/speckit-helper.sh constitution`
+!`~/.claude/hooks/speckit-helper.sh constitution`
 
 ## Instructions
 

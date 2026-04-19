@@ -9,13 +9,13 @@ Scan the current branch's specification for ambiguities and generate targeted cl
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Load spec
-!`$HOME/.claude/hooks/speckit-helper.sh spec`
+!`~/.claude/hooks/speckit-helper.sh spec`
 
 ### Existing clarifications
-!`$HOME/.claude/hooks/speckit-helper.sh clarifications`
+!`~/.claude/hooks/speckit-helper.sh clarifications`
 
 ## Instructions
 

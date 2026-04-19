@@ -7,13 +7,13 @@ Generate a comprehensive pull request summary from the data below.
 ## Live Branch Data
 
 ### Commits on this branch
-!`$HOME/.claude/hooks/speckit-helper.sh pr-commits`
+!`~/.claude/hooks/speckit-helper.sh pr-commits`
 
 ### Files changed
-!`$HOME/.claude/hooks/speckit-helper.sh pr-files`
+!`~/.claude/hooks/speckit-helper.sh pr-files`
 
 ### Diff stats
-!`$HOME/.claude/hooks/speckit-helper.sh pr-stats`
+!`~/.claude/hooks/speckit-helper.sh pr-stats`
 
 ## Output Format
 

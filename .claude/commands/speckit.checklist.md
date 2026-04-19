@@ -9,13 +9,13 @@ Generate requirement quality checklists (NOT implementation tests) for the curre
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Load spec
-!`$HOME/.claude/hooks/speckit-helper.sh spec`
+!`~/.claude/hooks/speckit-helper.sh spec`
 
 ### Existing checklists
-!`$HOME/.claude/hooks/speckit-helper.sh checklists-dir`
+!`~/.claude/hooks/speckit-helper.sh checklists-dir`
 
 ## Instructions
 

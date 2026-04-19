@@ -10,16 +10,16 @@ Generate a structured specification for: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Git status
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Constitution
-!`$HOME/.claude/hooks/speckit-helper.sh constitution`
+!`~/.claude/hooks/speckit-helper.sh constitution`
 
 ### Existing specs
-!`$HOME/.claude/hooks/speckit-helper.sh list-specs-dir`
+!`~/.claude/hooks/speckit-helper.sh list-specs-dir`
 
 ### Project structure
-!`$HOME/.claude/hooks/speckit-helper.sh detect-stack`
+!`~/.claude/hooks/speckit-helper.sh detect-stack`
 
 ## Instructions
 
@@ -90,7 +90,7 @@ Generate a structured specification for: **$ARGUMENTS**
    ```
 
 7. **Create git branch** (if in a git repo):
-   - Branch name: `feature/<branch-name>` (e.g., `feature/003-chat-system`)
+   - Branch name: `feature/<branch-name>` (e.g., `feature/chat-system`)
    - Create from current HEAD
    - Do NOT switch to it yet — ask user first
 

@@ -10,16 +10,16 @@ Reverse-engineer a specification from existing code in: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Current branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### .specify directory
-!`$HOME/.claude/hooks/speckit-helper.sh check-specify-dir`
+!`~/.claude/hooks/speckit-helper.sh check-specify-dir`
 
 ### Existing code
-!`$HOME/.claude/hooks/speckit-helper.sh detect-existing-code`
+!`~/.claude/hooks/speckit-helper.sh detect-existing-code`
 
 ### Constitution
-!`$HOME/.claude/hooks/speckit-helper.sh constitution`
+!`~/.claude/hooks/speckit-helper.sh constitution`
 
 ## Instructions
 

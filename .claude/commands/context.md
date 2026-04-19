@@ -7,13 +7,13 @@ Perform a comprehensive project context analysis using the `context-analysis` sk
 ## Live Project Data
 
 ### Recent commits
-!`$HOME/.claude/hooks/speckit-helper.sh recent-commits`
+!`~/.claude/hooks/speckit-helper.sh recent-commits`
 
 ### Active branch
-!`$HOME/.claude/hooks/speckit-helper.sh branch`
+!`~/.claude/hooks/speckit-helper.sh branch`
 
 ### Directory structure (top 2 levels)
-!`$HOME/.claude/hooks/speckit-helper.sh project-files`
+!`~/.claude/hooks/speckit-helper.sh project-files`
 
 ## Output Format
 

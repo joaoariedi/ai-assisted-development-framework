@@ -15,18 +15,22 @@ fi
 
 # Check if any source files were recently modified (last 60 seconds)
 # This approximates "did Claude edit code during this turn"
-RECENT_EDITS=$(find "$CWD" -maxdepth 5 \
+# Process substitution (not a pipeline) avoids a SIGPIPE race that would
+# otherwise combine with `pipefail` + `set -e` to abort the script silently.
+RECENT_EDITS=""
+NOW=$(date +%s)
+while IFS= read -r f; do
+  if [ -f "$f" ]; then
+    MTIME=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0)
+    if [ $((NOW - MTIME)) -lt 60 ]; then
+      RECENT_EDITS="$f"
+      break
+    fi
+  fi
+done < <(find "$CWD" -maxdepth 5 \
   \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
   -o -name "*.py" -o -name "*.rs" -o -name "*.go" \) \
-  2>/dev/null | while read -r f; do
-    if [ -f "$f" ]; then
-      MTIME=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0)
-      NOW=$(date +%s)
-      if [ $((NOW - MTIME)) -lt 60 ]; then
-        echo "$f"
-      fi
-    fi
-  done | head -1)
+  2>/dev/null)
 
 if [ -z "$RECENT_EDITS" ]; then
   exit 0
@@ -44,6 +48,6 @@ if [ -f "$STAMP_FILE" ]; then
 fi
 
 # Source files were edited but tests weren't run
-echo "Reminder: source files were modified but tests haven't been run this turn."
+echo "Reminder: source files were modified but tests haven't been run this turn." >&2
 
 exit 0

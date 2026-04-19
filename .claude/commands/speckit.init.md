@@ -9,10 +9,10 @@ Bootstrap a `.specify/` directory in the current project to enable spec-driven d
 ## Pre-Flight Checks
 
 ### Git root detection
-!`$HOME/.claude/hooks/speckit-helper.sh check-git-root`
+!`~/.claude/hooks/speckit-helper.sh check-git-root`
 
 ### Existing .specify/ detection
-!`$HOME/.claude/hooks/speckit-helper.sh check-specify-dir`
+!`~/.claude/hooks/speckit-helper.sh check-specify-dir`
 
 ## Instructions
 
