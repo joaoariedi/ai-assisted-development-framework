@@ -35,6 +35,13 @@
 - Follow existing project conventions and patterns
 - Prefer editing existing files over creating new ones
 
+## Surgical Changes
+- Every changed line must trace directly to the user's request. If a line doesn't, either remove it or justify it in the PR description.
+- Do NOT opportunistically clean up pre-existing dead code, reformat unrelated files, or refactor "while you're there." Scope creep dilutes the diff's signal and burns the reviewer's attention — the scarce resource in AI-assisted workflows.
+- The ONLY cleanup permitted is removing orphans YOUR edits just created: an unused import after deleting a call site, a now-unreachable branch after changing a condition, a variable that's no longer read.
+- If you notice a genuine bug or code smell outside the current task's scope, flag it to the user and wait for authorization rather than silently fixing it.
+- This rule takes precedence over "leave the code better than you found it." Boy-scout cleanups belong in their own commits and their own PRs.
+
 ## Verification Before Completion
 - NEVER claim a task is complete without running proof commands (tests, lint, build)
 - Show actual output of verification commands — do not summarize or assume results

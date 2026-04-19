@@ -129,6 +129,28 @@ case "$1" in
     git diff --cached --name-only 2>/dev/null | head -10
     ;;
 
+  # --- Plan phase marker (RIPER-style write-block) ---
+  # The marker file .specify/.plan-in-progress activates plan-phase-write-block.sh,
+  # which mechanically blocks Edit/Write to paths outside .specify/ while the plan
+  # is being generated. speckit.plan sets it in pre-flight and clears it after
+  # plan.md is written.
+  plan-phase-start)
+    mkdir -p .specify
+    touch .specify/.plan-in-progress
+    echo "PLAN_PHASE_STARTED: write-block active for paths outside .specify/"
+    ;;
+  plan-phase-end)
+    rm -f .specify/.plan-in-progress
+    echo "PLAN_PHASE_ENDED: write-block cleared"
+    ;;
+  plan-phase-status)
+    if [ -f .specify/.plan-in-progress ]; then
+      echo "PLAN_PHASE_ACTIVE"
+    else
+      echo "PLAN_PHASE_INACTIVE"
+    fi
+    ;;
+
   # --- RTK CLI output compression (optional, auto-detected) ---
   rtk-available)
     # Prints RTK_AVAILABLE or RTK_MISSING; always exits 0 so callers can
@@ -162,6 +184,7 @@ case "$1" in
     echo "  checklists-content, constitution, list-specs, list-specs-dir, check-specify-dir,"
     echo "  detect-stack, detect-test-framework, list-config-files, list-rules, readme-head,"
     echo "  check-plan-review, detect-existing-code, trivial-change-check,"
+    echo "  plan-phase-start, plan-phase-end, plan-phase-status,"
     echo "  rtk-available, rtk-run"
     exit 1
     ;;

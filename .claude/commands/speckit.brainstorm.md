@@ -148,11 +148,13 @@ Present the design document to the user. Wait for explicit approval before proce
 
 ### Step 7: Handoff to Specification
 
-After approval, suggest the next step:
+After approval, recommend a **context reset** before the spec phase. The brainstorm transcript (questions, rejected alternatives, Socratic back-and-forth) has served its purpose; the design document is now the source of truth. A fresh context gives `/speckit.specify` a tighter, less noisy starting point:
 
-> Design approved. Run `/speckit.specify <feature description>` to generate the formal specification with user scenarios, functional requirements, and success criteria.
+> Design approved and written to the design document. Before running `/speckit.specify`, run `/clear` to drop the brainstorm transcript — the design document is now the source of truth, and a fresh context yields a tighter, less noisy spec.
+>
+> Then: `/speckit.specify <feature description>` to generate the formal specification with user scenarios, functional requirements, and success criteria.
 
-The design document provides context for the specification phase — key decisions, scope boundaries, and chosen approach will inform the spec.
+The design document provides context for the specification phase — key decisions, scope boundaries, and chosen approach will inform the spec, without the exploratory detritus.
 
 ## Rationalization Prevention
 

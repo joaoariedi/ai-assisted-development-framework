@@ -20,6 +20,9 @@ Generate an implementation plan from the current branch's specification.
 ### Constitution
 !`~/.claude/hooks/speckit-helper.sh constitution`
 
+### Start plan phase (RIPER-style write-block)
+!`~/.claude/hooks/speckit-helper.sh plan-phase-start`
+
 ## Instructions
 
 **Required inputs**: `spec.md` and `constitution.md` must both exist. If either is missing, tell the user which command to run first (`/speckit.specify` or `/speckit.constitution`).
@@ -147,3 +150,11 @@ The goal of this phase is to compress verifiable truth about the codebase into a
    - Code sketches (count + one-line intent each)
    - Any constitution compliance concerns
    - Suggest next step: `/speckit.tasks`
+
+9. **End plan phase**: after `plan.md` is written and the summary is presented, clear the write-block marker so downstream commands can edit code:
+
+   ```bash
+   ~/.claude/hooks/speckit-helper.sh plan-phase-end
+   ```
+
+   If you abort the plan before completion, still run the command above — or delete `.specify/.plan-in-progress` manually — otherwise the next Edit/Write in this project will be blocked.
