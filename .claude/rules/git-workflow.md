@@ -6,8 +6,12 @@
 
 <body (optional)>
 
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+Co-Authored-By: Claude <model> <noreply@anthropic.com>
 ```
+
+Use the acting model's own name in the trailer rather than a hardcoded version — e.g.
+`Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`. Hardcoding a
+version here guarantees it goes stale the next time the model changes.
 
 ## Commit Types
 - `feat`: New feature

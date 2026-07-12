@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v4.3
+# 🤖 AI Development Framework v4.4
 
 > A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline. Balances **security**, **performance**, **maintainability**, and **efficacy** at every step.
 
@@ -174,7 +174,7 @@ Every decision in the framework balances four concerns:
 
 ## 🔁 Request Flow & Stack Composition
 
-The framework composes 5 layers — **methodology** (spec-kit), **agent runtime** (Claude Code), specialised **sub-agents**, **integrations** (MCP, hooks, rtk, security CLIs), and **models** (Opus 4.7 / Sonnet 4.6 / Haiku 4.5) — with cross-cutting governance for quality, security, context, and memory. A single SDD request traverses every layer:
+The framework composes 5 layers — **methodology** (spec-kit), **agent runtime** (Claude Code), specialised **sub-agents**, **integrations** (MCP, hooks, rtk, security CLIs), and **models** (Opus 4.8 / Sonnet 5 / Haiku 4.5) — with cross-cutting governance for quality, security, context, and memory. A single SDD request traverses every layer:
 
 ```mermaid
 sequenceDiagram
@@ -185,7 +185,7 @@ sequenceDiagram
     participant Sub as L2 · Sub-Agent<br/>(test-specialist)
     participant MCP as L3 · MCP / Hooks
     participant RTK as L3 · rtk proxy
-    participant Mod as L4 · Opus 4.7
+    participant Mod as L4 · Opus 4.8
 
     Dev->>FW: /speckit.brainstorm "user auth idea"
     FW->>CC: socratic exploration
@@ -224,14 +224,14 @@ sequenceDiagram
 | spec-kit (SDD) | ✅ active | Full pipeline incl. `/speckit.brainstorm` → `specify` → `plan` → `tasks` → `implement` |
 | OpenSpec | ⚪ not adopted | Alternative spec workflow |
 | Superpowers | ⚪ pattern reference | Skill-pack architecture is the influence |
-| Claude Code | ✅ primary runtime | Opus 4.7 / 1M ctx default |
+| Claude Code | ✅ primary runtime | Opus 4.8 / 1M ctx default |
 | Codex · Opencode · Cursor · Aider | ⚪ alternatives | Same methodology layer would still apply |
 | MCP: github, voicemode | ✅ active | See `~/.claude/mcp.json` |
 | MCP: Semgrep, Snyk, SonarQube | ⚪ optional | Add only when CLI scans aren't enough |
 | **rtk** | ✅ available (auto-detected per machine) | 60–90% token reduction on common dev commands |
 | Fabric | ⚪ pattern reference | Reusable prompt-pattern library |
 | gitleaks · semgrep · trivy · ruff · gosec | ✅ via Bash | Quality / security CLIs |
-| Opus 4.7 / Sonnet 4.6 / Haiku 4.5 | ✅ via Anthropic | Model selection per task |
+| Opus 4.8 / Sonnet 5 / Haiku 4.5 | ✅ via Anthropic | Model selection per task |
 | GPT · Gemini · Qwen · Llama | ⚪ alternatives | Foundation models from other providers |
 
 ---
@@ -309,7 +309,7 @@ See `context-management.md` rule for detailed guidance and project scaling strat
 
 ## 🕵️ Agents
 
-Five specialized agents with no built-in equivalent:
+Six specialized agents with no built-in equivalent:
 
 ### 🧪 test-specialist
 
@@ -353,6 +353,14 @@ Cybersecurity specialist for defensive forensics. Handles incident response, thr
 
 **When to use**: When a system may be compromised, for security audits, or proactive threat hunting.
 
+### 🔭 repo-scout
+
+The framework's only **one-shot subagent**. Answers a single targeted question about a repository *other than* the current project, then returns a citation-backed `<repo-scout-digest>` — never raw file contents or a transcript. Its working context is discarded, so a foreign repo can be interrogated without bloating the main session.
+
+Read-only by construction (`Read`, `Grep`, `Glob`, `Bash` only). It must never mutate the current project; if a change is needed it returns a *proposal* and the main agent executes it.
+
+**When to use**: "How does upstream library X implement Y?" — not for the current project, where `Explore`/`Grep` are cheaper. See the One-Shot Subagents section of `rules/agent-workflow.md` for the design contract.
+
 > Built-in agents handle general tasks: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
 ### 🤝 Agent Teams (Experimental)
@@ -376,7 +384,7 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json abo
 
 ## 🧠 Skills
 
-Six skills used by agents and commands internally:
+Seven skills used by agents and commands internally:
 
 | Skill | Purpose | Auto-invoked? |
 |-------|---------|---------------|
@@ -384,10 +392,13 @@ Six skills used by agents and commands internally:
 | 🔒 `security-review` | Code security checklist (secrets, SAST, SQLi, XSS, auth, supply chain SCA) | Yes — proactively on PRs |
 | ✅ `verification-before-completion` | Evidence-first completion gate with Iron Law — must run proof commands before claiming done | Yes — proactively before completion |
 | 🐛 `systematic-debugging` | 4-phase root cause investigation (read → reproduce → evidence → fix) with Iron Law | Yes — proactively on bugs |
+| 📐 `task-effort-estimation` | Deterministic change sizing — Pfeiffer Contribution Complexity from git metadata, plus AI-native risk flags | Yes — on "how big / how long is this?" |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks, algorithm complexity | No — explicit only |
 | 📄 `spec-template` | Structured Given/When/Then specification generation | No — speckit pipeline only |
 
-The two new skills enforce **Iron Laws** — non-negotiable rules that prevent false completion claims and shotgun debugging. Each includes a rationalization prevention table to counter common excuses.
+Two of these enforce **Iron Laws** — `verification-before-completion` and `systematic-debugging`. Iron Laws are non-negotiable rules that prevent false completion claims and shotgun debugging, and each ships a rationalization prevention table to counter the usual excuses.
+
+`task-effort-estimation` deliberately reports a **complexity score and risk flags, never an hour count**. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. So it flags the small diff with high coupling, which is the shape of work a naive estimate waves through. Hours only appear once `.claude/effort-calibration.json` maps observed scores to real recorded durations for your project.
 
 ---
 
@@ -538,13 +549,36 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 ├── .claude/
 │   ├── CLAUDE.md               # core config (loaded into system prompt)
 │   ├── mcp.json                # MCP servers (GitHub)
-│   ├── agents/                 # 5 custom agents
+│   ├── agents/                 # 6 custom agents (5 pipeline + repo-scout one-shot)
 │   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
-│   ├── hooks/                  # 7 lifecycle hooks (shell scripts)
+│   ├── hooks/                  # 7 lifecycle hooks + speckit-helper.sh
 │   ├── rules/                  # 8 modular policy files
-│   └── skills/                 # 6 internal skills
+│   └── skills/                 # 7 internal skills
 └── .stow-local-ignore          # excludes README from stow
 ```
+
+---
+
+## 📚 Research Corpus
+
+`reports/` holds the research behind the framework, split into ten single-subject files with no overlap between them. It is the **"why" layer**: `.claude/rules/` states *what* to do, and `reports/` records the evidence, benchmark, or threat model that produced the rule. Where a finding is already codified, the report points at the rule with a `> **Codified in**` callout instead of restating it — so no text lives in two places.
+
+| # | Subject | Codified in |
+|---|---------|-------------|
+| 01 | Context engineering fundamentals — WISC, context rot, prompt caching, scaling by project size | `context-management.md` |
+| 02 | CLAUDE.md authoring — tiering, inclusion/exclusion criteria, four production-repo styles | `agent-workflow.md` |
+| 03 | Agent topology — Skills vs Subagents vs Teams, orchestration patterns, memory architectures | `agent-workflow.md` |
+| 04 | AI protocol stack — MCP, A2A, Akashik, AG-UI | `mcp-security.md` (curation only) |
+| 05 | Codebase retrieval at scale — cAST, HCAG | *not yet codified* |
+| 06 | Security & DevSecOps — OWASP LLM Top 10, MCP controls, Policy-as-Code | `llm-security.md`, `mcp-security.md`, `pipeline-security.md` |
+| 07 | Quality gates — lifecycle hooks, pre-commit/pre-push, CI/CD, testing | `quality-tooling.md`, `code-quality.md` |
+| 08 | Project organization & delivery — release notes, IDEA.md, containerization | *not yet codified* |
+| 09 | Fabric — prompt orchestration, evaluated but **not adopted** | *not yet codified* |
+| 10 | Deterministic effort estimation — Pfeiffer Contribution Complexity, Epoch, LOCOMO | `task-effort-estimation` skill |
+
+Files 05, 08, and 09 carry no pointers because their subject is genuinely unadopted, and each says so in its own header — an unadopted idea is recorded as prior art, not smuggled in as current practice.
+
+`reports/sources/` keeps the five original research documents untouched, so every citation remains traceable to the document that made the claim.
 
 ---
 

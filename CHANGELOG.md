@@ -5,6 +5,39 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-07-12
+
+Covers everything unreleased since 4.3.0. The repository carries no git tags, so the
+`v4.3.1` label in commit `153ec98` was a working marker rather than a cut release; its
+contents are folded in here. A minor bump is the correct level — this window shipped a new
+agent, a new hook, a new rule, and a new skill.
+
+### Added
+- **`task-effort-estimation` skill**: Deterministic change sizing built on Pfeiffer's Contribution Complexity algorithm, computed from git metadata alone (lines added/removed, hunks, modified methods, file count, change kinds) with exponential `i^i` histogram weighting, so one high-complexity file outweighs a hundred trivial ones. Zero dependencies — `scc`, `lizard`, `git-effort`, and the Epoch MCP server are optional enhancers behind `command -v` guards. Runs in **Actual** mode (measure a real diff) or **Projected** mode (size unimplemented work with the projection stated for review).
+- **Non-Local Context Check** (within the above): the skill's headline output is a risk flag, not an hour count. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. The check catches the small diff with high coupling, which is the shape of work a naive estimate waves through. The skill refuses to emit hours until `.claude/effort-calibration.json` maps observed scores to recorded durations.
+- **`repo-scout` agent**: The framework's first one-shot subagent. Answers a single targeted question about a repository *other than* the current project and returns only a citation-backed `<repo-scout-digest>`, discarding its working context. Read-only tool allowlist by construction.
+- **One-Shot Subagents doctrine** (`rules/agent-workflow.md`): when to dispatch, the non-negotiable design rules (narrow trigger, tool allowlist, no side effects, output contract, model tier, stop-early budget), and the common anti-patterns.
+- **`rules/context-management.md`**: the 40% "Dumb Zone" context threshold, the Document & Clear pattern, compact-context priorities, and context scaling by project size. Adds RTK CLI-output compression as an auto-detected, never-required optimization (60–90% token reduction on common dev commands).
+- **`plan-phase-write-block.sh` hook**: RIPER-style mechanical enforcement that blocks `Edit`/`Write` outside `.specify/` while `/speckit.plan` is active, upgrading the pipeline from "trust the agent to respect phases" to a hard gate. Reads stay unrestricted so the Truth Map phase still works.
+- **Surgical Changes rule** (`rules/code-quality.md`): every changed line must trace to the user's request; forbids opportunistic cleanup of pre-existing dead code and unrelated reformatting. Reviewer attention is the scarce resource in AI-assisted workflows.
+- **Research corpus** (`reports/`): ten single-subject files covering context engineering, CLAUDE.md authoring, agent topology, the AI protocol stack, codebase retrieval, security/DevSecOps, quality gates, project organization, Fabric, and deterministic effort estimation. `reports/sources/` retains the five original documents untouched so every citation stays traceable.
+- **Framework stack diagram** and a Request Flow & Stack Composition section in the README, tracing a single SDD request through all five layers.
+
+### Changed
+- **`reports/` restructured into non-overlapping subjects.** The three research reports overlapped heavily with each other and with `.claude/rules/`, which had already harvested most of their conclusions. The Fabric report also duplicated itself — its §4 "Integration Opportunities" and §8 "Practical Usage Guide" covered the same seven areas with the same examples (merged: 573 → 315 lines). `reports/` is now the **"why" layer** and `rules/` stays the **"what" layer**: 16 `Codified in` pointers reference the enforcing rule instead of restating it, so no text lives in two places. Net 1,357 → 1,203 lines across nine topic files, losing nothing.
+- `/speckit.brainstorm` now recommends `/clear` before `/speckit.specify`, so the spec is written in fresh context with the design document as the sole source of truth.
+- `docs/` removed; research documents now live in `reports/`.
+- `rules/git-workflow.md`: the `Co-Authored-By` trailer no longer hardcodes a model version — hardcoding guaranteed it went stale on every model change.
+- README and `CLAUDE.md` refreshed: agent count 5 → 6, skill count 6 → 7, models updated to Opus 4.8 / Sonnet 5 / Haiku 4.5.
+
+### Fixed
+- **`stop-quality-check.sh` silent exit 141**: the `find | while | head -1` pipeline raced with SIGPIPE under `set -euo pipefail` whenever a match was found. Replaced with process substitution plus `break`.
+- **Spurious permission prompts**: normalized every speckit preflight path from `$HOME/.claude/hooks/...` to `~/.claude/hooks/...` to match the Bash allowlist entry.
+- **Documentation drift**: `repo-scout` shipped in `c0f873b` but was never documented in the README, which still advertised five agents. The CHANGELOG had recorded nothing since 4.3.0 despite nine intervening commits.
+
+### Notes
+- Files under `.claude/` are ignored by a common global gitignore rule (`.claude/`). Existing tracked files are unaffected, but **any new file added under `.claude/` needs `git add -f`** or it is silently dropped.
+
 ## [4.3.0] - 2026-03-31
 
 ### Added
