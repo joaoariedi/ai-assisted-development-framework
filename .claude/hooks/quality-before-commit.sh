@@ -23,6 +23,61 @@ if command -v gitleaks &>/dev/null; then
   fi
 fi
 
+# --- Universal: shell + markdown, on STAGED FILES ONLY ------------------------
+#
+# Every check below this block is gated behind a language manifest (package.json,
+# pyproject.toml, Cargo.toml, go.mod, pom.xml). A repo made of shell scripts and
+# markdown — like this framework itself — matches none of them, so the gate was a
+# no-op against its own source. These two checks are manifest-free.
+#
+# Each has a ZERO-DEPENDENCY baseline that always runs, plus a real linter when one
+# is installed. Guarding purely on `command -v` would have reproduced the original
+# bug on any machine without the linter.
+STAGED=$(git -C "$CWD" diff --cached --name-only --diff-filter=ACM 2>/dev/null || true)
+
+# Shell: bash -n always; shellcheck when present.
+SH_FILES=$(echo "$STAGED" | grep -E '\.(sh|bash)$' || true)
+if [ -n "$SH_FILES" ]; then
+  while IFS= read -r f; do
+    [ -f "$CWD/$f" ] || continue
+    if ! bash -n "$CWD/$f" 2>/dev/null; then
+      ERRORS="${ERRORS}Shell syntax error in $f. "
+    fi
+  done <<< "$SH_FILES"
+
+  if command -v shellcheck &>/dev/null; then
+    # shellcheck is advisory below `error` severity; only errors block a commit.
+    while IFS= read -r f; do
+      [ -f "$CWD/$f" ] || continue
+      if ! shellcheck -S error "$CWD/$f" >/dev/null 2>&1; then
+        ERRORS="${ERRORS}shellcheck errors in $f. "
+      fi
+    done <<< "$SH_FILES"
+  fi
+fi
+
+# Markdown: unclosed code fences always; markdownlint when present.
+MD_FILES=$(echo "$STAGED" | grep -E '\.md$' || true)
+if [ -n "$MD_FILES" ]; then
+  while IFS= read -r f; do
+    [ -f "$CWD/$f" ] || continue
+    FENCES=$(grep -c '^```' "$CWD/$f" 2>/dev/null || true)
+    FENCES=${FENCES:-0}
+    if [ $((FENCES % 2)) -ne 0 ]; then
+      ERRORS="${ERRORS}Unclosed code fence in $f. "
+    fi
+  done <<< "$MD_FILES"
+
+  if command -v markdownlint-cli2 &>/dev/null; then
+    while IFS= read -r f; do
+      [ -f "$CWD/$f" ] || continue
+      if ! markdownlint-cli2 "$CWD/$f" >/dev/null 2>&1; then
+        ERRORS="${ERRORS}markdownlint issues in $f. "
+      fi
+    done <<< "$MD_FILES"
+  fi
+fi
+
 # JavaScript/TypeScript projects
 if [ -f "$CWD/package.json" ]; then
   if npm --prefix "$CWD" run lint --if-present 2>&1 | grep -q "error"; then

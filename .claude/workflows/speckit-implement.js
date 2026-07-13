@@ -29,9 +29,14 @@ export const meta = {
 
 const TASKS_SCHEMA = {
   type: 'object',
-  required: ['featureDir', 'phases'],
+  required: ['featureDir', 'projectRoot', 'phases'],
   properties: {
     featureDir: { type: 'string' },
+    projectRoot: {
+      type: 'string',
+      description:
+        'Absolute path to the repo that OWNS this feature — the directory containing .specify/. Every agent must run commands here. It is NOT necessarily the session cwd.',
+    },
     testCommand: { type: 'string', description: 'command that runs the full suite; empty if none detected' },
     phases: {
       type: 'array',
@@ -129,6 +134,9 @@ TASK ${task.id}: ${task.description}
 ${task.requirement ? `Requirement: ${task.requirement}` : ''}
 ${task.files?.length ? `Target files: ${task.files.join(', ')}` : ''}
 Feature directory: ${ctx.featureDir}
+PROJECT ROOT: ${ctx.projectRoot}
+  Run every command from PROJECT ROOT and resolve every relative path against it. It is NOT
+  necessarily your shell's starting directory — cd there first.
 
 Read ${ctx.featureDir}/spec.md and ${ctx.featureDir}/plan.md for the requirement and the
 design decisions. Follow .claude/rules/code-quality.md (functions <50 lines, files <500,
@@ -159,6 +167,7 @@ a task wrongly refuted costs one more round.
 TASK ${task.id}: ${task.description}
 ${task.requirement ? `Requirement: ${task.requirement}` : ''}
 Feature directory: ${ctx.featureDir}
+PROJECT ROOT: ${ctx.projectRoot}  (cd here — it is NOT necessarily your starting directory)
 
 The implementer claims:
   ${impl.summary}
@@ -176,9 +185,22 @@ Verify against the actual repository, not the claim above. Run commands. Read th
 
 phase('Load')
 
-// args may be a feature directory path, or {featureDir}. Omitted => infer from the branch.
+// args may arrive as a bare path string, as {featureDir}, or as a JSON-ENCODED string of
+// that object — the last case is easy to miss and silently passes the whole blob through as
+// if it were a path. Normalize all three.
+let _args = args
+if (typeof _args === 'string') {
+  const t = _args.trim()
+  if (t.startsWith('{')) {
+    try {
+      _args = JSON.parse(t)
+    } catch {
+      /* not JSON — treat the string as the path itself */
+    }
+  }
+}
 const requestedDir =
-  typeof args === 'string' ? args : args && args.featureDir ? args.featureDir : ''
+  typeof _args === 'string' ? _args : (_args && _args.featureDir) || ''
 
 const ctx = await agent(
   `Load the spec-kit artifacts for the current feature.
@@ -203,8 +225,13 @@ Read tasks.md and parse it into the phase-ordered structure. The format is:
   - \`- [x]\` means already done — set done:true so it is skipped.
   - Phases are a dependency chain: Phase N+1 must not start until Phase N is complete.
 
-Also detect the command that runs the full test suite (package.json scripts.test, pytest,
-cargo test, go test ./...). Return "" if there is none.
+Resolve projectRoot: the directory that CONTAINS .specify/ (i.e. the feature dir with
+/.specify/specs/<name> stripped off). Return it as an absolute path. This is the repo the
+feature belongs to and it may NOT be the session's working directory — every later agent
+runs its commands there.
+
+Detect the command that runs the full test suite by looking in projectRoot (package.json
+scripts.test, pytest, cargo test, go test ./...). Return "" if there is none.
 
 Report tasks in the order they appear. Do not invent, reorder, or merge tasks.`,
   { schema: TASKS_SCHEMA, label: 'load-artifacts' },
@@ -313,10 +340,18 @@ for (const ph of ctx.phases) {
 
   // Phase gate — the whole suite, between phases, exactly as speckit.implement requires.
   const gate = await agent(
-    `Run the project's quality gate and report honestly.
+    `Run the quality gate for the project at ${ctx.projectRoot} and report honestly.
+
+FIRST: cd ${ctx.projectRoot}. That is the repo under test. It is NOT necessarily your shell's
+starting directory, and running these commands anywhere else tells you nothing.
+
   1. Full test suite${ctx.testCommand ? ` (\`${ctx.testCommand}\`)` : ''} — must be green.
-  2. Lint / format / typecheck, whichever the project configures.
-Show real command output. Do not fix anything; only report. "passed" means you SAW it pass.`,
+  2. Lint / format / typecheck, whichever that project configures.
+
+Show real command output. Do not fix anything; only report.
+"passed" means you SAW the suite pass. If the project configures no gate at all, that is an
+ABSENCE of a gate, not a failure — report passed:true and say so in the summary, because
+halting the run over a project that never had tests would be a false alarm.`,
     { label: `gate:${ph.name}`, phase: 'Implement', schema: GATE_SCHEMA },
   )
 
@@ -353,6 +388,8 @@ const report = await agent(
 
 Verified complete (${accepted.length}):
 ${accepted.map(r => `  ${r.task.id} [${r.task.requirement || '-'}] ${r.task.description}`).join('\n')}
+
+Work from PROJECT ROOT ${ctx.projectRoot} (cd there first).
 
 Read ${ctx.featureDir}/spec.md and produce the coverage mapping in this exact shape:
 

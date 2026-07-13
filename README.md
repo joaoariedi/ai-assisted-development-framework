@@ -445,7 +445,7 @@ Hooks ship **inside the plugin** (`.claude/hooks/hooks.json`), so installing the
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
 | ✅ `verify-before-task-complete.sh` | **TaskCompleted** | **Blocks** a task from being marked complete while the test suite fails. Exit 2 is a hard gate. |
-| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — runs gitleaks + language-specific linters, blocks on errors |
+| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — gitleaks, shell + markdown checks on staged files, then language-specific linters. Blocks on errors. |
 | 🔒 `block-sensitive-files.sh` | PreToolUse on `Edit\|Write` | Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*`, `secrets/` |
 | 📐 `plan-phase-write-block.sh` | PreToolUse on `Edit\|Write` | Blocks writes outside `.specify/` while `/speckit.plan` is active |
 | 🎨 `format-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-formats edited files (ruff, biome/prettier, gofmt, rustfmt), 10s throttle |
@@ -453,6 +453,26 @@ Hooks ship **inside the plugin** (`.claude/hooks/hooks.json`), so installing the
 | 🔔 `notify-on-block.sh` | Notification | Desktop alert when agent needs attention (notify-send / osascript) |
 | 📊 `stop-quality-check.sh` | Stop event | Reminds if source files were edited but tests not run |
 | 🔧 `speckit-helper.sh` | Pre-flight commands | Routes backtick logic to avoid Claude Code permission errors (not a hook — a helper) |
+
+### The framework lints itself
+
+Every language check in `quality-before-commit.sh` is gated behind a manifest — `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`. A repo made of shell scripts and markdown matches **none** of them, so for its whole history the framework's own quality gate was a **no-op against its own source**. It shipped a gate it did not run.
+
+Two manifest-free checks now run on **staged files only** (per the Tier 1 rule this framework itself states):
+
+| Check | Zero-dependency baseline | Upgraded when installed |
+|---|---|---|
+| **Shell** | `bash -n` — syntax must parse | `shellcheck -S error` |
+| **Markdown** | code fences must be balanced (an unclosed ``` silently breaks rendering) | `markdownlint-cli2` |
+
+The zero-dependency baseline is the point. Guarding purely on `command -v shellcheck` would have reproduced the original bug on any machine without it installed — a check that only runs where it's already unnecessary is not a check. To get the stronger tier:
+
+```bash
+# Arch / Manjaro
+sudo pacman -S shellcheck && npm i -g markdownlint-cli2
+```
+
+> **Known inconsistency, not yet fixed:** the *language* checks above still lint the whole tree (`ruff check "$CWD"`), which contradicts the staged-files-only rule in `quality-tooling.md`. The shell and markdown checks do it correctly. Fixing the rest is a separate change.
 
 ### The `TaskCompleted` gate
 
