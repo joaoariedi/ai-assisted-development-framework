@@ -1,6 +1,6 @@
 # Fabric: Prompt Orchestration as a Complementary Layer
 
-Everything the corpus has to say about [danielmiessler/fabric](https://github.com/danielmiessler/fabric) (v1.4.437, 40k+ stars, Go, MIT): what it is, where it would slot into the AI Development Framework v4.3, and whether it is worth adopting. **Adoption status: evaluated, not adopted.** Nothing described here is currently wired into the framework — no rule, hook, agent, or skill invokes Fabric today, and this file describes a proposal, not the status quo.
+Everything the corpus has to say about [danielmiessler/fabric](https://github.com/danielmiessler/fabric) (v1.4.437, 40k+ stars, Go, MIT): what it is, where it would slot into the AI Development Framework v4.4, and whether it is worth adopting. **Adoption status: evaluated, not adopted.** Nothing described here is currently wired into the framework — no rule, hook, agent, or skill invokes Fabric today, and this file describes a proposal, not the status quo.
 
 This file does **not** cover the threats that Fabric's security artifacts address (OWASP LLM Top 10, MCP security posture, trust boundaries — see `06-security-devsecops-for-agents.md`), the hook and CI mechanisms Fabric would sit behind (see `07-quality-gates.md`), or context-engineering theory such as WISC and prompt caching (see `01-context-engineering-fundamentals.md`).
 
@@ -157,7 +157,7 @@ These outputs feed the `.specify/specs/<branch>/research.md` artifact, giving `/
 
 ### 3. Security artifact generation (Phase 2, Steps 5–10)
 
-Today the `security-review` skill and `forensic-specialist` agent run SAST tools (semgrep, gitleaks, gosec) and analyze results *inside* Claude Code sessions, spending context window on the analysis. Fabric can generate the security artifacts up front as files.
+Today the built-in `/security-review`, the `/security-scan` command, and the `forensic-specialist` agent run SAST tools (semgrep, gitleaks, gosec) and analyze results *inside* Claude Code sessions, spending context window on the analysis. Fabric can generate the security artifacts up front as files.
 
 ```bash
 # Generate STRIDE threat model → input for forensic-specialist agent
@@ -181,7 +181,7 @@ fabric -u "https://advisory-url/CVE-2026-XXXX" -p analyze_threat_report > threat
 cat .specify/specs/feature/spec.md | fabric -p ask_secure_by_design_questions
 ```
 
-The `security-review` skill can reference Fabric-generated Semgrep rules during its SAST pass; `forensic-specialist` can consume threat models and Sigma rules as input artifacts; `quality-guardian`'s security assessment benefits from pre-generated threat context; and custom Semgrep rules augment Tier 1 pre-commit scanning. The threats these artifacts address are covered in `06-security-devsecops-for-agents.md`.
+The `/security-scan` command can reference Fabric-generated Semgrep rules during its SAST pass; `forensic-specialist` can consume threat models and Sigma rules as input artifacts; `quality-guardian`'s security assessment benefits from pre-generated threat context; and custom Semgrep rules augment Tier 1 pre-commit scanning. The threats these artifacts address are covered in `06-security-devsecops-for-agents.md`.
 
 Fabric can also generate diagrams during implementation:
 

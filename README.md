@@ -6,48 +6,122 @@
 
 ## ⚡ Quick Start
 
+> **Just want it installed?** Hand `SETUP.md` to a Claude Code agent — it is a runbook written for an agent to execute, and it does everything below (clone, install, permission rule, verification) and reports what it did. The rest of this section is the same thing for humans, and explains *why* each step exists.
+
 ### 1️⃣ Install as a Plugin (recommended)
 
 The framework is a Claude Code plugin. **The hooks ship with it** — you no longer hand-write `settings.json`, which is where every previous version leaked its most-reported friction.
 
+A plugin is installed **from a marketplace**, so the framework ships one (`.claude-plugin/marketplace.json`) that lists exactly one plugin: itself. Clone once, then point the marketplace at the clone:
+
 ```bash
-git clone git@github.com:joaoariedi/ai-assisted-development-framework.git
-claude plugin validate ./ai-assisted-development-framework   # optional: confirm the manifest
-claude --plugin-dir ./ai-assisted-development-framework      # try it for one session
+git clone https://github.com/joaoariedi/ai-assisted-development-framework.git ~/.claude-framework
+
+claude plugin marketplace add ~/.claude-framework
+claude plugin install ai-development-framework@ai-development-framework
 ```
 
-The plugin bundles **skills, commands, agents, hooks, workflows, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
+That is a **persistent, user-scoped** install: it writes `enabledPlugins` to `~/.claude/settings.json` and applies to every project, in every session, with no flags. Confirm it:
 
-> Components shipped by a plugin are **namespaced by plugin name**. The workflow is invoked as `ai-development-framework:speckit-workflow`, not as a bare `speckit-workflow` — the bare name does not resolve.
+```bash
+claude plugin list          # → ai-development-framework@ai-development-framework  ✔ enabled
+```
+
+Because the marketplace source is a **directory**, the plugin is read from your clone in place — nothing is copied. **Updating is therefore just `git pull`** (see *Updating* below), and the install path is stable and predictable, which the permission rule in step 2 depends on.
+
+<details>
+<summary><b>Alternative: try it for a single session, without installing</b></summary>
+
+```bash
+claude --plugin-dir ~/.claude-framework      # this session only; nothing is written to settings
+claude plugin validate ~/.claude-framework   # check the manifest without loading it
+```
+
+</details>
+
+The plugin bundles **skills, commands, agents, hooks, workflows, and the MCP server** in one unit.
+
+> **⚠️ Do not stow the dotfiles *and* install the plugin.** Every component would register twice. If `~/.claude/agents/` or `~/.claude/commands/` already contains these files from the legacy stow install, remove them (`stow -D claude`) before installing the plugin.
+
+#### What the plugin is called once installed
+
+Plugin components are **namespaced by plugin name**, but the namespace is only *required* where a bare name is ambiguous or unsupported:
+
+| Component | How you invoke it |
+|---|---|
+| **Commands** | `/context`, `/speckit.plan`, `/quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
+| **Agents** | Dispatched by Claude, or by name — they appear as `ai-development-framework:code-reviewer`. |
+| **The workflow** | **Must be namespaced**: `ai-development-framework:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
 
 ### 2️⃣ Optional Configuration
 
 Two things the plugin cannot ship, because they are machine-local by design:
 
-```bash
-# In ~/.claude/settings.json — only if you want these:
+```jsonc
+// In ~/.claude/settings.json — only if you want these:
 {
-  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   # Agent Teams (experimental)
-  "permissions": { "allow": ["Bash(/absolute/path/to/plugin/.claude/hooks/speckit-helper.sh:*)"] }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   // Agent Teams (experimental)
+  "permissions": {
+    "allow": ["Bash($HOME/.claude-framework/.claude/hooks/speckit-helper.sh:*)"]
+  }
 }
 ```
 
 > ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. Claude Code blocks `$()`, `||`, and `|` in pre-flight commands, so all logic routes through that helper script.
 >
-> **The path must be absolute and must point at your plugin install.** The commands invoke the helper as `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh`, which Claude Code expands to wherever the plugin actually lives — so substitute that directory here (the clone path you passed to `--plugin-dir`, or the install path from `claude plugin list`). Permission rules expand `$HOME` but **not** `${CLAUDE_PLUGIN_ROOT}`, and they do not accept a leading wildcard, so neither shortcut works. A pre-flight command that is denied aborts the whole slash command, and it does so **silently** — if a spec-kit command produces no output, this rule is the first thing to check.
+> **The path must be absolute and must point at your clone.** The commands invoke the helper as `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh`, which Claude Code expands to wherever the plugin lives — so the rule above assumes the `~/.claude-framework` clone path from step 1. If you cloned elsewhere, substitute that directory. Permission rules expand `$HOME` but **not** `${CLAUDE_PLUGIN_ROOT}`, and they do not accept a leading wildcard, so neither shortcut works.
+>
+> **This is the single most common failure.** A pre-flight command that is denied aborts the whole slash command **silently** — no error, no output, exit 0. If a spec-kit command appears to do nothing at all, this rule is the first thing to check.
 
 Export `GITHUB_TOKEN` if you want the bundled GitHub MCP server to connect.
 
-### 3️⃣ Verify Installation
+### 3️⃣ Verify the Installation
 
 ```bash
-cd ~/any-project
-claude
-> /context          # should detect tech stack and structure
-> /speckit.init     # bootstraps .specify/ for spec-driven dev
+cd ~/any-project && claude
 ```
 
-Check the `/` menu: every skill and command should be listed. **A skill that does not appear there is not loaded** — that is the only reliable test, and its absence is silent.
+Three checks, in increasing strength:
+
+1. **`claude plugin list`** — the plugin is `✔ enabled`. If it is not here, nothing else matters.
+2. **The `/` menu** — every command should be listed. **A component that does not appear is not loaded**, and its absence is silent. This is the only reliable test.
+3. **Run one** — `/context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
+
+> ⚠️ `claude plugin details ai-development-framework` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
+
+### 4️⃣ Your First Feature (the 60-second tour)
+
+The framework's core loop is **spec first, then code, then a gate you cannot talk your way past.**
+
+```bash
+/speckit.init                    # once per project — bootstraps .specify/
+/speckit.specify  add user login # → a spec: scenarios, requirements, success criteria
+/speckit.plan                    # → an implementation plan (writes are blocked outside .specify/)
+/speckit.tasks                   # → a phased, dependency-ordered task list
+/speckit.implement               # → TDD execution, red-green, one task at a time
+/quality                         # → lint, types, secrets, SOLID — before you commit
+```
+
+For a **large** task list, swap the last implementation step for the workflow, which runs independent tasks in parallel and has every task adversarially verified by agents that did not write it:
+
+```
+ai-development-framework:speckit-workflow
+```
+
+Not every change deserves a spec. For a typo or a config tweak, `/speckit.fix` skips the pipeline. For an existing codebase with no specs, `/speckit.baseline` reverse-engineers them.
+
+**What happens without you asking:** on every edit, formatters run and tests fire; on every `git commit`, secrets detection and linting must pass or the commit is blocked; and a task cannot be marked complete while the test suite fails. You do not opt into these — they ship with the plugin.
+
+### 5️⃣ Updating
+
+The plugin is read from your clone in place, so updating is a `git pull`:
+
+```bash
+git -C ~/.claude-framework pull
+claude plugin marketplace update ai-development-framework   # re-read the manifest
+```
+
+Restart Claude Code to pick up the new components. To check what changed first, read `CHANGELOG.md` in the clone.
 
 <details>
 <summary><b>Legacy: install via dotfiles + stow</b></summary>
@@ -76,7 +150,7 @@ This is the topology I run the framework on. The framework itself is host-agnost
 | 💻 **Primary laptop** | Manjaro Linux | ✅ Full | ❌ No | Day-to-day dev, production deploys, attended sessions |
 | 🖧 **Always-on remote workstation** | Arch Linux | ❌ GitHub only | ✅ Yes | Long-running tasks, mobile resume target, off-hours work |
 
-Both machines share the **same dotfiles** (`stow claude`), so Claude Code behaviour is identical on each: same agents, hooks, skills, rules, MCPs. Only the per-host `settings.json` (env vars, hook timeouts) differs.
+Both machines install the **same plugin** from the same clone, so Claude Code behaviour is identical on each: same agents, hooks, skills, workflows, MCP server. Only the per-host `settings.json` (env vars, the helper permission rule, hook timeouts) differs — which is exactly the machine-local part a plugin cannot ship.
 
 ### 🛡️ Trust Boundaries
 
@@ -130,7 +204,8 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
-speckit-workflow      → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
+ai-development-framework:speckit-workflow
+                      → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
 /quality              → 🛡️ final quality gate
 ```
 
@@ -234,6 +309,8 @@ Eight hooks enforce quality automatically — and they ship with the plugin, so 
 - 🧪 **Auto-test** — test suite runs after source file edits (throttled 15s, non-blocking)
 - 📊 **Reminders** — alerts if source files were edited but tests weren't run
 - 🔔 **Notifications** — desktop alerts when the agent needs human input (Linux/macOS)
+- 📐 **Plan-phase write-block** — while `/speckit.plan` is active, edits outside `.specify/` are blocked, so the planning phase cannot quietly become the implementation phase
+- ⛔ **Verification gate** (`TaskCompleted`) — a task **cannot be marked complete** while the test suite fails. This is the Iron Law made mechanical: every other quality mechanism in the framework is advisory, and this is the one the model cannot rationalize past
 
 The `quality-guardian` agent validates before commit/PR/merge with secrets scanning, SAST, supply chain checks, SOLID architectural analysis, performance validation, and **Iron Law enforcement**.
 
@@ -245,8 +322,8 @@ The framework implements layered defenses against OWASP LLM vulnerabilities:
 |-------|-----------|--------|
 | **Enforcement** | Hooks | Sensitive file blocking, secrets detection, pre-commit quality |
 | **Guidance** | Rules | OWASP LLM Top 10, MCP security, code quality, SOLID principles |
-| **Analysis** | Skills & Agents | Security review, forensic investigation, quality gates |
-| **Efficacy** | Iron Laws | Verification-before-completion, systematic-debugging |
+| **Analysis** | Skills & Agents | Built-in `/security-review`, `/security-scan`, forensic investigation, quality gates |
+| **Efficacy** | Iron Laws | Verification before completion (rule + `TaskCompleted` hook), systematic-debugging |
 
 MCP servers follow strict security posture — OAuth 2.1 for production, least privilege, input validation, and human-in-the-loop for high-impact actions.
 
@@ -312,7 +389,7 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 1. 🔧 Tool discovery and configuration
 2. 🔑 Secrets detection (mandatory, blocks on findings)
 3. 📝 Code quality validation (lint, types, formatting)
-4. 🔒 Security assessment (delegates to `security-review` skill + LLM security rules)
+4. 🔒 Security assessment (delegates to the built-in `/security-review` + LLM security rules)
 5. ⚡ Performance validation (delegates to `performance-audit` skill)
 6. 🏛️ **Architectural pattern validation** — SOLID principle checks with chain-of-thought for OCP and DIP
 7. 🧪 Regression prevention (full test suite)
@@ -388,7 +465,7 @@ spawn teammates → TaskCreate → TaskUpdate (assign or self-claim) → SendMes
 | **Full pipeline** | End-to-end: impl + tests + quality + review + PR |
 | **Research + build** | Deep codebase research while implementing |
 
-Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json above).
+Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` in `~/.claude/settings.json` — it is opt-in, and shown in step 2️⃣ above. A plugin cannot ship an env var.
 
 ---
 
@@ -609,25 +686,34 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 
 ---
 
-## 📁 Dotfiles Package Structure
+## 📁 Package Structure
+
+The repository *is* the plugin. The two manifests live at the root; everything they point at lives under `.claude/`.
 
 ```
-~/dotfiles/claude/
+ai-assisted-development-framework/
+├── .claude-plugin/
+│   ├── plugin.json             # the plugin manifest — declares every component below
+│   └── marketplace.json        # makes the repo installable (`claude plugin install`)
+├── .mcp.json                   # GitHub MCP server (project scope — NOT .claude/mcp.json)
 ├── .claude/
-│   ├── CLAUDE.md               # core config (loaded into system prompt)
+│   ├── CLAUDE.md               # core config (loaded into the system prompt)
 │   ├── agents/                 # 6 custom agents (5 pipeline + repo-scout one-shot)
 │   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
-│   ├── hooks/                  # 7 lifecycle hooks + speckit-helper.sh
+│   ├── hooks/                  # 8 lifecycle hooks + hooks.json + speckit-helper.sh
 │   ├── rules/                  # 8 modular policy files
-│   └── skills/                 # 3 skills, each a <name>/SKILL.md directory
-└── .stow-local-ignore          # excludes README from stow
+│   ├── skills/                 # 3 skills, each a <name>/SKILL.md directory
+│   └── workflows/              # speckit-workflow.js — the deterministic task-list executor
+└── reports/                    # 11 research files: the "why" behind the rules
 ```
+
+> `CLAUDE.md` and `rules/` are **not** plugin components — a plugin cannot ship them. They apply when the repo is your project, or when you stow them globally. Everything else in the tree is shipped by `plugin.json`.
 
 ---
 
 ## 📚 Research Corpus
 
-`reports/` holds the research behind the framework, split into ten single-subject files with no overlap between them. It is the **"why" layer**: `.claude/rules/` states *what* to do, and `reports/` records the evidence, benchmark, or threat model that produced the rule. Where a finding is already codified, the report points at the rule with a `> **Codified in**` callout instead of restating it — so no text lives in two places.
+`reports/` holds the research behind the framework, split into eleven single-subject files with no overlap between them. It is the **"why" layer**: `.claude/rules/` states *what* to do, and `reports/` records the evidence, benchmark, or threat model that produced the rule. Where a finding is already codified, the report points at the rule with a `> **Codified in**` callout instead of restating it — so no text lives in two places.
 
 | # | Subject | Codified in |
 |---|---------|-------------|
