@@ -49,7 +49,7 @@ Plugin components are **namespaced by plugin name**, but the namespace is only *
 
 | Component | How you invoke it |
 |---|---|
-| **Commands** | `/context`, `/speckit.plan`, `/quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
+| **Commands** | `/project-context`, `/speckit.plan`, `/quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
 | **Agents** | Dispatched by Claude, or by name — they appear as `ai-development-framework:code-reviewer`. |
 | **The workflow** | **Must be namespaced**: `ai-development-framework:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
 
@@ -90,7 +90,7 @@ Three checks, in increasing strength:
 
 1. **`claude plugin list`** — the plugin is `✔ enabled`. If it is not here, nothing else matters.
 2. **The `/` menu** — every command should be listed. **A component that does not appear is not loaded**, and its absence is silent. This is the only reliable test.
-3. **Run one** — `/context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
+3. **Run one** — `/project-context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
 
 > ⚠️ `claude plugin details ai-development-framework` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
 
@@ -197,7 +197,7 @@ The triviality gate ensures only genuinely trivial changes bypass the full pipel
 The full spec-driven development pipeline from idea to implementation:
 
 ```
-/context              → 🧭 orient (detect stack, tools, structure)
+/project-context              → 🧭 orient (detect stack, tools, structure)
 /speckit.init         → 🏗️ bootstrap (once per project)
 /speckit.constitution → 📜 define principles (once per project)
 /speckit.brainstorm   → 💡 Socratic design exploration (refine the idea) ← NEW
@@ -492,7 +492,7 @@ The framework ships only what Claude Code does **not** already do natively:
 |---|---|---|
 | verification-before-completion | `/verify` | It builds and drives the real app rather than settling for a green typecheck. The **Iron Law** survives as a *rule* in `code-quality.md` — a rule is always in context, whereas a skill only loads when invoked. |
 | security-review | `/security-review` | Full branch review. `/security-scan` remains for the fast, diff-only pass. |
-| context-analysis | `/context` | The command already carries the methodology and injects live git data. |
+| context-analysis | `/project-context` | The command already carries the methodology and injects live git data. |
 | spec-template | `/speckit.specify` | The Given/When/Then patterns now live in the command itself. |
 
 `task-effort-estimation` deliberately reports a **complexity score and risk flags, never an hour count**. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. So it flags the small diff with high coupling, which is the shape of work a naive estimate waves through. Hours only appear once `.claude/effort-calibration.json` maps observed scores to real recorded durations for your project.
@@ -504,7 +504,7 @@ The framework ships only what Claude Code does **not** already do natively:
 | Command | Args | Description |
 |---------|------|-------------|
 | `/agent` | `<task>` | Start full development workflow with planning and task tracking |
-| `/context` | — | Analyze project tech stack, tools, and structure |
+| `/project-context` | — | Analyze project tech stack, tools, and structure |
 | `/pr-summary` | — | Generate PR description from current branch diff |
 | `/quality` | — | Run comprehensive quality checks (spawns quality-guardian) |
 | `/security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
