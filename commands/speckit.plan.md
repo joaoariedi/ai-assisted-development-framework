@@ -13,19 +13,19 @@ Generate an implementation plan from the current branch's specification.
 > pre-executed in a `!` block. A `!` block is permission-checked before
 > `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
 
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh branch`
 
 ### Auto-detect spec branch
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-spec`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh check-spec`
 
 ### Available specs
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh list-specs`
 
 ### Constitution
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh constitution`
 
 ### Start plan phase (RIPER-style write-block)
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-start`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh plan-phase-start`
 
 ## Instructions
 
@@ -158,7 +158,7 @@ The goal of this phase is to compress verifiable truth about the codebase into a
 9. **End plan phase**: after `plan.md` is written and the summary is presented, clear the write-block marker so downstream commands can edit code:
 
    ```bash
-   ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-end
+   ${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh plan-phase-end
    ```
 
    If you abort the plan before completion, still run the command above — or delete `.specify/.plan-in-progress` manually — otherwise the next Edit/Write in this project will be blocked.

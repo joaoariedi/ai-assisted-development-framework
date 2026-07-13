@@ -87,8 +87,8 @@ must be literal and absolute.
 {
   "permissions": {
     "allow": [
-      "Bash($HOME/.claude-framework//.claude/hooks/speckit-helper.sh:*)",
-      "Bash($HOME/.claude-framework/.claude/hooks/speckit-helper.sh:*)"
+      "Bash($HOME/.claude-framework//hooks/speckit-helper.sh:*)",
+      "Bash($HOME/.claude-framework/hooks/speckit-helper.sh:*)"
     ]
   }
 }
@@ -96,8 +96,8 @@ must be literal and absolute.
 
 Both entries are deliberate, and the doubled slash in the first is not a typo.
 `${CLAUDE_PLUGIN_ROOT}` expands **with a trailing slash**, so the command
-`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh` reaches the permission matcher as
-`…/.claude-framework//.claude/hooks/…`. The matcher compares strings literally and does not
+`${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh` reaches the permission matcher as
+`…/.claude-framework//hooks/…`. The matcher compares strings literally and does not
 normalise `//`, so a rule written with a single slash silently fails to match it. The second
 entry covers the case where a future release drops the trailing slash. Keep both.
 

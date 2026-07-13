@@ -13,13 +13,13 @@ Scan the current branch's specification for ambiguities and generate targeted cl
 > pre-executed in a `!` block. A `!` block is permission-checked before
 > `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
 
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh branch`
 
 ### Load spec
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh spec`
 
 ### Existing clarifications
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh clarifications`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh clarifications`
 
 ## Instructions
 

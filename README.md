@@ -62,14 +62,19 @@ Two things the plugin cannot ship, because they are machine-local by design:
 {
   "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   // Agent Teams (experimental)
   "permissions": {
-    "allow": ["Bash($HOME/.claude-framework/.claude/hooks/speckit-helper.sh:*)"]
+    "allow": [
+      "Bash($HOME/.claude-framework//hooks/speckit-helper.sh:*)",
+      "Bash($HOME/.claude-framework/hooks/speckit-helper.sh:*)"
+    ]
   }
 }
 ```
 
-> ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. Claude Code blocks `$()`, `||`, and `|` in pre-flight commands, so all logic routes through that helper script.
+> ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. The commands run the helper with the Bash tool; they cannot pre-execute it in a `` !`…` `` block, because a `!` block is permission-checked *before* `${CLAUDE_PLUGIN_ROOT}` is substituted and is rejected outright as `Contains expansion`.
 >
-> **The path must be absolute and must point at your clone.** The commands invoke the helper as `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh`, which Claude Code expands to wherever the plugin lives — so the rule above assumes the `~/.claude-framework` clone path from step 1. If you cloned elsewhere, substitute that directory. Permission rules expand `$HOME` but **not** `${CLAUDE_PLUGIN_ROOT}`, and they do not accept a leading wildcard, so neither shortcut works.
+> **The doubled slash in the first entry is not a typo.** `${CLAUDE_PLUGIN_ROOT}` expands *with* a trailing slash, so the helper reaches the permission matcher as `…/.claude-framework//hooks/…`. The matcher compares literally and does not normalise `//`, so a single-slash rule never matches it. The second entry covers a future release dropping the trailing slash. Keep both.
+>
+> **The path must be absolute and must point at your clone.** Permission rules expand `$HOME` but **not** `${CLAUDE_PLUGIN_ROOT}`, and they do not accept a leading wildcard, so neither shortcut works. The rule above assumes the `~/.claude-framework` clone path from step 1; if you cloned elsewhere, substitute that directory.
 >
 > **This is the single most common failure.** A pre-flight command that is denied aborts the whole slash command **silently** — no error, no output, exit 0. If a spec-kit command appears to do nothing at all, this rule is the first thing to check.
 

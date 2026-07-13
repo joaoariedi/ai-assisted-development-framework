@@ -20,7 +20,7 @@
 set -uo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-HELPER="$REPO/.claude/hooks/speckit-helper.sh"
+HELPER="$REPO/hooks/speckit-helper.sh"
 PASS=0
 FAIL=0
 
@@ -50,6 +50,25 @@ while read -r agent; do
   else bad "agent $agent DOES NOT EXIST"; fi
 done < <(jq -r '.agents[]?' "$REPO/.claude-plugin/plugin.json")
 
+# --- Tier 1: the #9 regression guard ------------------------------------------------
+head_ "Payload location"
+
+# The plugin's payload must NOT live under .claude/. That path is also where Claude Code
+# looks for *project-scope* config, so shipping it there means that while working in this
+# repo the project-scope copy shadows the plugin's — and a project-scope command gets no
+# plugin root, so ${CLAUDE_PLUGIN_ROOT} is never substituted.
+#
+# The effect is that the commands behave differently here than in any real install. That is
+# the blind spot that let #7 ship: it looked fine while dogfooding. See #9.
+shadowed=0
+for d in commands agents skills hooks workflows; do
+  if [ -e "$REPO/.claude/$d" ]; then
+    bad ".claude/$d shadows the plugin's own $d when working in this repo (see #9)"
+    shadowed=$((shadowed + 1))
+  fi
+done
+[ "$shadowed" -eq 0 ] && ok "no plugin payload under .claude/ — nothing shadows the plugin"
+
 # --- Tier 1: hooks ------------------------------------------------------------------
 head_ "Hooks"
 
@@ -61,7 +80,7 @@ while read -r cmd; do
   if [ ! -f "$script" ]; then bad "hook $name is declared but not shipped"
   elif [ ! -x "$script" ]; then bad "hook $name is not executable (will fail silently)"
   else ok "hook $name exists and is executable"; fi
-done < <(jq -r '.hooks | to_entries[] | .value[] | .hooks[] | .command' "$REPO/.claude/hooks/hooks.json")
+done < <(jq -r '.hooks | to_entries[] | .value[] | .hooks[] | .command' "$REPO/hooks/hooks.json")
 
 # --- Tier 1: the #7 regression guard ------------------------------------------------
 head_ "Command → helper wiring"
@@ -70,9 +89,9 @@ head_ "Command → helper wiring"
 # substituted, so the checker sees a literal ${...} and rejects the command with
 # "Contains expansion". No allowlist entry can match it. This shipped twice (aa32e83,
 # then #7). If this assertion ever fails again, do not "fix" it by changing the rule.
-if grep -rqF '!`${CLAUDE_PLUGIN_ROOT}' "$REPO/.claude/commands/"; then
+if grep -rqF '!`${CLAUDE_PLUGIN_ROOT}' "$REPO/commands/"; then
   bad "a command puts \${CLAUDE_PLUGIN_ROOT} inside a ! block — rejected as 'Contains expansion' (see #7)"
-  grep -rlF '!`${CLAUDE_PLUGIN_ROOT}' "$REPO/.claude/commands/" | sed 's|^|       |'
+  grep -rlF '!`${CLAUDE_PLUGIN_ROOT}' "$REPO/commands/" | sed 's|^|       |'
 else
   ok "no command invokes the helper from a ! block"
 fi
@@ -85,7 +104,7 @@ while read -r sub; do
     bad "commands call helper subcommand '$sub', which speckit-helper.sh does not implement"
     missing=$((missing + 1))
   fi
-done < <(grep -rhoE 'speckit-helper\.sh [a-z-]+' "$REPO/.claude/commands/" | awk '{print $2}' | sort -u)
+done < <(grep -rhoE 'speckit-helper\.sh [a-z-]+' "$REPO/commands/" | awk '{print $2}' | sort -u)
 [ "$missing" -eq 0 ] && ok "every helper subcommand used by a command is implemented"
 
 # --- Tier 1: helper runs ------------------------------------------------------------
@@ -156,7 +175,7 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
       bad "command invocation fails as the model would run it: $real"
       broken=$((broken + 1))
     fi
-  done < <(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}[^`]+' "$REPO/.claude/commands/" | sort -u)
+  done < <(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}[^`]+' "$REPO/commands/" | sort -u)
   # NB: match ANY ${CLAUDE_PLUGIN_ROOT} invocation, not just speckit-helper.sh. Hardcoding
   # the script name here creates the exact blind spot this test exists to close: a command
   # pointing at a script that does not exist would never be matched, so never executed, so
@@ -171,11 +190,11 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   # compares literally without normalising it. A single-slash rule silently fails to match,
   # so every helper call prompts — and a non-interactive context denies prompts, which
   # aborts the command with no output at all.
-  if grep -qF '//.claude/hooks/speckit-helper.sh' "$REPO/SETUP.md"; then
+  if grep -qF '//hooks/speckit-helper.sh' "$REPO/SETUP.md"; then
     ok "SETUP prescribes the doubled-slash rule that the commands actually produce"
   else
     bad "SETUP's permission rule lacks the doubled slash, so it will never match"
-    printf '       commands send: <plugin-root>//.claude/hooks/speckit-helper.sh\n'
+    printf '       commands send: <plugin-root>//hooks/speckit-helper.sh\n'
   fi
 else
   head_ "Live install"
