@@ -5,7 +5,7 @@
 
 ---
 
-## What it is
+## 🎯 What it is
 
 Claude Code will happily write code from a one-line prompt. That works until the change is big
 enough that "what were we building?" stops having an obvious answer — and then it fails quietly,
@@ -17,17 +17,17 @@ agents, nine hooks, and a set of rules that load into every session.
 
 The parts that matter are the ones you cannot talk your way past:
 
-- **A `TaskCompleted` hook blocks a task from being marked done while the tests fail.** Not a
+- ✅ **A `TaskCompleted` hook blocks a task from being marked done while the tests fail.** Not a
   reminder — a hook that exits non-zero and refuses.
-- **A pre-commit hook runs secrets detection and linting**, and blocks the commit if they fail.
-- **A plan-phase hook blocks edits outside `.specify/`** while a plan is being written, so the
+- 🔐 **A pre-commit hook runs secrets detection and linting**, and blocks the commit if they fail.
+- 🚧 **A plan-phase hook blocks edits outside `.specify/`** while a plan is being written, so the
   agent cannot start coding "just to check something."
 
 Everything else — the agents, the skills, the research corpus — is support for that spine.
 
 ---
 
-## Install
+## 📦 Install
 
 **Hand `SETUP.md` to an agent.** It is a runbook written for Claude Code to execute: it clones,
 installs, configures the permission rule, verifies the result, and tells you what it did.
@@ -57,26 +57,26 @@ an upgrade — see [`docs/install.md`](docs/install.md).
 
 ---
 
-## Structure
+## 🗂️ Structure
 
 | Directory | What lives there |
 |---|---|
-| `commands/` | The 18 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
-| `agents/` | Six specialist subagents — testing, quality, review, security, PR coordination, recon. |
-| `hooks/` | Nine hooks, plus `speckit-helper.sh` (34 subcommands) that the commands call for live git data. |
-| `skills/` | Systematic debugging, effort estimation, performance audit. |
-| `workflows/` | `speckit-workflow.js` — executes a task list as a deterministic Workflow. |
-| `.claude/rules/` | The rules loaded into every session. **Not shipped by the plugin** — copy them yourself. |
-| `tests/` | `smoke.sh` — 40 checks. The plugin's own test suite. |
-| `docs/` | Everything below. |
+| 🛠️ `commands/` | The 18 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
+| 🕵️ `agents/` | Six specialist subagents — testing, quality, review, security, PR coordination, recon. |
+| ⚙️ `hooks/` | Nine hooks, plus `speckit-helper.sh` (34 subcommands) that the commands call for live git data. |
+| 🧠 `skills/` | Systematic debugging, effort estimation, performance audit. |
+| 🔁 `workflows/` | `speckit-workflow.js` — executes a task list as a deterministic Workflow. |
+| 📏 `.claude/rules/` | The rules loaded into every session. **Not shipped by the plugin** — copy them yourself. |
+| 🧪 `tests/` | `smoke.sh` — the plugin's own test suite: 38 checks in CI, 42 with the live and end-to-end tiers. |
+| 📚 `docs/` | Everything below. |
 
 ---
 
-## Using it
+## 🚀 Using it
 
 The pipeline is not all-or-nothing. Pick the path that matches the change.
 
-### 1. A new project, from scratch
+### 🌱 1. A new project, from scratch
 
 Full spec-driven development. Every gate, in order.
 
@@ -107,7 +107,7 @@ ai-development-framework:speckit-workflow
 It must be called by that full name; a bare `speckit-workflow` does not resolve. Run it only
 **after** the human gates — a workflow cannot pause to ask you a question.
 
-### 2. A feature, in a project already set up
+### ✨ 2. A feature, in a project already set up
 
 `.specify/` already exists. Skip the bootstrap and the constitution.
 
@@ -123,7 +123,7 @@ It must be called by that full name; a bare `speckit-workflow` does not resolve.
 /adf.pr-summary                      # → PR description from the branch diff
 ```
 
-### 3. A trivial fix
+### 🔧 3. A trivial fix
 
 A typo, a config tweak, a one-line bug. The pipeline would cost more than the change.
 
@@ -135,7 +135,7 @@ A typo, a config tweak, a one-line bug. The pipeline would cost more than the ch
 The hooks still apply. You cannot commit secrets or skip the tests just because you took the
 short path.
 
-### 4. Brownfield — existing code, no specs
+### 🏚️ 4. Brownfield — existing code, no specs
 
 Reverse-engineer the spec from what is already there, then proceed normally.
 
@@ -148,53 +148,53 @@ Reverse-engineer the spec from what is already there, then proceed normally.
 Read the generated spec before trusting it — it is inferred, not authoritative. Once you have
 one, treat the module as scenario 2.
 
-### Also available, any time
+### 🧰 Also available, any time
 
 | | |
 |---|---|
-| `/adf.security-scan` | Secrets, SQLi, XSS in the staged changes. |
-| `/adf.agent <task>` | Full workflow with planning and task tracking, for open-ended work. |
-| `/adf.quality` | The quality gate. Spawns `quality-guardian`. |
+| 🔒 `/adf.security-scan` | Secrets, SQLi, XSS in the staged changes. |
+| 🤝 `/adf.agent <task>` | Full workflow with planning and task tracking, for open-ended work. |
+| 🛡️ `/adf.quality` | The quality gate. Spawns `quality-guardian`. |
 
 Full reference: [`docs/commands.md`](docs/commands.md).
 
 ---
 
-## What happens without you asking
+## ⚙️ What happens without you asking
 
 The hooks ship with the plugin — you do not register them:
 
-- **On every edit** — formatters run; tests fire for the touched code.
-- **On every `git commit`** — secrets detection and linting must pass, or the commit is blocked.
-- **On task completion** — the task cannot be marked done while the test suite fails.
-- **During `/speckit.plan`** — edits outside `.specify/` are blocked.
+- ✏️ **On every edit** — formatters run; tests fire for the touched code.
+- 🔐 **On every `git commit`** — secrets detection and linting must pass, or the commit is blocked.
+- ✅ **On task completion** — the task cannot be marked done while the test suite fails.
+- 🚧 **During `/speckit.plan`** — edits outside `.specify/` are blocked.
 
 [`docs/hooks.md`](docs/hooks.md) explains each, and how to opt out deliberately when you must.
 
 ---
 
-## Documentation
+## 📚 Documentation
 
 | | |
 |---|---|
-| [Installing & Configuring](docs/install.md) | Install, the permission rule, verification, updating, what the plugin cannot ship. |
-| [Commands](docs/commands.md) | All 18, with arguments. |
-| [Agents & Parallelism](docs/agents.md) | The six agents; when to use a subagent vs. a team vs. a workflow. |
-| [Hooks & Quality Gates](docs/hooks.md) | Every hook, the Iron Laws, and the security posture. |
-| [Spec-Driven Development](docs/spec-kit.md) | The lifecycle in depth, `.specify/` artifacts, task management. |
-| [Architecture](docs/architecture.md) | Package structure, request flow, the five-layer stack, deployment topology. |
-| [Skills](docs/skills.md) · [Rules](docs/rules.md) · [MCP](docs/mcp.md) | Component reference. |
-| [Performance & Reasoning](docs/performance.md) | Ultrathink, model selection, context management. |
-| [Research Corpus](docs/research.md) | The eleven reports the framework is built on, and acknowledgments. |
+| 📦 [Installing & Configuring](docs/install.md) | Install, the permission rule, verification, updating, what the plugin cannot ship. |
+| 🛠️ [Commands](docs/commands.md) | All 18, with arguments. |
+| 🕵️ [Agents & Parallelism](docs/agents.md) | The six agents; when to use a subagent vs. a team vs. a workflow. |
+| ⚙️ [Hooks & Quality Gates](docs/hooks.md) | Every hook, the Iron Laws, and the security posture. |
+| 🧬 [Spec-Driven Development](docs/spec-kit.md) | The lifecycle in depth, `.specify/` artifacts, task management. |
+| 🏗️ [Architecture](docs/architecture.md) | Package structure, request flow, the five-layer stack, deployment topology. |
+| 🧠 [Skills](docs/skills.md) · [Rules](docs/rules.md) · [MCP](docs/mcp.md) | Component reference. |
+| ⚡ [Performance & Reasoning](docs/performance.md) | Ultrathink, model selection, context management. |
+| 📖 [Research Corpus](docs/research.md) | The eleven reports the framework is built on, and acknowledgments. |
 
 ---
 
-## Requirements
+## 🧩 Requirements
 
 `git`, the `claude` CLI. Optional: `rtk` (CLI output compression, auto-detected), `GITHUB_TOKEN`
 (for the bundled GitHub MCP server).
 
-## License
+## 📄 License
 
 MIT — see [LICENSE](LICENSE).
 
