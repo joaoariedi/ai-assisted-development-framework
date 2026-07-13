@@ -23,7 +23,6 @@ ls -la ~/.claude/
 # hooks/    → ../dotfiles/claude/.claude/hooks/
 # skills/   → ../dotfiles/claude/.claude/skills/
 # rules/    → ../dotfiles/claude/.claude/rules/
-# mcp.json  → ../dotfiles/claude/.claude/mcp.json
 ```
 
 ### 2️⃣ Create Machine-Local Settings
@@ -226,7 +225,7 @@ sequenceDiagram
 | Superpowers | ⚪ pattern reference | Skill-pack architecture is the influence |
 | Claude Code | ✅ primary runtime | Opus 4.8 / 1M ctx default |
 | Codex · Opencode · Cursor · Aider | ⚪ alternatives | Same methodology layer would still apply |
-| MCP: github, voicemode | ✅ active | See `~/.claude/mcp.json` |
+| MCP: github | ⚙️ project-scoped | Root `.mcp.json`; needs `GITHUB_TOKEN` exported |
 | MCP: Semgrep, Snyk, SonarQube | ⚪ optional | Add only when CLI scans aren't enough |
 | **rtk** | ✅ available (auto-detected per machine) | 60–90% token reduction on common dev commands |
 | Fabric | ⚪ pattern reference | Reusable prompt-pattern library |
@@ -525,18 +524,37 @@ The framework uses Claude Code's built-in task tracker:
 
 ## 🔌 MCP Integration
 
+The repo ships a **project-scoped** `.mcp.json` at its root, which Claude Code loads automatically for anyone working in this repository:
+
 ```json
 {
   "mcpServers": {
     "github": {
-      "transport": "http",
-      "url": "https://api.githubcopilot.com/mcp/v1",
-      "scope": "user",
-      "description": "GitHub PR/Issue automation for review-coordinator agent"
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
     }
   }
 }
 ```
+
+Export `GITHUB_TOKEN` before starting Claude Code, or the server loads with a
+`Missing environment variables` warning. No token is committed — the value is expanded from
+your environment at load time.
+
+**For your own projects**, register the server once at user scope instead:
+
+```bash
+claude mcp add --scope user --transport http github https://api.githubcopilot.com/mcp
+claude mcp list          # verify: should report "✔ Connected"
+```
+
+> **Config locations matter.** Claude Code reads `~/.claude.json` (user scope) and `.mcp.json`
+> at a project root (project scope). It does **not** read `~/.claude/mcp.json` — a file there
+> is silently inert. Verify with `claude mcp list`; a server that does not appear in that
+> output is not loaded, no matter how correct its JSON looks.
 
 Add security MCP servers only when CLI tools are insufficient — each server adds context overhead. See `mcp-security.md` rule for evaluation criteria.
 
@@ -548,7 +566,6 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 ~/dotfiles/claude/
 ├── .claude/
 │   ├── CLAUDE.md               # core config (loaded into system prompt)
-│   ├── mcp.json                # MCP servers (GitHub)
 │   ├── agents/                 # 6 custom agents (5 pipeline + repo-scout one-shot)
 │   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
 │   ├── hooks/                  # 7 lifecycle hooks + speckit-helper.sh

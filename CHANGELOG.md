@@ -31,9 +31,13 @@ agent, a new hook, a new rule, and a new skill.
 - README and `CLAUDE.md` refreshed: agent count 5 → 6, skill count 6 → 7, models updated to Opus 4.8 / Sonnet 5 / Haiku 4.5.
 
 ### Fixed
+- **GitHub MCP server never loaded.** `.claude/mcp.json` is not a path Claude Code reads — it only reads `~/.claude.json` (user scope) and `.mcp.json` at a project root (project scope) — so the file was silently inert and the server has never been active, despite the README advertising it as such. `review-coordinator` has been running without it. The config also carried four independent errors: `"transport"` instead of `"type"` (fails to load), a `/mcp/v1` URL instead of `/mcp` (404), no `Authorization` header (401), and two fields that are not in the schema at all (`"scope"`, which is CLI-only, and `"description"`). Replaced with a correct project-scoped `.mcp.json` at the repo root using `Bearer ${GITHUB_TOKEN}` env-var expansion so no secret is committed; verified loading via `claude mcp list`. The README now documents `claude mcp add --scope user` for consumers' own projects and warns that a server absent from `claude mcp list` is not loaded regardless of how correct its JSON looks.
 - **`stop-quality-check.sh` silent exit 141**: the `find | while | head -1` pipeline raced with SIGPIPE under `set -euo pipefail` whenever a match was found. Replaced with process substitution plus `break`.
 - **Spurious permission prompts**: normalized every speckit preflight path from `$HOME/.claude/hooks/...` to `~/.claude/hooks/...` to match the Bash allowlist entry.
 - **Documentation drift**: `repo-scout` shipped in `c0f873b` but was never documented in the README, which still advertised five agents. The CHANGELOG had recorded nothing since 4.3.0 despite nine intervening commits.
+
+### Removed
+- **voicemode MCP server** and its `mcp__voicemode__converse` permission entry. Removed from user scope via `claude mcp remove voicemode -s user`; `mcpServers` in `~/.claude.json` is now empty. The README no longer lists it as an active integration.
 
 ### Notes
 - Files under `.claude/` are ignored by a common global gitignore rule (`.claude/`). Existing tracked files are unaffected, but **any new file added under `.claude/` needs `git add -f`** or it is silently dropped.
