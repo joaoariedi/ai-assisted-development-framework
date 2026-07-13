@@ -41,7 +41,8 @@ A change qualifies as trivial ONLY if **ALL** of these are true:
 ### If Trivial (passes the gate)
 
 1. **Apply the fix** directly — no spec, no plan, no tasks needed
-2. **Verify** using the `verification-before-completion` skill protocol:
+2. **Verify** — the Iron Law in `rules/code-quality.md` applies. Run the built-in `/verify`
+   skill to exercise the change against the running app, not just tests. Protocol:
    - Run tests: confirm all pass
    - Run lint: confirm clean
    - Show the actual output — do not assume or summarize

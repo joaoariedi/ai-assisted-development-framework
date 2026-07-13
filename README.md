@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v4.3
+# 🤖 AI Development Framework v4.4
 
 > A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline. Balances **security**, **performance**, **maintainability**, and **efficacy** at every step.
 
@@ -6,64 +6,33 @@
 
 ## ⚡ Quick Start
 
-### 1️⃣ Install via Dotfiles
+### 1️⃣ Install as a Plugin (recommended)
+
+The framework is a Claude Code plugin. **The hooks ship with it** — you no longer hand-write `settings.json`, which is where every previous version leaked its most-reported friction.
 
 ```bash
-# Clone the dotfiles repo (or your own fork)
-git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
-
-# Symlink Claude Code config into ~/.claude/
-cd ~/dotfiles && stow claude
-
-# Verify symlinks
-ls -la ~/.claude/
-# CLAUDE.md → ../dotfiles/claude/.claude/CLAUDE.md
-# commands/ → ../dotfiles/claude/.claude/commands/
-# agents/   → ../dotfiles/claude/.claude/agents/
-# hooks/    → ../dotfiles/claude/.claude/hooks/
-# skills/   → ../dotfiles/claude/.claude/skills/
-# rules/    → ../dotfiles/claude/.claude/rules/
-# mcp.json  → ../dotfiles/claude/.claude/mcp.json
+git clone git@github.com:joaoariedi/ai-assisted-development-framework.git
+claude plugin validate ./ai-assisted-development-framework   # optional: confirm the manifest
+claude --plugin-dir ./ai-assisted-development-framework      # try it for one session
 ```
 
-### 2️⃣ Create Machine-Local Settings
+The plugin bundles **skills, commands, agents, hooks, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
 
-`settings.json` contains hooks and env vars. It's machine-specific and **not managed by stow**:
+### 2️⃣ Optional Configuration
+
+Two things the plugin cannot ship, because they are machine-local by design:
 
 ```bash
-cat > ~/.claude/settings.json << 'EOF'
+# In ~/.claude/settings.json — only if you want these:
 {
-  "permissions": {
-    "allow": [
-      "Bash($HOME/.claude/hooks/speckit-helper.sh:*)"
-    ]
-  },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "~/.claude/hooks/quality-before-commit.sh", "timeout": 120 }] },
-      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/block-sensitive-files.sh" }] }
-    ],
-    "PostToolUse": [
-      { "matcher": "Edit|Write", "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/format-after-edit.sh", "timeout": 15 },
-        { "type": "command", "command": "~/.claude/hooks/run-tests-after-edit.sh", "timeout": 30 }
-      ]}
-    ],
-    "Notification": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-on-block.sh", "timeout": 5 }] }
-    ],
-    "Stop": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/stop-quality-check.sh", "timeout": 10 }] }
-    ]
-  }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   # Agent Teams (experimental)
+  "permissions": { "allow": ["Bash($HOME/.claude/hooks/speckit-helper.sh:*)"] }
 }
-EOF
 ```
 
-> ⚠️ **Important**: The `speckit-helper.sh` permission is required for all spec-kit commands to work. Claude Code blocks `$()`, `||`, and `|` operators in pre-flight commands, so all logic is routed through the helper script.
+> ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. Claude Code blocks `$()`, `||`, and `|` in pre-flight commands, so all logic routes through that helper script.
+
+Export `GITHUB_TOKEN` if you want the bundled GitHub MCP server to connect.
 
 ### 3️⃣ Verify Installation
 
@@ -74,7 +43,21 @@ claude
 > /speckit.init     # bootstraps .specify/ for spec-driven dev
 ```
 
-After `stow claude`, every new Claude Code session loads the rules, agents, commands, and skills automatically. If you have an existing `~/.claude/` config, back it up first (`mv ~/.claude ~/.claude.backup`); to pick up newly-added files later, restow with `stow -R claude`.
+Check the `/` menu: every skill and command should be listed. **A skill that does not appear there is not loaded** — that is the only reliable test, and its absence is silent.
+
+<details>
+<summary><b>Legacy: install via dotfiles + stow</b></summary>
+
+The original mechanism still works, but it cannot ship hooks — you must hand-write `settings.json`, and every new hook needs a manual edit.
+
+```bash
+git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
+cd ~/dotfiles && stow claude    # symlinks CLAUDE.md, rules/, agents/, commands/, skills/, hooks/ into ~/.claude/
+```
+
+> ⚠️ **Do not use both.** Stowing the config *and* installing the plugin registers every skill, command, and agent **twice**. Pick one. Stow remains useful for `CLAUDE.md` and `rules/`, which are not plugin components — so if you want those globally, stow them and install the plugin only in projects that need it.
+
+</details>
 
 ---
 
@@ -143,6 +126,7 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
+/speckit-implement    → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
 /quality              → 🛡️ final quality gate
 ```
 
@@ -168,13 +152,13 @@ Every decision in the framework balances four concerns:
 | 🔒 **Security** | Hooks block sensitive files, gitleaks secrets scanning, OWASP LLM rules, forensic-specialist agent |
 | ⚡ **Performance** | performance-audit skill, quality-guardian benchmarks, CI optimization (cancel-in-progress, staged-files-only lint) |
 | 🏛️ **Maintainability** | SOLID principle checks, code quality limits, systematic-debugging skill, cross-cutting change maps |
-| 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, verification-before-completion skill |
+| 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, built-in `/verify` to drive the real app |
 
 ---
 
 ## 🔁 Request Flow & Stack Composition
 
-The framework composes 5 layers — **methodology** (spec-kit), **agent runtime** (Claude Code), specialised **sub-agents**, **integrations** (MCP, hooks, rtk, security CLIs), and **models** (Opus 4.7 / Sonnet 4.6 / Haiku 4.5) — with cross-cutting governance for quality, security, context, and memory. A single SDD request traverses every layer:
+The framework composes 5 layers — **methodology** (spec-kit), **agent runtime** (Claude Code), specialised **sub-agents**, **integrations** (MCP, hooks, rtk, security CLIs), and **models** (Opus 4.8 / Sonnet 5 / Haiku 4.5) — with cross-cutting governance for quality, security, context, and memory. A single SDD request traverses every layer:
 
 ```mermaid
 sequenceDiagram
@@ -185,7 +169,7 @@ sequenceDiagram
     participant Sub as L2 · Sub-Agent<br/>(test-specialist)
     participant MCP as L3 · MCP / Hooks
     participant RTK as L3 · rtk proxy
-    participant Mod as L4 · Opus 4.7
+    participant Mod as L4 · Opus 4.8
 
     Dev->>FW: /speckit.brainstorm "user auth idea"
     FW->>CC: socratic exploration
@@ -224,21 +208,21 @@ sequenceDiagram
 | spec-kit (SDD) | ✅ active | Full pipeline incl. `/speckit.brainstorm` → `specify` → `plan` → `tasks` → `implement` |
 | OpenSpec | ⚪ not adopted | Alternative spec workflow |
 | Superpowers | ⚪ pattern reference | Skill-pack architecture is the influence |
-| Claude Code | ✅ primary runtime | Opus 4.7 / 1M ctx default |
+| Claude Code | ✅ primary runtime | Opus 4.8 / 1M ctx default |
 | Codex · Opencode · Cursor · Aider | ⚪ alternatives | Same methodology layer would still apply |
-| MCP: github, voicemode | ✅ active | See `~/.claude/mcp.json` |
+| MCP: github | ⚙️ project-scoped | Root `.mcp.json`; needs `GITHUB_TOKEN` exported |
 | MCP: Semgrep, Snyk, SonarQube | ⚪ optional | Add only when CLI scans aren't enough |
 | **rtk** | ✅ available (auto-detected per machine) | 60–90% token reduction on common dev commands |
 | Fabric | ⚪ pattern reference | Reusable prompt-pattern library |
 | gitleaks · semgrep · trivy · ruff · gosec | ✅ via Bash | Quality / security CLIs |
-| Opus 4.7 / Sonnet 4.6 / Haiku 4.5 | ✅ via Anthropic | Model selection per task |
+| Opus 4.8 / Sonnet 5 / Haiku 4.5 | ✅ via Anthropic | Model selection per task |
 | GPT · Gemini · Qwen · Llama | ⚪ alternatives | Foundation models from other providers |
 
 ---
 
 ## 🛡️ Automated Quality Gates
 
-Seven hooks enforce quality automatically — no manual intervention needed:
+Eight hooks enforce quality automatically — and they ship with the plugin, so there is nothing to register:
 
 - 🔍 **Pre-commit** — secrets detection (gitleaks) + language-specific linting blocks the commit on errors
 - 🔒 **File protection** — writes to `.env`, `*.key`, `*.pem`, credentials, and `.git/` internals are blocked
@@ -309,7 +293,7 @@ See `context-management.md` rule for detailed guidance and project scaling strat
 
 ## 🕵️ Agents
 
-Five specialized agents with no built-in equivalent:
+Six specialized agents with no built-in equivalent:
 
 ### 🧪 test-specialist
 
@@ -329,7 +313,7 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 6. 🏛️ **Architectural pattern validation** — SOLID principle checks with chain-of-thought for OCP and DIP
 7. 🧪 Regression prevention (full test suite)
 
-Enforces Iron Laws from `verification-before-completion` and `systematic-debugging` skills.
+Enforces both Iron Laws from `rules/code-quality.md`: **verification before completion** (proved with `/verify`) and **no fixes without root-cause investigation** (the `systematic-debugging` skill).
 
 **When to use**: Before any commit, PR, or merge. Spawned automatically by `/quality`.
 
@@ -353,15 +337,45 @@ Cybersecurity specialist for defensive forensics. Handles incident response, thr
 
 **When to use**: When a system may be compromised, for security audits, or proactive threat hunting.
 
+### 🔭 repo-scout
+
+The framework's only **one-shot subagent**. Answers a single targeted question about a repository *other than* the current project, then returns a citation-backed `<repo-scout-digest>` — never raw file contents or a transcript. Its working context is discarded, so a foreign repo can be interrogated without bloating the main session.
+
+Read-only by construction (`Read`, `Grep`, `Glob`, `Bash` only). It must never mutate the current project; if a change is needed it returns a *proposal* and the main agent executes it.
+
+**When to use**: "How does upstream library X implement Y?" — not for the current project, where `Explore`/`Grep` are cheaper. See the One-Shot Subagents section of `rules/agent-workflow.md` for the design contract.
+
 > Built-in agents handle general tasks: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
-### 🤝 Agent Teams (Experimental)
+### 🤝 Parallelism: Three Primitives
 
-For parallel work across services or modules, Agent Teams provide peer-to-peer mesh orchestration:
+They are not interchangeable, and none supersedes the others:
+
+| | Subagents | Agent Teams | Workflows |
+|---|---|---|---|
+| **Communication** | Report to the caller only | Teammates message each other | None — a script wires the stages |
+| **Determinism** | Model decides | Lead decides, turn by turn | **Code decides** |
+| **Scale** | A few | 3–5 | Dozens to hundreds |
+| **Best for** | Result-only tasks | Debate, challenge, competing hypotheses | Repeatable fan-out |
+
+Reach for a **subagent** by default — you want an answer, not a colleague. Reach for an **Agent Team** when workers must *challenge each other*: five teammates trying to disprove each other's hypotheses beat sequential investigation, which anchors on the first plausible theory.
+
+**`/speckit-implement`** (`.claude/workflows/speckit-implement.js`) is the framework's workflow. It executes `tasks.md` with the orchestration moved into code:
+
+- **Phase order is enforced, not trusted.** Spec-kit declares Phase N+1 blocked by Phase N. A script guarantees that barrier; a model can talk itself into skipping ahead.
+- **The implementer never grades its own homework.** Every task is checked by three agents that did not write it, through *different* lenses — one reads the test diff hunting for a weakened assertion, one checks the requirement rather than the test, one runs the full suite itself. Any single refutation blocks the task. This is the Verification Iron Law made structural.
+- **`[P]` is not trusted either.** The marker is model-written and nothing enforces it, so two `[P]` tasks in one phase can name the same file. The script batches them by *actual file disjointness*; a task declaring no files is serialized, because it cannot be proven safe.
+- **`tasks.md` is written once, at the end**, by a single agent — parallel implementers ticking their own checkboxes would race on one file.
+
+> **Why the whole pipeline is not one workflow.** A workflow cannot take mid-run input. But `/speckit.clarify` asks you questions, `/speckit.review` is a sign-off, and `/speckit.checklist` is a gate. Encoding the full pipeline as one workflow would silently delete every human gate and turn spec-*driven* development into fire-and-forget. Run the gated phases first; the workflow starts where the human sign-off ends.
+
+**Agent Teams (Experimental)** — requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
 ```
-TeamCreate → TaskCreate → spawn teammates → SendMessage → shutdown → TeamDelete
+spawn teammates → TaskCreate → TaskUpdate (assign or self-claim) → SendMessage → shutdown_request
 ```
+
+> ⚠️ `TeamCreate` and `TeamDelete` **no longer exist** (removed in v2.1.178), and `team_name` on the Agent tool is accepted but **ignored**. A team forms when the first teammate spawns and is cleaned up automatically at session end — there is no setup or teardown step. Start with **3–5 teammates**, 5–6 tasks each.
 
 | Pattern | Use Case |
 |---------|----------|
@@ -376,18 +390,26 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json abo
 
 ## 🧠 Skills
 
-Six skills used by agents and commands internally:
+Skills live at `.claude/skills/<name>/SKILL.md` — a **directory containing `SKILL.md`**, not a bare `.md` file. A bare `.claude/skills/foo.md` is silently ignored and never loads. Verify with the `/` menu: a skill that does not appear there is not registered.
+
+The framework ships only what Claude Code does **not** already do natively:
 
 | Skill | Purpose | Auto-invoked? |
 |-------|---------|---------------|
-| 🔎 `context-analysis` | Project structure detection, tech stack analysis | Yes — proactively on new codebases |
-| 🔒 `security-review` | Code security checklist (secrets, SAST, SQLi, XSS, auth, supply chain SCA) | Yes — proactively on PRs |
-| ✅ `verification-before-completion` | Evidence-first completion gate with Iron Law — must run proof commands before claiming done | Yes — proactively before completion |
 | 🐛 `systematic-debugging` | 4-phase root cause investigation (read → reproduce → evidence → fix) with Iron Law | Yes — proactively on bugs |
+| 📐 `task-effort-estimation` | Deterministic change sizing — Pfeiffer Contribution Complexity from git metadata, plus AI-native risk flags | Yes — on "how big / how long is this?" |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks, algorithm complexity | No — explicit only |
-| 📄 `spec-template` | Structured Given/When/Then specification generation | No — speckit pipeline only |
 
-The two new skills enforce **Iron Laws** — non-negotiable rules that prevent false completion claims and shotgun debugging. Each includes a rationalization prevention table to counter common excuses.
+**Deliberately NOT reimplemented.** A project skill *overrides* a bundled one of the same name, so shipping a `security-review` skill would shadow Claude Code's own — which is better. Use the built-ins:
+
+| Instead of a custom skill | Use the built-in | Why |
+|---|---|---|
+| verification-before-completion | `/verify` | It builds and drives the real app rather than settling for a green typecheck. The **Iron Law** survives as a *rule* in `code-quality.md` — a rule is always in context, whereas a skill only loads when invoked. |
+| security-review | `/security-review` | Full branch review. `/security-scan` remains for the fast, diff-only pass. |
+| context-analysis | `/context` | The command already carries the methodology and injects live git data. |
+| spec-template | `/speckit.specify` | The Given/When/Then patterns now live in the command itself. |
+
+`task-effort-estimation` deliberately reports a **complexity score and risk flags, never an hour count**. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. So it flags the small diff with high coupling, which is the shape of work a naive estimate waves through. Hours only appear once `.claude/effort-calibration.json` maps observed scores to real recorded durations for your project.
 
 ---
 
@@ -418,17 +440,50 @@ The two new skills enforce **Iron Laws** — non-negotiable rules that prevent f
 
 ## ⚙️ Hooks
 
-Shell-script hooks run automatically via `settings.json`:
+Hooks ship **inside the plugin** (`.claude/hooks/hooks.json`), so installing the plugin registers all of them. No `settings.json` editing.
 
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
-| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — runs gitleaks + language-specific linters, blocks on errors |
+| ✅ `verify-before-task-complete.sh` | **TaskCompleted** | **Blocks** a task from being marked complete while the test suite fails. Exit 2 is a hard gate. |
+| 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — gitleaks, shell + markdown checks on staged files, then language-specific linters. Blocks on errors. |
 | 🔒 `block-sensitive-files.sh` | PreToolUse on `Edit\|Write` | Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*`, `secrets/` |
+| 📐 `plan-phase-write-block.sh` | PreToolUse on `Edit\|Write` | Blocks writes outside `.specify/` while `/speckit.plan` is active |
 | 🎨 `format-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-formats edited files (ruff, biome/prettier, gofmt, rustfmt), 10s throttle |
 | 🧪 `run-tests-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-runs test suite after source edits, 15s throttle, non-blocking |
 | 🔔 `notify-on-block.sh` | Notification | Desktop alert when agent needs attention (notify-send / osascript) |
 | 📊 `stop-quality-check.sh` | Stop event | Reminds if source files were edited but tests not run |
-| 🔧 `speckit-helper.sh` | Pre-flight commands | Routes backtick logic to avoid Claude Code permission errors |
+| 🔧 `speckit-helper.sh` | Pre-flight commands | Routes backtick logic to avoid Claude Code permission errors (not a hook — a helper) |
+
+### The framework lints itself
+
+Every language check in `quality-before-commit.sh` is gated behind a manifest — `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `pom.xml`. A repo made of shell scripts and markdown matches **none** of them, so for its whole history the framework's own quality gate was a **no-op against its own source**. It shipped a gate it did not run.
+
+Two manifest-free checks now run on **staged files only** (per the Tier 1 rule this framework itself states):
+
+| Check | Zero-dependency baseline | Upgraded when installed |
+|---|---|---|
+| **Shell** | `bash -n` — syntax must parse | `shellcheck -S error` |
+| **Markdown** | code fences must be balanced (an unclosed ``` silently breaks rendering) | `markdownlint-cli2` |
+
+The zero-dependency baseline is the point. Guarding purely on `command -v shellcheck` would have reproduced the original bug on any machine without it installed — a check that only runs where it's already unnecessary is not a check. To get the stronger tier:
+
+```bash
+# Arch / Manjaro
+sudo pacman -S shellcheck && npm i -g markdownlint-cli2
+```
+
+The **language** checks are scoped the same way — but only where the tool permits it. `ruff`, `eslint`, and `biome` take a file list, so they see staged files only. A **type checker cannot**: `tsc` needs the whole program graph to resolve an import, and `cargo clippy` analyses a crate, not a file. Those stay whole-unit, which is correct rather than lazy — they are simply gated on their language actually being staged, so they cost nothing otherwise.
+
+### The `TaskCompleted` gate
+
+Every other quality mechanism in this framework is **advisory** — a rule the model can rationalize past, or a `Stop` hook that prints a reminder and exits 0. `verify-before-task-complete.sh` is the first one that is **mechanical**: exit 2 blocks the completion outright and feeds stderr back to the agent.
+
+It is the enforcement the Verification Iron Law always claimed to have:
+
+- Skips entirely when there is no test runner, or when the runner is on `PATH` but cannot execute (a version-manager shim that fails at exec time is a **tooling** fault, not a test failure — blocking on that would be a false positive, and a gate that cries wolf gets disabled).
+- Skips when the working tree has no source changes. Docs cannot break a test suite.
+- Caches the result against a hash of the working tree, so the suite is not re-run for a tree already proven green.
+- `CLAUDE_SKIP_VERIFY_GATE=1` disables it — deliberately, and visibly, rather than by quietly working around it.
 
 ---
 
@@ -438,7 +493,7 @@ Modular policies loaded into every session automatically:
 
 | Rule | Covers |
 |------|--------|
-| 📝 `code-quality.md` | Function/file size limits, SOLID principles, testing, verification-before-completion, Iron Laws, security test files |
+| 📝 `code-quality.md` | Function/file size limits, SOLID principles, testing, both Iron Laws (with rationalization tables), surgical changes, security test files |
 | 🔀 `git-workflow.md` | Commit format, branch naming, co-authoring, staging |
 | 🔄 `agent-workflow.md` | 4-phase workflow, Agent Teams, CLAUDE.md template guidance (change maps, guardrails, trust boundaries) |
 | 🔧 `quality-tooling.md` | Per-language tools, tiered validation, lefthook, pre-commit/pre-push separation, CI best practices |
@@ -456,7 +511,7 @@ Functions:   < 50 lines
 Files:       < 500 lines
 Complexity:  < 10 (cyclomatic)
 SOLID:       OCP + DIP violations flagged in changed code
-Iron Laws:   verification-before-completion + systematic-debugging
+Iron Laws:   verification before completion + root cause before fix
 ```
 
 Enforced by `code-quality.md` rule and `quality-guardian` agent. Test coverage follows project-configured thresholds.
@@ -514,18 +569,37 @@ The framework uses Claude Code's built-in task tracker:
 
 ## 🔌 MCP Integration
 
+The repo ships a **project-scoped** `.mcp.json` at its root, which Claude Code loads automatically for anyone working in this repository:
+
 ```json
 {
   "mcpServers": {
     "github": {
-      "transport": "http",
-      "url": "https://api.githubcopilot.com/mcp/v1",
-      "scope": "user",
-      "description": "GitHub PR/Issue automation for review-coordinator agent"
+      "type": "http",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_TOKEN}"
+      }
     }
   }
 }
 ```
+
+Export `GITHUB_TOKEN` before starting Claude Code, or the server loads with a
+`Missing environment variables` warning. No token is committed — the value is expanded from
+your environment at load time.
+
+**For your own projects**, register the server once at user scope instead:
+
+```bash
+claude mcp add --scope user --transport http github https://api.githubcopilot.com/mcp
+claude mcp list          # verify: should report "✔ Connected"
+```
+
+> **Config locations matter.** Claude Code reads `~/.claude.json` (user scope) and `.mcp.json`
+> at a project root (project scope). It does **not** read `~/.claude/mcp.json` — a file there
+> is silently inert. Verify with `claude mcp list`; a server that does not appear in that
+> output is not loaded, no matter how correct its JSON looks.
 
 Add security MCP servers only when CLI tools are insufficient — each server adds context overhead. See `mcp-security.md` rule for evaluation criteria.
 
@@ -537,14 +611,37 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 ~/dotfiles/claude/
 ├── .claude/
 │   ├── CLAUDE.md               # core config (loaded into system prompt)
-│   ├── mcp.json                # MCP servers (GitHub)
-│   ├── agents/                 # 5 custom agents
+│   ├── agents/                 # 6 custom agents (5 pipeline + repo-scout one-shot)
 │   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
-│   ├── hooks/                  # 7 lifecycle hooks (shell scripts)
+│   ├── hooks/                  # 7 lifecycle hooks + speckit-helper.sh
 │   ├── rules/                  # 8 modular policy files
-│   └── skills/                 # 6 internal skills
+│   └── skills/                 # 3 skills, each a <name>/SKILL.md directory
 └── .stow-local-ignore          # excludes README from stow
 ```
+
+---
+
+## 📚 Research Corpus
+
+`reports/` holds the research behind the framework, split into ten single-subject files with no overlap between them. It is the **"why" layer**: `.claude/rules/` states *what* to do, and `reports/` records the evidence, benchmark, or threat model that produced the rule. Where a finding is already codified, the report points at the rule with a `> **Codified in**` callout instead of restating it — so no text lives in two places.
+
+| # | Subject | Codified in |
+|---|---------|-------------|
+| 01 | Context engineering fundamentals — WISC, context rot, prompt caching, scaling by project size | `context-management.md` |
+| 02 | CLAUDE.md authoring — tiering, inclusion/exclusion criteria, four production-repo styles | `agent-workflow.md` |
+| 03 | Agent topology — Skills vs Subagents vs Teams, orchestration patterns, memory architectures | `agent-workflow.md` |
+| 04 | AI protocol stack — MCP, A2A, Akashik, AG-UI | `mcp-security.md` (curation only) |
+| 05 | Codebase retrieval at scale — cAST, HCAG | *not yet codified* |
+| 06 | Security & DevSecOps — OWASP LLM Top 10, MCP controls, Policy-as-Code | `llm-security.md`, `mcp-security.md`, `pipeline-security.md` |
+| 07 | Quality gates — lifecycle hooks, pre-commit/pre-push, CI/CD, testing | `quality-tooling.md`, `code-quality.md` |
+| 08 | Project organization & delivery — release notes, IDEA.md, containerization | *not yet codified* |
+| 09 | Fabric — prompt orchestration, evaluated but **not adopted** | *not yet codified* |
+| 10 | Deterministic effort estimation — Pfeiffer Contribution Complexity, Epoch, LOCOMO | `task-effort-estimation` skill |
+| 11 | Claude Code harness capabilities — skill loading rules, invocation control, `context: fork`, bundled skills | the `.claude/skills/` layer |
+
+Files 05, 08, and 09 carry no pointers because their subject is genuinely unadopted, and each says so in its own header — an unadopted idea is recorded as prior art, not smuggled in as current practice.
+
+`reports/sources/` keeps the five original research documents untouched, so every citation remains traceable to the document that made the claim.
 
 ---
 
@@ -571,4 +668,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.3.0 &nbsp;|&nbsp; **Last Updated**: 2026-03-31 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit, Agent Teams
+**Framework Version**: 4.4.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-12 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams

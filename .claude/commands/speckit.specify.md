@@ -32,7 +32,10 @@ Generate a structured specification for: **$ARGUMENTS**
 
 3. **Create spec directory**: `.specify/specs/<branch-name>/`
 
-4. **Write `spec.md`** using the `spec-template` skill patterns:
+4. **Write `spec.md`**. Every behavior gets a Given/When/Then block with a happy path, an edge
+   case, and an error case, plus the source and test files it touches. Specs must be testable
+   (never "should be fast"), map to exactly one behavior each, and include negative cases —
+   what must NOT happen. Group them into Must have / Should have / Edge cases. Use these patterns:
 
    ```markdown
    # Spec: <branch-name>

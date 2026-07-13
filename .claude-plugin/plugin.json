@@ -1,0 +1,26 @@
+{
+  "name": "ai-development-framework",
+  "displayName": "AI Development Framework",
+  "version": "4.4.0",
+  "description": "Spec-driven development for Claude Code: quality gates, custom agents, security guardrails, and a full specification pipeline. Ships its hooks — including a TaskCompleted gate that mechanically enforces the Verification Iron Law.",
+  "author": {
+    "name": "joaoariedi",
+    "url": "https://github.com/joaoariedi"
+  },
+  "homepage": "https://github.com/joaoariedi/ai-assisted-development-framework",
+  "repository": "https://github.com/joaoariedi/ai-assisted-development-framework",
+  "license": "MIT",
+  "keywords": ["spec-driven-development", "quality-gates", "security", "sdd", "spec-kit"],
+  "skills": "./.claude/skills/",
+  "commands": "./.claude/commands/",
+  "agents": [
+    "./.claude/agents/code-reviewer.md",
+    "./.claude/agents/forensic-specialist.md",
+    "./.claude/agents/quality-guardian.md",
+    "./.claude/agents/repo-scout.md",
+    "./.claude/agents/review-coordinator.md",
+    "./.claude/agents/test-specialist.md"
+  ],
+  "hooks": "./.claude/hooks/hooks.json",
+  "mcpServers": "./.mcp.json"
+}

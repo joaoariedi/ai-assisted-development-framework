@@ -1,4 +1,4 @@
-# AI Development Framework v4.3
+# AI Development Framework v4.4
 
 ## Custom Agents
 
@@ -9,6 +9,7 @@
 | **code-reviewer** | Code review | Before PR creation, spec compliance + quality |
 | **review-coordinator** | PR management | Creating PRs, managing review workflows |
 | **forensic-specialist** | Security | Security audits, suspicious patterns |
+| **repo-scout** | One-shot recon | A targeted question about a repo OTHER than this one; returns a citation-backed digest, not a transcript |
 
 For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
@@ -30,7 +31,7 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 9. Version declaration is deprecated in docker compose, do not add it
 
 ## Performance & Model Selection
-- **Fast Mode**: Toggle with `/fast` for faster Opus 4.6 output on quick iterations, bug fixes, and exploration
+- **Fast Mode**: Toggle with `/fast` for faster Opus output on quick iterations, bug fixes, and exploration (uses Opus, not a smaller model)
 - **Ultrathink**: Type `ultrathink` in any prompt to bump that turn to high reasoning effort (reverts after response)
 - Effort levels: `max` (via `/model` only) > `high` (ultrathink keyword) > `medium` (default) > `low`
 - Agents default to adaptive model selection — override with `model:` in agent frontmatter only when needed
