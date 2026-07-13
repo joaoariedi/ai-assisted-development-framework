@@ -16,7 +16,9 @@ claude plugin validate ./ai-assisted-development-framework   # optional: confirm
 claude --plugin-dir ./ai-assisted-development-framework      # try it for one session
 ```
 
-The plugin bundles **skills, commands, agents, hooks, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
+The plugin bundles **skills, commands, agents, hooks, workflows, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
+
+> Components shipped by a plugin are **namespaced by plugin name**. The workflow is invoked as `ai-development-framework:speckit-implement`, not as a bare `speckit-implement` — the bare name does not resolve.
 
 ### 2️⃣ Optional Configuration
 
@@ -26,11 +28,13 @@ Two things the plugin cannot ship, because they are machine-local by design:
 # In ~/.claude/settings.json — only if you want these:
 {
   "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   # Agent Teams (experimental)
-  "permissions": { "allow": ["Bash($HOME/.claude/hooks/speckit-helper.sh:*)"] }
+  "permissions": { "allow": ["Bash(/absolute/path/to/plugin/.claude/hooks/speckit-helper.sh:*)"] }
 }
 ```
 
 > ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. Claude Code blocks `$()`, `||`, and `|` in pre-flight commands, so all logic routes through that helper script.
+>
+> **The path must be absolute and must point at your plugin install.** The commands invoke the helper as `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh`, which Claude Code expands to wherever the plugin actually lives — so substitute that directory here (the clone path you passed to `--plugin-dir`, or the install path from `claude plugin list`). Permission rules expand `$HOME` but **not** `${CLAUDE_PLUGIN_ROOT}`, and they do not accept a leading wildcard, so neither shortcut works. A pre-flight command that is denied aborts the whole slash command, and it does so **silently** — if a spec-kit command produces no output, this rule is the first thing to check.
 
 Export `GITHUB_TOKEN` if you want the bundled GitHub MCP server to connect.
 
@@ -126,7 +130,7 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
-/speckit-implement    → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
+speckit-implement     → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
 /quality              → 🛡️ final quality gate
 ```
 
@@ -360,7 +364,7 @@ They are not interchangeable, and none supersedes the others:
 
 Reach for a **subagent** by default — you want an answer, not a colleague. Reach for an **Agent Team** when workers must *challenge each other*: five teammates trying to disprove each other's hypotheses beat sequential investigation, which anchors on the first plausible theory.
 
-**`/speckit-implement`** (`.claude/workflows/speckit-implement.js`) is the framework's workflow. It executes `tasks.md` with the orchestration moved into code:
+**`speckit-implement`** (`.claude/workflows/speckit-implement.js`) is the framework's workflow — invoked as `ai-development-framework:speckit-implement` under a plugin install, since plugin components are namespaced. It executes `tasks.md` with the orchestration moved into code:
 
 - **Phase order is enforced, not trusted.** Spec-kit declares Phase N+1 blocked by Phase N. A script guarantees that barrier; a model can talk itself into skipping ahead.
 - **The implementer never grades its own homework.** Every task is checked by three agents that did not write it, through *different* lenses — one reads the test diff hunting for a weakened assertion, one checks the requirement rather than the test, one runs the full suite itself. Any single refutation blocks the task. This is the Verification Iron Law made structural.

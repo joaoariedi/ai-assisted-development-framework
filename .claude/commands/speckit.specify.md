@@ -10,16 +10,16 @@ Generate a structured specification for: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Git status
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Constitution
-!`~/.claude/hooks/speckit-helper.sh constitution`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Existing specs
-!`~/.claude/hooks/speckit-helper.sh list-specs-dir`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs-dir`
 
 ### Project structure
-!`~/.claude/hooks/speckit-helper.sh detect-stack`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-stack`
 
 ## Instructions
 

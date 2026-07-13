@@ -9,19 +9,19 @@ Generate an implementation plan from the current branch's specification.
 ## Pre-Flight
 
 ### Current branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Auto-detect spec branch
-!`~/.claude/hooks/speckit-helper.sh check-spec`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-spec`
 
 ### Available specs
-!`~/.claude/hooks/speckit-helper.sh list-specs`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs`
 
 ### Constitution
-!`~/.claude/hooks/speckit-helper.sh constitution`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Start plan phase (RIPER-style write-block)
-!`~/.claude/hooks/speckit-helper.sh plan-phase-start`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-start`
 
 ## Instructions
 
@@ -154,7 +154,7 @@ The goal of this phase is to compress verifiable truth about the codebase into a
 9. **End plan phase**: after `plan.md` is written and the summary is presented, clear the write-block marker so downstream commands can edit code:
 
    ```bash
-   ~/.claude/hooks/speckit-helper.sh plan-phase-end
+   ${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-end
    ```
 
    If you abort the plan before completion, still run the command above — or delete `.specify/.plan-in-progress` manually — otherwise the next Edit/Write in this project will be blocked.

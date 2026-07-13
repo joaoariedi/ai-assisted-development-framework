@@ -9,16 +9,16 @@ Create or update the project constitution at `.specify/memory/constitution.md`.
 ## Pre-Flight
 
 ### Existing constitution
-!`~/.claude/hooks/speckit-helper.sh constitution`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Project context
-!`~/.claude/hooks/speckit-helper.sh readme-head`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh readme-head`
 
 ### Tech stack detection
-!`~/.claude/hooks/speckit-helper.sh list-config-files`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-config-files`
 
 ### Existing rules
-!`~/.claude/hooks/speckit-helper.sh list-rules`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-rules`
 
 ## Instructions
 

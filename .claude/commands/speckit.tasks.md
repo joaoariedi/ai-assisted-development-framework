@@ -9,16 +9,16 @@ Generate a phased task list from the current branch's plan and specification.
 ## Pre-Flight
 
 ### Current branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Auto-detect spec branch
-!`~/.claude/hooks/speckit-helper.sh check-plan`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-plan`
 
 ### Load spec
-!`~/.claude/hooks/speckit-helper.sh spec`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
 
 ### Load plan
-!`~/.claude/hooks/speckit-helper.sh plan`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan`
 
 ## Instructions
 

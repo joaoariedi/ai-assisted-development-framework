@@ -22,5 +22,6 @@
     "./.claude/agents/test-specialist.md"
   ],
   "hooks": "./.claude/hooks/hooks.json",
+  "workflows": "./.claude/workflows/",
   "mcpServers": "./.mcp.json"
 }
