@@ -28,6 +28,16 @@ ok()   { printf '  \033[32mok\033[0m   %s\n' "$1"; PASS=$((PASS + 1)); }
 bad()  { printf '  \033[31mFAIL\033[0m %s\n' "$1"; FAIL=$((FAIL + 1)); }
 head_() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 
+# NEVER write `producer | grep -q pattern` in this script.
+#
+# `set -o pipefail` is on, and `grep -q` exits the instant it matches. The producer then dies
+# with SIGPIPE (141), pipefail makes the PIPELINE return 141, and the `if` reads that as "no
+# match" — so a violating file reports as clean. Worse, it is a race: on a small input the
+# producer finishes before grep exits and the check works, which is how three guards in this
+# suite passed their own mutation tests while being unreliable.
+#
+# Capture first, match second: `x="$(producer)"` then `grep -q ... <<<"$x"`. No pipe, no race.
+
 # --- Tier 1: manifest ---------------------------------------------------------------
 head_ "Manifest"
 
@@ -128,7 +138,8 @@ fi
 # `!` block being reintroduced a third time — but they are prose inside skill content, and
 # skill content is substituted. A note that spells the plugin-root variable with a $ and
 # braces gets its own warning replaced by a path, and reads as nonsense to the next reader.
-if grep -h '^>' "$REPO"/commands/*.md | grep -qF '${CLAUDE_PLUGIN_ROOT}'; then
+notes="$(grep -h '^>' "$REPO"/commands/*.md || true)"
+if grep -qF '${CLAUDE_PLUGIN_ROOT}' <<<"$notes"; then
   bad "a note spells out the substitutable plugin-root variable — it will be replaced by a path and the warning will be gibberish"
 else
   ok "the anti-regression notes survive substitution"
@@ -163,12 +174,24 @@ head_ "Documented permission rule"
 # document $HOME and ~ as counter-examples ("❌ blocked"), in prose and tables, and flagging
 # those would be a false positive. Only a rule inside a code block is one a user will paste.
 for doc in SETUP.md README.md; do
-  if awk '/^```/{f=!f; next} f' "$REPO/$doc" | grep -qE 'Bash\((\$HOME|~)/[^)]*speckit-helper'; then
+  fenced="$(awk '/^```/{f=!f; next} f' "$REPO/$doc" || true)"
+  if grep -qE 'Bash\((\$HOME|~)/[^)]*speckit-helper' <<<"$fenced"; then
     bad "$doc prescribes a helper rule using \$HOME or ~ — neither is expanded, so it never matches"
   else
     ok "$doc prescribes a literal-path helper rule"
   fi
 done
+
+# The stow install is dead (#18) and must not be prescribed again. The payload no longer
+# lives under .claude/, and the dotfiles package no longer carries agents/commands/hooks/
+# skills — following those instructions yields a half-install with none of them. Only the
+# REMOVAL form (`stow -D claude`) is legitimate now.
+readme_fenced="$(awk '/^```/{f=!f; next} f' "$REPO/README.md" || true)"
+if grep -qE '(^|[^-])\bstow claude\b' <<<"$readme_fenced"; then
+  bad "README prescribes 'stow claude' as an install — that path is dead and yields a half-install (#18)"
+else
+  ok "README does not prescribe the dead stow install path"
+fi
 
 # --- Tier 1: helper runs ------------------------------------------------------------
 head_ "Helper"
@@ -220,7 +243,8 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   claude plugin marketplace add "$REPO" >/dev/null 2>&1
   claude plugin install ai-development-framework@ai-development-framework >/dev/null 2>&1
 
-  if claude plugin list 2>/dev/null | grep -q 'ai-development-framework'; then
+  installed="$(claude plugin list 2>/dev/null || true)"
+  if grep -q 'ai-development-framework' <<<"$installed"; then
     ok "plugin installs into a clean config and reports enabled"
   else
     bad "plugin did not install"
