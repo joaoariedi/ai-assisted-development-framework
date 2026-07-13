@@ -18,7 +18,7 @@ claude --plugin-dir ./ai-assisted-development-framework      # try it for one se
 
 The plugin bundles **skills, commands, agents, hooks, workflows, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
 
-> Components shipped by a plugin are **namespaced by plugin name**. The workflow is invoked as `ai-development-framework:speckit-implement`, not as a bare `speckit-implement` — the bare name does not resolve.
+> Components shipped by a plugin are **namespaced by plugin name**. The workflow is invoked as `ai-development-framework:speckit-workflow`, not as a bare `speckit-workflow` — the bare name does not resolve.
 
 ### 2️⃣ Optional Configuration
 
@@ -130,7 +130,7 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
-speckit-implement     → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
+speckit-workflow      → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
 /quality              → 🛡️ final quality gate
 ```
 
@@ -364,7 +364,7 @@ They are not interchangeable, and none supersedes the others:
 
 Reach for a **subagent** by default — you want an answer, not a colleague. Reach for an **Agent Team** when workers must *challenge each other*: five teammates trying to disprove each other's hypotheses beat sequential investigation, which anchors on the first plausible theory.
 
-**`speckit-implement`** (`.claude/workflows/speckit-implement.js`) is the framework's workflow — invoked as `ai-development-framework:speckit-implement` under a plugin install, since plugin components are namespaced. It executes `tasks.md` with the orchestration moved into code:
+**`speckit-workflow`** (`.claude/workflows/speckit-workflow.js`) is the framework's workflow — invoked as `ai-development-framework:speckit-workflow` under a plugin install, since plugin components are namespaced. It is named distinctly from the `/speckit.implement` **command** on purpose: they are two ways to execute `tasks.md`, and a shared name invited picking the wrong one. It executes `tasks.md` with the orchestration moved into code:
 
 - **Phase order is enforced, not trusted.** Spec-kit declares Phase N+1 blocked by Phase N. A script guarantees that barrier; a model can talk itself into skipping ahead.
 - **The implementer never grades its own homework.** Every task is checked by three agents that did not write it, through *different* lenses — one reads the test diff hunting for a weakened assertion, one checks the requirement rather than the test, one runs the full suite itself. Any single refutation blocks the task. This is the Verification Iron Law made structural.
@@ -645,7 +645,7 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 
 Files 05, 08, and 09 carry no pointers because their subject is genuinely unadopted, and each says so in its own header — an unadopted idea is recorded as prior art, not smuggled in as current practice.
 
-`reports/sources/` keeps the five original research documents untouched, so every citation remains traceable to the document that made the claim.
+The five original research documents that produced this corpus are no longer carried in the tree — the topic files above supersede them. They remain recoverable from git history (`git show b515e2f:reports/sources/`) if a claim ever needs tracing back to the document that made it.
 
 ---
 
