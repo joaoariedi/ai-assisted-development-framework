@@ -2,8 +2,36 @@
 
 All notable changes to the AI Development Framework will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+## Versioning
+
+This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) **from 4.5.0
+onward**: the next change that breaks an existing install — a renamed command, a moved path,
+a permission rule that must be edited — will be a **major** bump.
+
+It has not always. 4.5.0 itself renamed `/context` and moved the helper path under a *minor*
+bump, which semver does not permit. Saying so here is more useful than pretending otherwise;
+the breakage is flagged inline in that entry.
+
+Releases before 4.5.0 were never tagged. `v4.4.0` was applied retroactively to `6b02e5d`, the
+tip of `main` when 4.4.0 was current. Earlier versions have no identifiable release commit and
+are not tagged.
+
+## Releasing
+
+Six declarations of the version are bumped **by hand**, and `tests/smoke.sh` fails if they
+disagree — that check exists because nothing else would notice a half-bumped release:
+
+1. `.claude-plugin/plugin.json` → `version`
+2. `.claude-plugin/marketplace.json` → `metadata.version` **and** `plugins[0].version`
+3. `README.md` → the title and the **Framework Version** footer
+4. `.claude/CLAUDE.md` → the title
+5. Write the entry here, dated.
+6. `tests/smoke.sh` (and `SMOKE_LIVE=1` if you are logged in — it is the only check that
+   drives the plugin end to end).
+7. Tag it: `git tag -a vX.Y.Z && git push origin vX.Y.Z`, then cut a GitHub Release from the
+   entry above.
 
 ## [4.5.0] - 2026-07-13
 
