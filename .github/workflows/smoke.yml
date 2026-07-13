@@ -1,0 +1,24 @@
+name: smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # helper subcommands read git history
+
+      # Tier 1 only. The live tier needs an authenticated `claude` CLI, so it cannot run
+      # here — see tests/smoke.sh for what that tier covers and why a plugin's slash
+      # commands cannot be driven headlessly at all.
+      - name: Smoke test (structural + regression)
+        run: tests/smoke.sh
