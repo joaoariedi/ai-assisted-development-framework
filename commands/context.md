@@ -21,13 +21,13 @@ For deep or repository-wide search, delegate to the built-in `Explore` agent rat
 > pre-executed in a `!` block. A `!` block is permission-checked before
 > `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
 
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh recent-commits`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh recent-commits`
 
 ### Active branch
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh branch`
 
 ### Directory structure (top 2 levels)
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh project-files`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh project-files`
 
 ## Output Format
 

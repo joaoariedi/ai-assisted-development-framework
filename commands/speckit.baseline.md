@@ -14,16 +14,16 @@ Reverse-engineer a specification from existing code in: **$ARGUMENTS**
 > pre-executed in a `!` block. A `!` block is permission-checked before
 > `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
 
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh branch`
 
 ### .specify directory
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-specify-dir`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh check-specify-dir`
 
 ### Existing code
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-existing-code`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh detect-existing-code`
 
 ### Constitution
-Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh constitution`
 
 ## Instructions
 

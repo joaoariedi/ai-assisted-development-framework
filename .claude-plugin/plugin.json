@@ -10,18 +10,24 @@
   "homepage": "https://github.com/joaoariedi/ai-assisted-development-framework",
   "repository": "https://github.com/joaoariedi/ai-assisted-development-framework",
   "license": "MIT",
-  "keywords": ["spec-driven-development", "quality-gates", "security", "sdd", "spec-kit"],
-  "skills": "./.claude/skills/",
-  "commands": "./.claude/commands/",
-  "agents": [
-    "./.claude/agents/code-reviewer.md",
-    "./.claude/agents/forensic-specialist.md",
-    "./.claude/agents/quality-guardian.md",
-    "./.claude/agents/repo-scout.md",
-    "./.claude/agents/review-coordinator.md",
-    "./.claude/agents/test-specialist.md"
+  "keywords": [
+    "spec-driven-development",
+    "quality-gates",
+    "security",
+    "sdd",
+    "spec-kit"
   ],
-  "hooks": "./.claude/hooks/hooks.json",
-  "workflows": "./.claude/workflows/",
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "agents": [
+    "./agents/code-reviewer.md",
+    "./agents/forensic-specialist.md",
+    "./agents/quality-guardian.md",
+    "./agents/repo-scout.md",
+    "./agents/review-coordinator.md",
+    "./agents/test-specialist.md"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "workflows": "./workflows/",
   "mcpServers": "./.mcp.json"
 }
