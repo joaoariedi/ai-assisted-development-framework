@@ -167,7 +167,7 @@ Every decision in the framework balances four concerns:
 | 🔒 **Security** | Hooks block sensitive files, gitleaks secrets scanning, OWASP LLM rules, forensic-specialist agent |
 | ⚡ **Performance** | performance-audit skill, quality-guardian benchmarks, CI optimization (cancel-in-progress, staged-files-only lint) |
 | 🏛️ **Maintainability** | SOLID principle checks, code quality limits, systematic-debugging skill, cross-cutting change maps |
-| 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, verification-before-completion skill |
+| 🎯 **Efficacy** | Iron Laws prevent false completions, spec compliance gates, built-in `/verify` to drive the real app |
 
 ---
 
@@ -328,7 +328,7 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 6. 🏛️ **Architectural pattern validation** — SOLID principle checks with chain-of-thought for OCP and DIP
 7. 🧪 Regression prevention (full test suite)
 
-Enforces Iron Laws from `verification-before-completion` and `systematic-debugging` skills.
+Enforces both Iron Laws from `rules/code-quality.md`: **verification before completion** (proved with `/verify`) and **no fixes without root-cause investigation** (the `systematic-debugging` skill).
 
 **When to use**: Before any commit, PR, or merge. Spawned automatically by `/quality`.
 
@@ -383,19 +383,24 @@ Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (included in settings.json abo
 
 ## 🧠 Skills
 
-Seven skills used by agents and commands internally:
+Skills live at `.claude/skills/<name>/SKILL.md` — a **directory containing `SKILL.md`**, not a bare `.md` file. A bare `.claude/skills/foo.md` is silently ignored and never loads. Verify with the `/` menu: a skill that does not appear there is not registered.
+
+The framework ships only what Claude Code does **not** already do natively:
 
 | Skill | Purpose | Auto-invoked? |
 |-------|---------|---------------|
-| 🔎 `context-analysis` | Project structure detection, tech stack analysis | Yes — proactively on new codebases |
-| 🔒 `security-review` | Code security checklist (secrets, SAST, SQLi, XSS, auth, supply chain SCA) | Yes — proactively on PRs |
-| ✅ `verification-before-completion` | Evidence-first completion gate with Iron Law — must run proof commands before claiming done | Yes — proactively before completion |
 | 🐛 `systematic-debugging` | 4-phase root cause investigation (read → reproduce → evidence → fix) with Iron Law | Yes — proactively on bugs |
 | 📐 `task-effort-estimation` | Deterministic change sizing — Pfeiffer Contribution Complexity from git metadata, plus AI-native risk flags | Yes — on "how big / how long is this?" |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks, algorithm complexity | No — explicit only |
-| 📄 `spec-template` | Structured Given/When/Then specification generation | No — speckit pipeline only |
 
-Two of these enforce **Iron Laws** — `verification-before-completion` and `systematic-debugging`. Iron Laws are non-negotiable rules that prevent false completion claims and shotgun debugging, and each ships a rationalization prevention table to counter the usual excuses.
+**Deliberately NOT reimplemented.** A project skill *overrides* a bundled one of the same name, so shipping a `security-review` skill would shadow Claude Code's own — which is better. Use the built-ins:
+
+| Instead of a custom skill | Use the built-in | Why |
+|---|---|---|
+| verification-before-completion | `/verify` | It builds and drives the real app rather than settling for a green typecheck. The **Iron Law** survives as a *rule* in `code-quality.md` — a rule is always in context, whereas a skill only loads when invoked. |
+| security-review | `/security-review` | Full branch review. `/security-scan` remains for the fast, diff-only pass. |
+| context-analysis | `/context` | The command already carries the methodology and injects live git data. |
+| spec-template | `/speckit.specify` | The Given/When/Then patterns now live in the command itself. |
 
 `task-effort-estimation` deliberately reports a **complexity score and risk flags, never an hour count**. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. So it flags the small diff with high coupling, which is the shape of work a naive estimate waves through. Hours only appear once `.claude/effort-calibration.json` maps observed scores to real recorded durations for your project.
 
@@ -448,7 +453,7 @@ Modular policies loaded into every session automatically:
 
 | Rule | Covers |
 |------|--------|
-| 📝 `code-quality.md` | Function/file size limits, SOLID principles, testing, verification-before-completion, Iron Laws, security test files |
+| 📝 `code-quality.md` | Function/file size limits, SOLID principles, testing, both Iron Laws (with rationalization tables), surgical changes, security test files |
 | 🔀 `git-workflow.md` | Commit format, branch naming, co-authoring, staging |
 | 🔄 `agent-workflow.md` | 4-phase workflow, Agent Teams, CLAUDE.md template guidance (change maps, guardrails, trust boundaries) |
 | 🔧 `quality-tooling.md` | Per-language tools, tiered validation, lefthook, pre-commit/pre-push separation, CI best practices |
@@ -466,7 +471,7 @@ Functions:   < 50 lines
 Files:       < 500 lines
 Complexity:  < 10 (cyclomatic)
 SOLID:       OCP + DIP violations flagged in changed code
-Iron Laws:   verification-before-completion + systematic-debugging
+Iron Laws:   verification before completion + root cause before fix
 ```
 
 Enforced by `code-quality.md` rule and `quality-guardian` agent. Test coverage follows project-configured thresholds.
@@ -570,7 +575,7 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 │   ├── commands/               # 18 slash commands (5 standard + 13 speckit)
 │   ├── hooks/                  # 7 lifecycle hooks + speckit-helper.sh
 │   ├── rules/                  # 8 modular policy files
-│   └── skills/                 # 7 internal skills
+│   └── skills/                 # 3 skills, each a <name>/SKILL.md directory
 └── .stow-local-ignore          # excludes README from stow
 ```
 
@@ -592,6 +597,7 @@ Add security MCP servers only when CLI tools are insufficient — each server ad
 | 08 | Project organization & delivery — release notes, IDEA.md, containerization | *not yet codified* |
 | 09 | Fabric — prompt orchestration, evaluated but **not adopted** | *not yet codified* |
 | 10 | Deterministic effort estimation — Pfeiffer Contribution Complexity, Epoch, LOCOMO | `task-effort-estimation` skill |
+| 11 | Claude Code harness capabilities — skill loading rules, invocation control, `context: fork`, bundled skills | the `.claude/skills/` layer |
 
 Files 05, 08, and 09 carry no pointers because their subject is genuinely unadopted, and each says so in its own header — an unadopted idea is recorded as prior art, not smuggled in as current practice.
 

@@ -2,7 +2,17 @@
 description: "Refresh project context analysis"
 ---
 
-Perform a comprehensive project context analysis using the `context-analysis` skill methodology plus the live data below.
+Perform a comprehensive project context analysis, combining the methodology below with the live data.
+
+## Analysis Steps
+
+1. **Tech Stack Detection** — check for `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Gemfile`. Identify the framework (React, Vue, Django, FastAPI, Actix, Gin, Rails) and build tools (Webpack, Vite, Poetry, Cargo, Make).
+2. **Architecture Pattern** — read the directory structure for a pattern (MVC, hexagonal, clean architecture); identify service boundaries in monorepos.
+3. **Test Framework** — find `tests/`, `__tests__/`, `spec/`; identify the runner (Jest, pytest, cargo test, go test) and coverage configuration.
+4. **Quality Tooling** — find linter configs (`.eslintrc*`, `ruff.toml`, `clippy.toml`), formatters (Prettier, Black, rustfmt, gofmt), and type checkers (TypeScript, mypy).
+5. **Dependencies** — separate direct from transitive; identify core libraries and their purpose; check for monorepo tooling (Nx, Turborepo, Lerna).
+
+For deep or repository-wide search, delegate to the built-in `Explore` agent rather than reading files inline — it keeps this command's context small.
 
 ## Live Project Data
 

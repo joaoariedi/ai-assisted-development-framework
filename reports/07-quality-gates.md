@@ -147,6 +147,19 @@ Three things generalize. **Lockfiles are committed everywhere, without exception
 
 ---
 
+## 6. Contract Testing as a Drift Gate
+
+The failure mode specific to AI-assisted work is not a broken build — it is an implementation that compiles, passes its own tests, and quietly no longer matches the contract it was specified against. Tests written by the same agent that wrote the code cannot catch this: they encode the agent's *interpretation*, so agent and test drift together.
+
+A **contract** breaks that circularity because it is authored independently of the implementation:
+
+- **Schema validation** (e.g. Spectral against an OpenAPI spec) — the API surface must still match the declared spec after the agent has edited it.
+- **Consumer-driven contract tests** (e.g. Pact) — the consumer's expectations are the fixture; the provider must satisfy them regardless of how it was rewritten.
+
+Run both immediately after the build step, before anything downstream. They are the cheapest available check on *spec-to-implementation drift*, which is precisely what the spec-kit pipeline exists to prevent — and the only one in this file that an agent cannot satisfy by rewriting the assertion.
+
+> **Codified in** — nothing yet. The framework has no contract-testing gate. This is the strongest unadopted idea in this file.
+
 ## Not Yet Adopted
 
 Quality, CI, and testing items from the source's recommended-enhancements list that the framework has **not** implemented:

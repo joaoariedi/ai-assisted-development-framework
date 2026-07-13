@@ -1,6 +1,6 @@
 # Pipeline Security Services & Tools Reference
 
-Reference for quality-guardian, forensic-specialist, and security-review skill when recommending or evaluating security tooling.
+Reference for the quality-guardian and forensic-specialist agents, and for the `/security-scan` command, when recommending or evaluating security tooling.
 
 ## Application Security Posture Management (ASPM)
 

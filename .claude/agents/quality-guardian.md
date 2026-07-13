@@ -39,8 +39,8 @@ Your primary responsibility is to serve as the quality gate for all code changes
    - Analyze code maintainability and technical debt
 
 4. **Security Assessment**
-   - Apply the `security-review` skill methodology (secrets, SAST, SQLi, XSS, auth, supply chain)
-   - The skill contains the full per-language SCA tool list — delegate to it rather than duplicating
+   - Run the built-in `/security-review` skill (secrets, SAST, SQLi, XSS, auth, supply chain)
+   - `rules/pipeline-security.md` holds the full per-language SAST/SCA tool list — consult it rather than duplicating
    - Additionally validate input sanitization and output encoding in changed code
    - For release builds: generate SBOM with `syft`, scan with `grype` or `trivy`
    - Follow `llm-security.md` rules for OWASP LLM-specific mitigations

@@ -57,7 +57,7 @@ Evaluate the quality, safety, and maintainability of the code changes.
 - No bare `catch {}`, no `except: pass`, no `_ = err`
 
 **3. Security**:
-- Apply the `security-review` skill checklist to changed files
+- Run the built-in `/security-review` skill over the changed files (or `/security-scan` for a fast, diff-only pass)
 - Check for hardcoded secrets, SQL injection, XSS, auth bypass
 - Verify input validation at system boundaries
 - Check that user input is sanitized before storage or display
@@ -76,7 +76,7 @@ Evaluate the quality, safety, and maintainability of the code changes.
 **6. Test Coverage**:
 - Verify critical paths have tests
 - Check that edge cases and error conditions are tested
-- Invoke `verification-before-completion` skill to ensure all tests actually pass
+- Enforce the Verification Iron Law (`rules/code-quality.md`): run the tests and show real output; use `/verify` to drive the app rather than trusting a green typecheck
 - Flag any test that modifies assertions to match buggy behavior
 
 ## Review Output Format
@@ -121,8 +121,8 @@ Scope: [CLEAN / CREEP DETECTED — list unexpected changes]
 
 1. **Always complete both stages** — do not skip spec compliance even if no artifacts exist
 2. **When no spec-kit artifacts exist**, review against PR description, commit messages, or task descriptions
-3. **Use `verification-before-completion` skill** to ensure all claims are backed by evidence
-4. **Use `systematic-debugging` skill** if review reveals potential bugs requiring investigation
+3. **Enforce the Verification Iron Law** (`rules/code-quality.md`) — every claim backed by fresh command output; `/verify` exercises the real app
+4. **Use the `systematic-debugging` skill** if review reveals potential bugs requiring investigation
 5. **Focus on correctness and architecture** — flag but do not block on style nitpicks
 6. **Be specific**: every finding must include file:line reference and explanation
 7. **No performative agreement** — if a suggestion is wrong or unnecessary, say so with reasoning

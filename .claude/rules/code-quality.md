@@ -42,12 +42,26 @@
 - If you notice a genuine bug or code smell outside the current task's scope, flag it to the user and wait for authorization rather than silently fixing it.
 - This rule takes precedence over "leave the code better than you found it." Boy-scout cleanups belong in their own commits and their own PRs.
 
-## Verification Before Completion
+## Verification Before Completion (Iron Law)
+
+**IRON LAW: NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE.**
+
 - NEVER claim a task is complete without running proof commands (tests, lint, build)
 - Show actual output of verification commands — do not summarize or assume results
 - If verification reveals failures, fix them before claiming completion
 - Stale evidence (from a previous iteration) is not valid — re-run after every change
-- The `verification-before-completion` skill defines the full protocol and Iron Law
+- Prefer the built-in **`/verify`** skill: it builds and drives the actual app rather than
+  settling for tests or a typecheck. Passing tests are evidence the tests pass, not evidence
+  the change works.
+
+Rationalization table — none of these excuses satisfy the Iron Law:
+
+| Excuse | Reality |
+|--------|---------|
+| "The change is trivial" | Trivial changes break builds. Run the command. |
+| "Tests passed last iteration" | Stale evidence is not evidence. Re-run. |
+| "The typecheck is green" | A typecheck is not a behavior check. Drive the code path. |
+| "It's obviously correct" | Then proving it costs one command. Run it. |
 
 ## Security-Specific Test Files
 - For features involving auth, authorization, or data protection, create dedicated security test files
@@ -56,7 +70,11 @@
 - Pattern: FrankMega maintains 5 dedicated security test files alongside standard tests
 
 ## Iron Law Enforcement
-- Rules marked as "Iron Law" in skills are non-negotiable — cannot be overridden by convenience
-- Two Iron Laws exist: `verification-before-completion` and `systematic-debugging`
-- quality-guardian must enforce Iron Laws during quality gates
+- An Iron Law is non-negotiable — it cannot be overridden by convenience or time pressure
+- Two Iron Laws exist:
+  1. **Verification before completion** — stated above; enforced with the built-in `/verify`
+  2. **No fixes without root-cause investigation first** — see the `systematic-debugging` skill
+- Iron Laws live in this rules file, not only in a skill: a rule is always in context, whereas
+  a skill loads only when invoked. The law must bind even when the skill never fires.
+- quality-guardian must enforce both Iron Laws during quality gates
 - Iron Laws include rationalization prevention tables to counter common excuses

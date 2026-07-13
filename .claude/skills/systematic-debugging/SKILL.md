@@ -52,7 +52,7 @@ This rule is non-negotiable. Do not touch production code until you understand W
 - Fix the ROOT CAUSE, not the symptom
 - Write a test that reproduces the bug BEFORE fixing it (red → green)
 - Apply the fix — change as little as possible
-- Verify using the `verification-before-completion` skill protocol
+- Verify per the Verification Iron Law in `rules/code-quality.md` — run `/verify` to drive the real app, not just the test suite
 - Confirm no regressions in the full test suite
 - Apply defense-in-depth: add guards at each layer, not just the source
 
@@ -88,4 +88,4 @@ When fixing a bug, add protection at multiple layers:
 - **quality-guardian**: Invokes this skill when debugging test failures during quality gates
 - **code-reviewer**: References this skill when review reveals potential bugs
 - **speckit.implement**: Use this skill when TDD red phase reveals unexpected failures
-- **verification-before-completion**: Always follow verification protocol after a fix
+- **Verification Iron Law** (`rules/code-quality.md`): always prove the fix with fresh evidence — `/verify` exercises the running app

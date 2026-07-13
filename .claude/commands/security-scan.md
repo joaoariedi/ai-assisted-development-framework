@@ -2,12 +2,16 @@
 description: "Quick security scan of current changes"
 ---
 
-Perform a quick security review of the current changes using the `security-review` skill methodology.
+Perform a quick security review of the current changes.
+
+> **Scope note.** This is the *fast, changes-only* scan. For a full review of every pending
+> change on the branch, use the built-in `/security-review` skill instead. This command exists
+> because it is narrower and cheaper: staged/unstaged diff only, with the checklist below.
 
 ## Scope
 Focus on staged and unstaged changes:
 1. Run `git diff --staged` and `git diff` to identify changed files
-2. Apply the security-review skill checklist to those changes only
+2. Apply the checklist below to those changes only
 
 ## Checklist
 - [ ] No hardcoded secrets, API keys, or passwords in code
