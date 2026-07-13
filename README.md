@@ -136,17 +136,29 @@ claude plugin marketplace update ai-development-framework   # re-read the manife
 
 Restart Claude Code to pick up the new components. To check what changed first, read `CHANGELOG.md` in the clone.
 
-<details>
-<summary><b>Legacy: install via dotfiles + stow</b></summary>
+### 6️⃣ The two things the plugin cannot ship
 
-The original mechanism still works, but it cannot ship hooks — you must hand-write `settings.json`, and every new hook needs a manual edit.
+`plugin.json` ships **skills, commands, agents, hooks, workflows, and the MCP server**. There is no plugin component for **`rules/`** or **`CLAUDE.md`** — so installing the plugin does *not* give you the framework's global rules (code quality, git workflow, the Iron Laws, security, context management). If you want those to apply everywhere, copy them into `~/.claude/` yourself:
 
 ```bash
-git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
-cd ~/dotfiles && stow claude    # symlinks CLAUDE.md, rules/, agents/, commands/, skills/, hooks/ into ~/.claude/
+cp -r ~/.claude-framework/.claude/rules ~/.claude/rules
+cp    ~/.claude-framework/.claude/CLAUDE.md ~/.claude/CLAUDE.md
 ```
 
-> ⚠️ **Do not use both.** Stowing the config *and* installing the plugin registers every skill, command, and agent **twice**. Pick one. Stow remains useful for `CLAUDE.md` and `rules/`, which are not plugin components — so if you want those globally, stow them and install the plugin only in projects that need it.
+> ⚠️ **These drift.** Nothing keeps them in sync — a `git pull` updates the plugin's components but not your copies. Re-copy them after an upgrade, and read `CHANGELOG.md` to see whether they changed. This is the one genuine gap in the plugin install, and it is a limitation of what a Claude Code plugin can contain, not an oversight.
+
+<details>
+<summary><b>Historical: the old dotfiles + stow install</b></summary>
+
+Before 4.4.0 the framework was installed by symlinking a dotfiles package into `~/.claude/` with GNU Stow. **That path is gone.** As of 4.5.0 the plugin payload lives at the repository root, not under `.claude/`, and the dotfiles package no longer carries `agents/`, `commands/`, `hooks/`, or `skills/` — following the old instructions today produces a half-install with none of them.
+
+If you have a legacy stow install, retire it before installing the plugin, or every component registers **twice**:
+
+```bash
+cd ~/dotfiles && stow -D claude    # then install the plugin as above
+```
+
+Keep `CLAUDE.md` and `rules/` if your dotfiles carry them — as above, the plugin cannot ship those.
 
 </details>
 
@@ -720,7 +732,7 @@ ai-assisted-development-framework/
 └── reports/                    # 11 research files: the "why" behind the rules
 ```
 
-> `CLAUDE.md` and `rules/` are **not** plugin components — a plugin cannot ship them. They apply when the repo is your project, or when you stow them globally. Everything else in the tree is shipped by `plugin.json`.
+> `CLAUDE.md` and `rules/` are **not** plugin components — a plugin cannot ship them. They apply when this repo *is* your project, or when you copy them into `~/.claude/` yourself (see *The two things the plugin cannot ship*). Everything else in the tree is shipped by `plugin.json`.
 
 ---
 
