@@ -33,6 +33,38 @@ disagree — that check exists because nothing else would notice a half-bumped r
 7. Tag it: `git tag -a vX.Y.Z && git push origin vX.Y.Z`, then cut a GitHub Release from the
    entry above.
 
+## [5.0.0] - 2026-07-13
+
+**Every command is renamed.** This is the first release under the versioning policy stated
+above, and it is a major bump because it breaks every command a user types.
+
+### Changed
+- **⚠️ BREAKING — all commands are namespaced.** The five bare-named commands now carry an
+  `adf.` prefix. The `speckit.*` pipeline is unchanged: it was already namespaced.
+
+  | Was | Now |
+  |---|---|
+  | `/project-context` | `/adf.context` |
+  | `/quality` | `/adf.quality` |
+  | `/agent` | `/adf.agent` |
+  | `/pr-summary` | `/adf.pr-summary` |
+  | `/security-scan` | `/adf.security-scan` |
+
+  This closes a class of bug rather than an instance of one. A command whose name a Claude
+  Code **built-in** already owns is unreachable — typing the bare name gets the built-in,
+  every time. `/context` shipped that way and was dead for every user for four releases (see
+  4.5.0); it only *looked* fine because the repo's own project-scope copy shadowed the
+  built-in while dogfooding.
+
+  The previous guard was a hand-maintained list of built-in names, which protects against the
+  past and not the future: the day Claude Code ships a `/quality`, that command goes silently
+  unreachable and a stale list says nothing. **No built-in slash command contains a dot**, so
+  requiring every command to be namespaced makes the collision impossible by construction —
+  and deletes the list. The smoke test now enforces the rule structurally.
+
+  Verified end to end, not assumed: a dotted command name loads and runs through a real model
+  session.
+
 ## [4.5.0] - 2026-07-13
 
 4.4.0 shipped the plugin. This release makes it *work*.

@@ -57,7 +57,7 @@ Evaluate the quality, safety, and maintainability of the code changes.
 - No bare `catch {}`, no `except: pass`, no `_ = err`
 
 **3. Security**:
-- Run the built-in `/security-review` skill over the changed files (or `/security-scan` for a fast, diff-only pass)
+- Run the built-in `/security-review` skill over the changed files (or `/adf.security-scan` for a fast, diff-only pass)
 - Check for hardcoded secrets, SQL injection, XSS, auth bypass
 - Verify input validation at system boundaries
 - Check that user input is sanitized before storage or display

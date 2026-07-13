@@ -140,8 +140,8 @@ Verification is not optional here — this framework's recurring failure mode is
    ```bash
    claude plugin list          # ✔ enabled
    ```
-2. **Loaded:** the `/` menu lists the framework's commands (`/project-context`, `/quality`, `/speckit.plan`, …). *A component that does not appear here is not loaded.*
-3. **Works:** run `/project-context` in any git repository. It should print a project summary. **If it prints nothing at all, Step 4 is missing or its path is wrong.**
+2. **Loaded:** the `/` menu lists the framework's commands (`/adf.context`, `/adf.quality`, `/speckit.plan`, …). *A component that does not appear here is not loaded.*
+3. **Works:** run `/adf.context` in any git repository. It should print a project summary. **If it prints nothing at all, Step 4 is missing or its path is wrong.**
 4. **The workflow resolves** — it is the one component that must be called by its full namespaced name:
    ```
    ai-development-framework:speckit-workflow

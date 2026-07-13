@@ -1,7 +1,7 @@
 {
   "name": "ai-development-framework",
   "displayName": "AI Development Framework",
-  "version": "4.5.0",
+  "version": "5.0.0",
   "description": "Spec-driven development for Claude Code: quality gates, custom agents, security guardrails, and a full specification pipeline. Ships its hooks — including a TaskCompleted gate that mechanically enforces the Verification Iron Law.",
   "author": {
     "name": "joaoariedi",
