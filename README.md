@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v4.5
+# 🤖 AI Development Framework v5.0
 
 > A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline. Balances **security**, **performance**, **maintainability**, and **efficacy** at every step.
 
@@ -49,7 +49,7 @@ Plugin components are **namespaced by plugin name**, but the namespace is only *
 
 | Component | How you invoke it |
 |---|---|
-| **Commands** | `/project-context`, `/speckit.plan`, `/quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
+| **Commands** | `/adf.context`, `/speckit.plan`, `/adf.quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
 | **Agents** | Dispatched by Claude, or by name — they appear as `ai-development-framework:code-reviewer`. |
 | **The workflow** | **Must be namespaced**: `ai-development-framework:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
 
@@ -98,7 +98,7 @@ Three checks, in increasing strength:
 
 1. **`claude plugin list`** — the plugin is `✔ enabled`. If it is not here, nothing else matters.
 2. **The `/` menu** — every command should be listed. **A component that does not appear is not loaded**, and its absence is silent. This is the only reliable test.
-3. **Run one** — `/project-context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
+3. **Run one** — `/adf.context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
 
 > ⚠️ `claude plugin details ai-development-framework` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
 
@@ -112,7 +112,7 @@ The framework's core loop is **spec first, then code, then a gate you cannot tal
 /speckit.plan                    # → an implementation plan (writes are blocked outside .specify/)
 /speckit.tasks                   # → a phased, dependency-ordered task list
 /speckit.implement               # → TDD execution, red-green, one task at a time
-/quality                         # → lint, types, secrets, SOLID — before you commit
+/adf.quality                         # → lint, types, secrets, SOLID — before you commit
 ```
 
 For a **large** task list, swap the last implementation step for the workflow, which runs independent tasks in parallel and has every task adversarially verified by agents that did not write it:
@@ -217,7 +217,7 @@ The triviality gate ensures only genuinely trivial changes bypass the full pipel
 The full spec-driven development pipeline from idea to implementation:
 
 ```
-/project-context              → 🧭 orient (detect stack, tools, structure)
+/adf.context              → 🧭 orient (detect stack, tools, structure)
 /speckit.init         → 🏗️ bootstrap (once per project)
 /speckit.constitution → 📜 define principles (once per project)
 /speckit.brainstorm   → 💡 Socratic design exploration (refine the idea) ← NEW
@@ -231,7 +231,7 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
 ai-development-framework:speckit-workflow
                       → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
-/quality              → 🛡️ final quality gate
+/adf.quality              → 🛡️ final quality gate
 ```
 
 Specifications live in `.specify/specs/<branch>/` and are committed to version control. A constitution in `.specify/memory/constitution.md` defines project-level governance principles that every plan is validated against.
@@ -347,7 +347,7 @@ The framework implements layered defenses against OWASP LLM vulnerabilities:
 |-------|-----------|--------|
 | **Enforcement** | Hooks | Sensitive file blocking, secrets detection, pre-commit quality |
 | **Guidance** | Rules | OWASP LLM Top 10, MCP security, code quality, SOLID principles |
-| **Analysis** | Skills & Agents | Built-in `/security-review`, `/security-scan`, forensic investigation, quality gates |
+| **Analysis** | Skills & Agents | Built-in `/security-review`, `/adf.security-scan`, forensic investigation, quality gates |
 | **Efficacy** | Iron Laws | Verification before completion (rule + `TaskCompleted` hook), systematic-debugging |
 
 MCP servers follow strict security posture — OAuth 2.1 for production, least privilege, input validation, and human-in-the-loop for high-impact actions.
@@ -421,7 +421,7 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 
 Enforces both Iron Laws from `rules/code-quality.md`: **verification before completion** (proved with `/verify`) and **no fixes without root-cause investigation** (the `systematic-debugging` skill).
 
-**When to use**: Before any commit, PR, or merge. Spawned automatically by `/quality`.
+**When to use**: Before any commit, PR, or merge. Spawned automatically by `/adf.quality`.
 
 ### 🔍 code-reviewer
 
@@ -511,8 +511,8 @@ The framework ships only what Claude Code does **not** already do natively:
 | Instead of a custom skill | Use the built-in | Why |
 |---|---|---|
 | verification-before-completion | `/verify` | It builds and drives the real app rather than settling for a green typecheck. The **Iron Law** survives as a *rule* in `code-quality.md` — a rule is always in context, whereas a skill only loads when invoked. |
-| security-review | `/security-review` | Full branch review. `/security-scan` remains for the fast, diff-only pass. |
-| context-analysis | `/project-context` | The command already carries the methodology and injects live git data. |
+| security-review | `/security-review` | Full branch review. `/adf.security-scan` remains for the fast, diff-only pass. |
+| context-analysis | `/adf.context` | The command already carries the methodology and injects live git data. |
 | spec-template | `/speckit.specify` | The Given/When/Then patterns now live in the command itself. |
 
 `task-effort-estimation` deliberately reports a **complexity score and risk flags, never an hour count**. Effort under AI assistance is bimodal — up to 78% of high-complexity *isolated* features land under a quarter of expected effort, while ~22% of *low*-complexity tasks needing non-local context exceed 180%. So it flags the small diff with high coupling, which is the shape of work a naive estimate waves through. Hours only appear once `.claude/effort-calibration.json` maps observed scores to real recorded durations for your project.
@@ -523,11 +523,11 @@ The framework ships only what Claude Code does **not** already do natively:
 
 | Command | Args | Description |
 |---------|------|-------------|
-| `/agent` | `<task>` | Start full development workflow with planning and task tracking |
-| `/project-context` | — | Analyze project tech stack, tools, and structure |
-| `/pr-summary` | — | Generate PR description from current branch diff |
-| `/quality` | — | Run comprehensive quality checks (spawns quality-guardian) |
-| `/security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
+| `/adf.agent` | `<task>` | Start full development workflow with planning and task tracking |
+| `/adf.context` | — | Analyze project tech stack, tools, and structure |
+| `/adf.pr-summary` | — | Generate PR description from current branch diff |
+| `/adf.quality` | — | Run comprehensive quality checks (spawns quality-guardian) |
+| `/adf.security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
 | `/speckit.init` | — | Bootstrap `.specify/` directory in current project |
 | `/speckit.constitution` | — | Create/update project governance principles |
 | `/speckit.brainstorm` | `<idea>` | Socratic design exploration before specification |
@@ -783,4 +783,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.5.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
+**Framework Version**: 5.0.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams

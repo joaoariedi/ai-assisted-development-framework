@@ -116,29 +116,29 @@ done
 head_ "Command names"
 
 # A command whose name a Claude Code BUILT-IN already owns is unreachable: typing the bare
-# name gets the built-in, every time. `/context` shipped this way and nobody noticed for
-# four releases, because the repo's own project-scope copy shadowed the built-in while
-# dogfooding — so it worked here and nowhere else. Fixing that shadowing (#9) is what made
-# it visible: /context started returning the built-in's token-usage readout.
+# name gets the built-in, every time. `/context` shipped that way and nobody noticed for four
+# releases, because the repo's own project-scope copy shadowed the built-in while dogfooding —
+# so it worked here and nowhere else. Fixing that shadowing (#9) is what exposed it.
 #
-# Keep this list current by hand; there is no API that enumerates built-in slash commands.
-BUILTINS="add-dir agents bashes bug clear code-review compact config context cost doctor
-export fast feedback help hooks ide init install-github-app login logout mcp memory model
-output-style permissions pr-comments privacy-settings release-notes resume review run
-schedule security-review simplify skills status statusline teleport terminal-setup todos
-upgrade usage verify vim loop"
-
-collided=0
+# This used to be a hand-maintained list of built-in names, which guarded the past and not the
+# future: the day Claude Code ships a /quality, that command goes silently unreachable and a
+# stale list says nothing (#17).
+#
+# So the rule is structural instead. Every command is NAMESPACED — its name contains a `.`
+# (adf.quality, speckit.plan). No built-in slash command contains a dot, so a collision is
+# impossible by construction, and there is no list to keep current.
+unnamespaced=0
 for f in "$REPO"/commands/*.md; do
   name="$(basename "$f" .md)"
-  for b in $BUILTINS; do
-    if [ "$name" = "$b" ]; then
-      bad "command /$name collides with Claude Code's built-in /$b — the built-in wins, so this command is unreachable"
-      collided=$((collided + 1))
-    fi
-  done
+  case "$name" in
+    *.*) : ;;
+    *)
+      bad "command /$name is not namespaced — a Claude Code built-in of that name would silently shadow it (#17)"
+      unnamespaced=$((unnamespaced + 1))
+      ;;
+  esac
 done
-[ "$collided" -eq 0 ] && ok "no command name is shadowed by a Claude Code built-in"
+[ "$unnamespaced" -eq 0 ] && ok "every command is namespaced — no built-in can collide with any of them"
 
 # --- Tier 1: hooks ------------------------------------------------------------------
 head_ "Hooks"
@@ -370,7 +370,7 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
                    '{permissions:{allow:[$a,$b],deny:[]}}')"
 
     run="$(cd "$E2E" && timeout 300 claude -p \
-        "Invoke the skill ai-development-framework:project-context and follow its instructions." \
+        "Invoke the skill ai-development-framework:adf.context and follow its instructions." \
         --plugin-dir "$REPO" --settings "$rules" --output-format json 2>&1 || true)"
     rm -rf "$E2E"
 
