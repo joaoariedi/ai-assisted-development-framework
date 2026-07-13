@@ -206,24 +206,77 @@ head_ "Documented permission rule"
 # Inspect only what the docs PRESCRIBE — the contents of fenced code blocks. Both files also
 # document $HOME and ~ as counter-examples ("❌ blocked"), in prose and tables, and flagging
 # those would be a false positive. Only a rule inside a code block is one a user will paste.
-for doc in SETUP.md README.md; do
-  fenced="$(awk '/^```/{f=!f; next} f' "$REPO/$doc" || true)"
+# Scan every doc, not just the two that happened to carry the rule when this was written. The
+# permission rule and the stow text moved to docs/ when the README was split — a guard pinned to
+# README.md would then have passed trivially while docs/install.md shipped the broken rule.
+bad_rule=0
+for doc in "$REPO"/SETUP.md "$REPO"/README.md "$REPO"/docs/*.md; do
+  [ -f "$doc" ] || continue
+  fenced="$(awk '/^```/{f=!f; next} f' "$doc" || true)"
   if grep -qE 'Bash\((\$HOME|~)/[^)]*speckit-helper' <<<"$fenced"; then
-    bad "$doc prescribes a helper rule using \$HOME or ~ — neither is expanded, so it never matches"
-  else
-    ok "$doc prescribes a literal-path helper rule"
+    bad "$(basename "$doc") prescribes a helper rule using \$HOME or ~ — neither is expanded, so it never matches"
+    bad_rule=$((bad_rule + 1))
   fi
 done
+[ "$bad_rule" -eq 0 ] && ok "no doc prescribes a helper rule that cannot match"
 
 # The stow install is dead (#18) and must not be prescribed again. The payload no longer
 # lives under .claude/, and the dotfiles package no longer carries agents/commands/hooks/
 # skills — following those instructions yields a half-install with none of them. Only the
 # REMOVAL form (`stow -D claude`) is legitimate now.
-readme_fenced="$(awk '/^```/{f=!f; next} f' "$REPO/README.md" || true)"
-if grep -qE '(^|[^-])\bstow claude\b' <<<"$readme_fenced"; then
-  bad "README prescribes 'stow claude' as an install — that path is dead and yields a half-install (#18)"
+stow_bad=0
+for doc in "$REPO"/README.md "$REPO"/docs/*.md; do
+  [ -f "$doc" ] || continue
+  fenced="$(awk '/^```/{f=!f; next} f' "$doc" || true)"
+  if grep -qE '(^|[^-])\bstow claude\b' <<<"$fenced"; then
+    bad "$(basename "$doc") prescribes 'stow claude' as an install — that path is dead and yields a half-install (#18)"
+    stow_bad=$((stow_bad + 1))
+  fi
+done
+[ "$stow_bad" -eq 0 ] && ok "no doc prescribes the dead stow install path"
+
+# --- docs stay honest -----------------------------------------------------------------
+# Two ways a split README rots: a command ships with no entry in the reference, and a link
+# points at a doc that was renamed or never written. Both are silent.
+undocumented=0
+for f in "$REPO"/commands/*.md; do
+  name="$(basename "$f" .md)"
+  grep -qF "/$name" "$REPO/docs/commands.md" || {
+    bad "command /$name is not documented in docs/commands.md"
+    undocumented=$((undocumented + 1))
+  }
+done
+[ "$undocumented" -eq 0 ] && ok "every command appears in docs/commands.md"
+
+broken=0
+for doc in "$REPO"/README.md "$REPO"/docs/*.md; do
+  [ -f "$doc" ] || continue
+  dir="$(dirname "$doc")"
+  while read -r link; do
+    [ -z "$link" ] && continue
+    case "$link" in http*|\#*) continue ;; esac
+    target="${link%%#*}"
+    [ -e "$dir/$target" ] || {
+      bad "$(basename "$doc") links to $target, which does not exist"
+      broken=$((broken + 1))
+    }
+  done < <(grep -oE '\]\([^)]+\)' "$doc" | sed 's/^](//; s/)$//' || true)
+done
+[ "$broken" -eq 0 ] && ok "every relative link in the docs resolves"
+
+# The payload moved out of .claude/ in 5.0 (#9), but the docs went on describing the old layout —
+# an architecture diagram and two file paths that had not existed for a release. Splitting the
+# README is what exposed them. `~/.claude/...` is legitimate (the user's home, legacy installs);
+# a bare `.claude/<payload>/` is this repo's own layout, and it is wrong.
+# The lookbehind excludes anything path-prefixed (`~/.claude/agents/`, `/home/you/.claude/...`) —
+# those are the USER's home directory and are legitimate. Only a bare, relative
+# `.claude/<payload>/` refers to this repo's layout, and that is the thing that is wrong.
+stale_paths="$(grep -rnP '(?<![~/])\.claude/(commands|agents|hooks|workflows)/' "$REPO/docs" "$REPO/README.md" 2>/dev/null || true)"
+if [ -n "$stale_paths" ]; then
+  bad "docs describe the pre-5.0 layout — the payload does not live under .claude/ (#9)"
+  sed 's|^|       |' <<<"$stale_paths" | head -3
 else
-  ok "README does not prescribe the dead stow install path"
+  ok "docs describe the payload where it actually lives"
 fi
 
 # --- Tier 1: helper runs ------------------------------------------------------------
