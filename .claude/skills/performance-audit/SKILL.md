@@ -1,12 +1,28 @@
 ---
 name: "Performance Audit"
 description: |
-  Use when analyzing performance bottlenecks or
-  optimizing critical code paths. Read-only analysis
-  with optional benchmarking via Bash.
+  Use when analyzing performance bottlenecks or optimizing critical code paths.
+  Finds N+1 queries, blocking I/O, memory leaks, and algorithmic complexity.
+  Read-only analysis with optional benchmarking via Bash.
+when_to_use: |
+  "why is this slow?", "profile this", "find the bottleneck",
+  "N+1 query", "optimize this path"
+context: fork
+agent: Explore
 allowed-tools: Read, Grep, Glob, Bash
+disallowed-tools: Edit, Write, NotebookEdit
 disable-model-invocation: true
 ---
+
+<!--
+  context: fork — a profiling sweep reads widely and produces noisy output; the main
+  conversation needs the findings, not the trawl.
+  disable-model-invocation stays: an audit is expensive and should be asked for, not
+  volunteered. It remains reachable as /performance-audit (user-invocable defaults true).
+  disallowed-tools — read-only by contract. `allowed-tools` alone enforces nothing;
+  it only pre-grants permission.
+-->
+
 
 # Performance Audit Skill
 

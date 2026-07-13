@@ -84,10 +84,58 @@ allowed-tools: Bash(gh *)
 - Changed files: !`gh pr diff --name-only`
 ```
 
-**3. `hooks:` in skill frontmatter — scoped lifecycle hooks.**
-The framework's hooks must be hand-registered in a machine-local `settings.json`; the README carries a warning about this, and the v4.3.1 commit noted that "users on the distribution repo must register the new hook in their own settings.json." Skill-scoped hooks sidestep that entirely — they travel with the skill.
+**3. `hooks:` in skill and agent frontmatter — scoped lifecycle hooks.**
+Hooks can be declared in a `SKILL.md` (or agent) frontmatter, travel with the component, need no `settings.json` registration, and are cleaned up when the component finishes. All hook events are supported; `Stop` becomes `SubagentStop` for subagents. Skills additionally get `once: true` (run once per session, then remove).
+
+```yaml
+hooks:
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: "./scripts/security-check.sh"
+```
+
+> **This does NOT solve the framework's distribution friction, and an earlier draft of this file
+> wrongly claimed it did.** The framework's seven hooks are *global* — `PreToolUse` on every
+> `Bash`, `PostToolUse` on every `Edit|Write`. A skill-scoped hook only fires while that skill is
+> active, so it cannot replace a global gate. The real fix is packaging: a
+> `.claude-plugin/plugin.json` bundles **agents, hooks, and MCP servers** together, which is the
+> only mechanism that ships a global hook without asking the user to hand-edit `settings.json`.
 
 Substitutions available in a skill body: `$ARGUMENTS`, `$0`/`$1`, `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_SKILL_DIR}`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_EFFORT}`.
+
+## Hook Events: The Framework Uses Four of Roughly Thirty
+
+Registered today: `PreToolUse`, `PostToolUse`, `Notification`, `Stop`. Also available:
+
+| Group | Events |
+|---|---|
+| Session | `SessionStart`, `Setup`, `SessionEnd` |
+| Per-turn | `UserPromptSubmit`, `UserPromptExpansion`, `Stop`, `StopFailure`, `TeammateIdle` |
+| Tool loop | `PreToolUse`, `PermissionRequest`, `PermissionDenied`, `PostToolUse`, `PostToolUseFailure`, `PostToolBatch` |
+| Subagent / task | `SubagentStart`, `SubagentStop`, `TaskCreated`, `TaskCompleted` |
+| Compaction | `PreCompact`, `PostCompact` |
+| File / config | `FileChanged`, `ConfigChange`, `CwdChanged`, `InstructionsLoaded`, `WorktreeCreate`, `WorktreeRemove` |
+
+`TaskCompleted` is the notable gap: exiting 2 from it **blocks a premature completion**, which is the mechanical enforcement the Verification Iron Law currently lacks — today the law is prose the model can rationalize past.
+
+## Parallelism: Three Primitives, None Superseding Another
+
+| | Subagents | Agent Teams | Workflows |
+|---|---|---|---|
+| Communication | Report to caller only | Teammates message each other | None — a script wires stages |
+| Coordination | Main agent manages | Shared task list, self-claiming | JS script holds loop and branching |
+| Determinism | Model decides | Lead decides turn by turn | **Code decides** |
+| Scale | A few | 3–5 | Dozens to hundreds |
+| Best for | Result-only tasks | Debate, challenge, competing hypotheses | Repeatable fan-out |
+
+> **The framework's Agent Teams documentation was built on dead API.** `TeamCreate` and
+> `TeamDelete` were removed in v2.1.178, and `team_name` on the Agent tool is accepted but
+> **ignored** and deprecated. Three of the seven documented steps did not exist. A team now forms
+> when the first teammate spawns and is cleaned up automatically at session end.
+
+Agent Teams remain experimental and still require `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
 ## Commands and Skills Have Merged
 
@@ -95,11 +143,17 @@ Substitutions available in a skill body: `$ARGUMENTS`, `$0`/`$1`, `${CLAUDE_PROJ
 
 A command is the right choice when it is purely a human-triggered prompt. A skill is right when Claude should be able to *decide* to use it, when it needs supporting files, or when it needs tool/model/context control.
 
+## Adopted in v4.4
+
+- **`context: fork` + `agent: Explore`** on `task-effort-estimation` and `performance-audit` — both produce a bounded report the main thread needs the conclusion of, not the trawl. Deliberately **not** applied to `systematic-debugging`: that skill is a methodology the main agent follows *through to the fix*, and the evidence it gathers in phases 1–3 is what phase 4 edits against. Forking would discard the evidence at the moment it becomes useful.
+- **`disallowed-tools`** on both forked skills. The framework had been declaring `allowed-tools` in the belief it restricted them. It does not — it only pre-grants permission and prevents nothing. The "read-only" skills could always have called `Write`.
+- **`when_to_use`** on all three, giving the model trigger phrases rather than making it infer intent from a prose description.
+- **Agent Teams rewritten** against the current API (see above).
+
 ## Not Yet Adopted
 
-- **`context: fork` on the read-only skills.** `performance-audit` and `task-effort-estimation` are both read-mostly and produce bounded output — textbook fork candidates. Neither uses it.
-- **`disallowed-tools`.** The framework's skills declare `allowed-tools` believing it restricts them. It does not — it only pre-grants permission. Nothing is actually prevented from calling `Write`.
-- **`paths:` gating.** No skill limits its activation by file glob, so every skill's description competes for the model's attention on every turn.
-- **Skill-scoped `hooks:`.** All 7 hooks remain in machine-local `settings.json`, which is the framework's single largest installation friction.
-- **`/run-skill-generator`.** Would let `/verify` and `/run` work reliably in consumer projects rather than re-inferring the launch each time.
-- **Workflow tool vs Agent Teams.** `rules/agent-workflow.md` documents Agent Teams as the parallelism story and gates it behind `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`. A deterministic `Workflow` primitive now exists. Which supersedes which was **not verified against the docs** for this file — do not act on it without checking.
+- **Package the framework as a plugin.** A `.claude-plugin/plugin.json` bundles agents, hooks, and MCP servers. This is the *only* mechanism that ships the seven global hooks without asking every user to hand-write `settings.json` — the framework's single largest installation friction, and the thing the README currently apologizes for.
+- **`TaskCompleted` hook.** Exit 2 blocks a premature completion. This would convert the Verification Iron Law from prose the model can rationalize past into a gate it cannot. Given that the framework's entire Iron Law apparatus was unenforceable for three releases, this is the highest-value remaining item.
+- **`paths:` gating.** No skill limits activation by file glob, so every description competes for attention on every turn. Low value at three skills; it matters as the count grows.
+- **`/run-skill-generator`.** Would record each project's build/launch recipe so `/verify` and `/run` stop re-inferring it.
+- **Workflows.** No framework command or rule uses the deterministic `Workflow` primitive. The spec-kit pipeline (specify → plan → tasks → implement) is exactly the shape a workflow encodes, and is currently executed by model discretion at every step.

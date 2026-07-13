@@ -3,9 +3,25 @@ name: "Systematic Debugging"
 description: |
   Use when investigating bugs, test failures, or unexpected behavior.
   4-phase root cause investigation before attempting any fix.
+  Enforces the Iron Law: no fixes without root-cause investigation first.
   Prevents shotgun debugging and cargo-cult fixes.
+when_to_use: |
+  "this test is failing", "why is this broken?", "debug this",
+  "it worked before", "intermittent failure", "flaky test"
 allowed-tools: Read, Grep, Glob, Bash
 ---
+
+<!--
+  Deliberately NOT `context: fork`. The other two skills fork because they produce a
+  bounded report the main thread only needs the conclusion of. This one is different:
+  it is a methodology the main agent must follow *through to the fix*, and the evidence
+  it gathers in phases 1-3 is exactly what phase 4 edits against. Forking would discard
+  that evidence at the moment it becomes useful.
+
+  No `disallowed-tools` for the same reason — this skill ends in a fix, so it needs Edit.
+  Its discipline is the Iron Law, not a tool restriction.
+-->
+
 
 # Systematic Debugging Skill
 

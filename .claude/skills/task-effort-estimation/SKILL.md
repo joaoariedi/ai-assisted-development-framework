@@ -2,11 +2,24 @@
 name: "Task Effort Estimation"
 description: |
   Use when estimating the effort, complexity, or risk of a proposed code change
-  or an existing diff ("how big is this?", "how long will this take?", "size this
-  ticket"). Computes a deterministic Contribution Complexity score from
+  or an existing diff. Computes a deterministic Contribution Complexity score from
   version-control metadata, then flags AI-native risk. Read-only analysis.
+when_to_use: |
+  "how big is this?", "how long will this take?", "size this ticket",
+  "estimate this change", "is this risky?", "story points"
+context: fork
+agent: Explore
 allowed-tools: Read, Grep, Glob, Bash
+disallowed-tools: Edit, Write, NotebookEdit
 ---
+
+<!--
+  context: fork — the git-diff walk produces a lot of noise (per-file numstat, hunk
+  headers) that the main conversation never needs. Forking returns only the report.
+  disallowed-tools — this skill is read-only by contract. `allowed-tools` alone would
+  NOT enforce that: it merely pre-grants permission and restricts nothing.
+-->
+
 
 # Task Effort Estimation Skill
 

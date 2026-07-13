@@ -362,13 +362,26 @@ Read-only by construction (`Read`, `Grep`, `Glob`, `Bash` only). It must never m
 
 > Built-in agents handle general tasks: `Explore` (codebase search), `Plan` (architecture), `general-purpose` (implementation).
 
-### 🤝 Agent Teams (Experimental)
+### 🤝 Parallelism: Three Primitives
 
-For parallel work across services or modules, Agent Teams provide peer-to-peer mesh orchestration:
+They are not interchangeable, and none supersedes the others:
+
+| | Subagents | Agent Teams | Workflows |
+|---|---|---|---|
+| **Communication** | Report to the caller only | Teammates message each other | None — a script wires the stages |
+| **Determinism** | Model decides | Lead decides, turn by turn | **Code decides** |
+| **Scale** | A few | 3–5 | Dozens to hundreds |
+| **Best for** | Result-only tasks | Debate, challenge, competing hypotheses | Repeatable fan-out |
+
+Reach for a **subagent** by default — you want an answer, not a colleague. Reach for an **Agent Team** when workers must *challenge each other*: five teammates trying to disprove each other's hypotheses beat sequential investigation, which anchors on the first plausible theory.
+
+**Agent Teams (Experimental)** — requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`.
 
 ```
-TeamCreate → TaskCreate → spawn teammates → SendMessage → shutdown → TeamDelete
+spawn teammates → TaskCreate → TaskUpdate (assign or self-claim) → SendMessage → shutdown_request
 ```
+
+> ⚠️ `TeamCreate` and `TeamDelete` **no longer exist** (removed in v2.1.178), and `team_name` on the Agent tool is accepted but **ignored**. A team forms when the first teammate spawns and is cleaned up automatically at session end — there is no setup or teardown step. Start with **3–5 teammates**, 5–6 tasks each.
 
 | Pattern | Use Case |
 |---------|----------|
@@ -628,4 +641,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.3.0 &nbsp;|&nbsp; **Last Updated**: 2026-03-31 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills, MCP, spec-kit, Agent Teams
+**Framework Version**: 4.4.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-12 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
