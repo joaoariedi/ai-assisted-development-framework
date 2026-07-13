@@ -60,6 +60,39 @@ while read -r agent; do
   else bad "agent $agent DOES NOT EXIST"; fi
 done < <(jq -r '.agents[]?' "$REPO/.claude-plugin/plugin.json")
 
+# --- Tier 1: version consistency ------------------------------------------------------
+head_ "Version"
+
+# Six places declare the version and every one is bumped BY HAND. A release that updates
+# plugin.json but forgets marketplace.json ships a plugin whose marketplace advertises the
+# old version — and nothing else notices. (#19)
+v_plugin="$(jq -r '.version' "$REPO/.claude-plugin/plugin.json")"
+v_mkt_meta="$(jq -r '.metadata.version' "$REPO/.claude-plugin/marketplace.json")"
+v_mkt_plug="$(jq -r '.plugins[0].version' "$REPO/.claude-plugin/marketplace.json")"
+v_readme="$(grep -oE 'Framework Version\*\*: [0-9]+\.[0-9]+\.[0-9]+' "$REPO/README.md" | grep -oE '[0-9.]+$')"
+v_changelog="$(grep -m1 -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' "$REPO/CHANGELOG.md" | tr -d '#[] ')"
+
+mismatch=0
+for pair in "marketplace.metadata:$v_mkt_meta" "marketplace.plugins[0]:$v_mkt_plug" \
+            "README footer:$v_readme" "CHANGELOG latest entry:$v_changelog"; do
+  where="${pair%%:*}"; val="${pair#*:}"
+  if [ "$val" != "$v_plugin" ]; then
+    bad "$where says $val but plugin.json says $v_plugin"
+    mismatch=$((mismatch + 1))
+  fi
+done
+
+# The two titles carry only major.minor.
+minor="${v_plugin%.*}"
+for f in README.md .claude/CLAUDE.md; do
+  t="$(grep -m1 -oE 'AI Development Framework v[0-9]+\.[0-9]+' "$REPO/$f" | grep -oE '[0-9.]+$')"
+  if [ "$t" != "$minor" ]; then
+    bad "$f title says v$t but plugin.json says $v_plugin"
+    mismatch=$((mismatch + 1))
+  fi
+done
+[ "$mismatch" -eq 0 ] && ok "all six version declarations agree ($v_plugin)"
+
 # --- Tier 1: the #9 regression guard ------------------------------------------------
 head_ "Payload location"
 
