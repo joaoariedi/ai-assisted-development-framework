@@ -5,6 +5,103 @@ All notable changes to the AI Development Framework will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2026-07-13
+
+4.4.0 shipped the plugin. This release makes it *work*.
+
+Installing 4.4.0 exactly as `SETUP.md` prescribed produced a plugin that reported
+`✔ enabled` and in which **every helper-backed command was dead** — `/context`, `/quality`,
+`/pr-summary`, and the entire `/speckit.*` pipeline. Three separate bugs, all traced to one
+root cause: the plugin payload lived at `.claude/`, which is also where Claude Code looks
+for *project-scope* config. A project-scope command outranks both plugins and built-ins, so
+while working in this repository the commands resolved to the repo's own copies and behaved
+correctly. **The framework was never once dogfooded as a plugin**, and every one of these
+bugs is invisible from inside the repo and fatal outside it.
+
+Each was found by running the thing, not by reading it. None would have been caught by a
+linter, a schema check, or `claude plugin validate --strict` — all three pass on a
+completely broken plugin.
+
+### Fixed
+- **Commands could not invoke the plugin's own helper script.** Every one of the 54 helper
+  calls across 15 commands sat in a `` !`…` `` pre-execution block naming
+  `${CLAUDE_PLUGIN_ROOT}`. A `!` block is permission-checked **before** that variable is
+  substituted, so the matcher sees a literal `${…}`, cannot predict what it expands to, and
+  rejects the command with `Contains expansion`. **No allowlist entry can match such a
+  pattern**, and `allowed-tools:` frontmatter does not change the outcome. This was verified
+  against the live permission checker rather than inferred: `${CLAUDE_SKILL_DIR}` fails
+  identically; only `${CLAUDE_PROJECT_DIR}` is substituted pre-check, and it points at the
+  user's project, not the plugin — useless for locating a bundled script. What *does* work
+  is that `${CLAUDE_PLUGIN_ROOT}` is substituted in ordinary body text, so the commands now
+  hand the model an already-literal path to run with the Bash tool. Note the regression this
+  replaced: `aa32e83` had *fixed* a real bug (commands hardcoding `~/.claude/hooks/…`,
+  correct under the old stow install, wrong under a plugin) and traded it for this one.
+- **`/context` was unreachable behind a Claude Code built-in.** Claude Code ships its own
+  `/context` (a token-usage readout), and a built-in wins over a plugin command of the same
+  name — so no user could ever reach this one by typing it. It only appeared to work from
+  inside this repo, where the project-scope copy shadowed the built-in. **Renamed to
+  `/project-context`.**
+- **The anti-regression notes destroyed themselves.** The note added to each command
+  explaining why its calls cannot live in a `!` block was prose inside skill content — and
+  skill content is substituted. It spelled the plugin-root variable with a `$` and braces,
+  so the harness replaced it with a path and the warning became gibberish about a filesystem
+  location. The note was eaten by the exact mechanism it documented.
+- **The permission rule in `SETUP.md` never matched.** `${CLAUDE_PLUGIN_ROOT}` expands *with*
+  a trailing slash, so the helper reaches the permission matcher as
+  `…/.claude-framework//hooks/…`. The matcher compares literally and does **not** normalise
+  `//`, so the single-slash rule silently failed to match and every helper call prompted —
+  which, in a non-interactive context, means denied, which means the command aborts with no
+  output at all. Both slash forms are now documented, and the doubled one is not a typo.
+
+### Added
+- **`tests/smoke.sh` — the first test of the plugin's own components**, and `.github/workflows/smoke.yml`
+  to gate CI. Four consecutive releases shipped packaging bugs; nothing would have caught any
+  of them, because they are *load-and-run* failures, not shape failures. Tier 1 needs no auth
+  and no tokens: it asserts that every path `plugin.json` declares exists, that every hook is
+  shipped **and executable**, that no command invokes the helper from a `!` block, that no
+  command is named after a Claude Code built-in, that no payload sits under `.claude/`, that
+  the anti-regression notes survive substitution, and that every helper subcommand a command
+  calls is actually implemented. Tier 2 (`SMOKE_LIVE=1`) installs the plugin into a throwaway
+  `CLAUDE_CONFIG_DIR` and executes every helper invocation the commands hand the model,
+  substituted exactly as the harness substitutes it.
+- **Every check is mutation-tested.** A check that cannot fail is decoration, so each was
+  verified to turn the suite red when the bug it guards is reintroduced. The suite earned
+  this on its first real use: during the payload relocation it caught `hooks.json` still
+  pointing at the old location — a rewrite regex had silently matched nothing, leaving all
+  **eight hooks declared but not shipped** while the plugin still installed and still
+  reported `enabled`.
+
+### Changed
+- **⚠️ BREAKING — the plugin payload moved out of `.claude/`.** `commands/`, `agents/`,
+  `skills/`, `hooks/` and `workflows/` now live at the repository root. `.claude/` keeps only
+  what is genuinely this repo's own project config (`CLAUDE.md`, `rules/`). This is the root-
+  cause fix: the payload can no longer shadow itself, so the commands finally behave the same
+  here as in a real install.
+
+  **The helper path changes**, and the permission rule in `~/.claude/settings.json` must be
+  updated to match or every helper call will prompt:
+
+  ```jsonc
+  "allow": [
+    "Bash($HOME/.claude-framework//hooks/speckit-helper.sh:*)",
+    "Bash($HOME/.claude-framework/hooks/speckit-helper.sh:*)"
+  ]
+  ```
+- **⚠️ BREAKING — `/context` is renamed `/project-context`.** Muscle memory and any scripts or
+  docs referencing the old name must be updated. `/context` now unambiguously means Claude
+  Code's built-in.
+- `README.md` corrected: it advertised the pre-fix single-slash permission rule and described
+  the helper as running from a `!` pre-flight block — the one thing that provably does not work.
+
+### Known limitation
+- **No test can drive an actual slash-command invocation.** Plugin commands do not exist
+  outside an interactive session: `claude -p "/context"` silently resolves to the *built-in*,
+  and `/pr-summary` and `/ai-development-framework:project-context` both return
+  `Unknown command`. An assertion on `claude -p` would therefore pass against a completely
+  broken plugin. **This is why the 4.4.0 bugs survived: the real invocation cannot be
+  scripted, so nobody ever ran it.** The human verification step in `SETUP.md` — restart, run
+  `/project-context`, confirm it prints — remains the only proof that an install works.
+
 ## [4.4.0] - 2026-07-12
 
 Covers everything unreleased since 4.3.0. The repository carries no git tags, so the

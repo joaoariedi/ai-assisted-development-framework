@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v4.4
+# 🤖 AI Development Framework v4.5
 
 > A systematic Claude Code configuration for **spec-driven development (SDD)** with quality gates, custom agents, automated hooks, security guardrails, and a full specification pipeline. Balances **security**, **performance**, **maintainability**, and **efficacy** at every step.
 
@@ -763,4 +763,4 @@ MIT License — see [LICENSE](LICENSE)
 
 ---
 
-**Framework Version**: 4.4.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-12 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
+**Framework Version**: 4.5.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
