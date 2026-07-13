@@ -78,54 +78,106 @@ if [ -n "$MD_FILES" ]; then
   fi
 fi
 
-# JavaScript/TypeScript projects
-if [ -f "$CWD/package.json" ]; then
-  if npm --prefix "$CWD" run lint --if-present 2>&1 | grep -q "error"; then
-    ERRORS="${ERRORS}Lint errors found. "
-  fi
-  if npm --prefix "$CWD" run typecheck --if-present 2>&1 | grep -q "error"; then
-    ERRORS="${ERRORS}Type errors found. "
-  fi
-fi
+# --- Language checks, on STAGED FILES where the tool supports it ---------------
+#
+# Two rules govern everything below.
+#
+# 1. NEVER decide pass/fail by grepping output for the word "error". The previous
+#    version did, and it blocked PASSING commits: `tsc` prints "Found 0 errors."
+#    and eslint prints "0 errors" on success — both match. Use the EXIT CODE.
+#
+# 2. Scope to staged files ONLY where the tool can actually do it. Some cannot,
+#    and pretending otherwise breaks them:
+#      - a TYPE CHECKER needs the whole program graph. `tsc` on one file cannot
+#        see the types it imports. Whole-project is correct, not lazy.
+#      - `cargo clippy` analyses a crate, not a file.
+#      - `go vet` works per-package, so it is scoped to the packages that own the
+#        staged files rather than to the files themselves.
+#    Linters (ruff, eslint, biome) take a file list and are scoped properly.
 
-# Python projects
-if [ -f "$CWD/pyproject.toml" ] || [ -f "$CWD/setup.py" ]; then
-  if command -v ruff &>/dev/null; then
-    if ! ruff check "$CWD" --quiet 2>/dev/null; then
-      ERRORS="${ERRORS}Ruff lint errors found. "
+# JavaScript / TypeScript
+if [ -f "$CWD/package.json" ]; then
+  JS_FILES=$(echo "$STAGED" | grep -E '\.(js|jsx|ts|tsx|mjs|cjs)$' || true)
+
+  if [ -n "$JS_FILES" ]; then
+    # Prefer the linter binary directly: it accepts a file list, and resolving it
+    # from node_modules/.bin avoids an npx network round-trip in a <5s hook.
+    LINT_BIN=""
+    if [ -x "$CWD/node_modules/.bin/biome" ]; then
+      LINT_BIN="$CWD/node_modules/.bin/biome check"
+    elif [ -x "$CWD/node_modules/.bin/eslint" ]; then
+      LINT_BIN="$CWD/node_modules/.bin/eslint"
+    fi
+
+    if [ -n "$LINT_BIN" ]; then
+      if ! (cd "$CWD" && echo "$JS_FILES" | xargs $LINT_BIN >/dev/null 2>&1); then
+        ERRORS="${ERRORS}Lint errors in staged JS/TS. "
+      fi
+    else
+      # No scopable binary — fall back to the project script, whole-project.
+      if ! npm --prefix "$CWD" run lint --if-present >/dev/null 2>&1; then
+        ERRORS="${ERRORS}Lint errors found. "
+      fi
+    fi
+  fi
+
+  # Typecheck is whole-project BY NATURE — tsc needs every file to resolve types.
+  # Only run it when TS/JS is actually staged, so it costs nothing otherwise.
+  if [ -n "$JS_FILES" ]; then
+    if ! npm --prefix "$CWD" run typecheck --if-present >/dev/null 2>&1; then
+      ERRORS="${ERRORS}Type errors found. "
     fi
   fi
 fi
 
-# Rust projects
+# Python — ruff takes an explicit file list.
+if [ -f "$CWD/pyproject.toml" ] || [ -f "$CWD/setup.py" ]; then
+  PY_FILES=$(echo "$STAGED" | grep -E '\.py$' || true)
+  if [ -n "$PY_FILES" ] && command -v ruff &>/dev/null; then
+    if ! (cd "$CWD" && echo "$PY_FILES" | xargs ruff check --quiet >/dev/null 2>&1); then
+      ERRORS="${ERRORS}Ruff lint errors in staged Python. "
+    fi
+  fi
+fi
+
+# Rust — clippy analyses a CRATE. It cannot be scoped to files; whole-crate is the
+# only correct invocation. Gate it on Rust actually being staged so it stays cheap.
 if [ -f "$CWD/Cargo.toml" ]; then
-  if command -v cargo &>/dev/null; then
-    if ! cargo clippy --manifest-path "$CWD/Cargo.toml" --quiet 2>/dev/null; then
+  RS_FILES=$(echo "$STAGED" | grep -E '\.rs$' || true)
+  if [ -n "$RS_FILES" ] && command -v cargo &>/dev/null; then
+    if ! cargo clippy --manifest-path "$CWD/Cargo.toml" --quiet >/dev/null 2>&1; then
       ERRORS="${ERRORS}Clippy warnings found. "
     fi
   fi
 fi
 
-# Go projects
+# Go — `go vet` works per-package, so scope it to the packages owning staged files.
 if [ -f "$CWD/go.mod" ]; then
-  if command -v go &>/dev/null; then
-    if ! (cd "$CWD" && go vet ./... 2>/dev/null); then
-      ERRORS="${ERRORS}Go vet errors found. "
+  GO_FILES=$(echo "$STAGED" | grep -E '\.go$' || true)
+  if [ -n "$GO_FILES" ] && command -v go &>/dev/null; then
+    GO_PKGS=$(echo "$GO_FILES" | xargs -n1 dirname 2>/dev/null | sort -u | sed 's|^|./|' | tr '\n' ' ')
+    if [ -n "$GO_PKGS" ]; then
+      # shellcheck disable=SC2086 # GO_PKGS is a deliberate list of package paths
+      if ! (cd "$CWD" && go vet $GO_PKGS >/dev/null 2>&1); then
+        ERRORS="${ERRORS}Go vet errors in staged packages. "
+      fi
     fi
   fi
 fi
 
-# Java projects (Spotless is fast enough for pre-commit; skip full PMD/SpotBugs)
-if [ -f "$CWD/pom.xml" ]; then
-  if command -v mvn &>/dev/null; then
-    if ! mvn -f "$CWD/pom.xml" spotless:check -q 2>/dev/null; then
-      ERRORS="${ERRORS}Java formatting issues (run mvn spotless:apply). "
-    fi
-  fi
-elif [ -f "$CWD/build.gradle" ] || [ -f "$CWD/build.gradle.kts" ]; then
-  if [ -f "$CWD/gradlew" ]; then
-    if ! "$CWD/gradlew" -p "$CWD" spotlessCheck -q 2>/dev/null; then
-      ERRORS="${ERRORS}Java formatting issues (run ./gradlew spotlessApply). "
+# Java — Spotless can be scoped with -DspotlessFiles (a regex over absolute paths).
+if [ -f "$CWD/pom.xml" ] || [ -f "$CWD/build.gradle" ] || [ -f "$CWD/build.gradle.kts" ]; then
+  JAVA_FILES=$(echo "$STAGED" | grep -E '\.(java|kt)$' || true)
+  if [ -n "$JAVA_FILES" ]; then
+    SPOTLESS_RE=$(echo "$JAVA_FILES" | sed 's/[.[\*^$]/\\&/g' | paste -sd'|' -)
+    if [ -f "$CWD/pom.xml" ] && command -v mvn &>/dev/null; then
+      if ! mvn -f "$CWD/pom.xml" spotless:check -q "-DspotlessFiles=.*($SPOTLESS_RE)" >/dev/null 2>&1; then
+        ERRORS="${ERRORS}Java formatting issues (run mvn spotless:apply). "
+      fi
+    elif [ -f "$CWD/gradlew" ]; then
+      if ! "$CWD/gradlew" -p "$CWD" spotlessCheck -q >/dev/null 2>&1; then
+        ERRORS="${ERRORS}Java formatting issues (run ./gradlew spotlessApply). "
+      fi
     fi
   fi
 fi

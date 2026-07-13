@@ -472,7 +472,7 @@ The zero-dependency baseline is the point. Guarding purely on `command -v shellc
 sudo pacman -S shellcheck && npm i -g markdownlint-cli2
 ```
 
-> **Known inconsistency, not yet fixed:** the *language* checks above still lint the whole tree (`ruff check "$CWD"`), which contradicts the staged-files-only rule in `quality-tooling.md`. The shell and markdown checks do it correctly. Fixing the rest is a separate change.
+The **language** checks are scoped the same way — but only where the tool permits it. `ruff`, `eslint`, and `biome` take a file list, so they see staged files only. A **type checker cannot**: `tsc` needs the whole program graph to resolve an import, and `cargo clippy` analyses a crate, not a file. Those stay whole-unit, which is correct rather than lazy — they are simply gated on their language actually being staged, so they cost nothing otherwise.
 
 ### The `TaskCompleted` gate
 
