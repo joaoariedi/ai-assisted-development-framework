@@ -78,28 +78,43 @@ Expect `ai-development-framework@ai-development-framework` with `Status: ✔ ena
 Most spec-kit commands gather live project data by running `speckit-helper.sh` with the Bash
 tool. Without an allowlist entry, every one of those calls prompts.
 
-Merge the following into `~/.claude/settings.json`, preserving everything already there.
-Substitute the real clone path — `$HOME` is expanded in permission rules, but
-`${CLAUDE_PLUGIN_ROOT}` is **not**, and a leading wildcard does **not** match, so the path
-must be literal and absolute.
+**The rule must mirror, byte for byte, the command string the model actually sends.** The
+permission matcher does no expansion and no normalisation whatsoever. Every convenience you
+would reach for silently fails to match — each of these was tested against the live matcher:
+
+| Rule you might write | Result |
+|---|---|
+| `Bash(/home/you/.claude-framework//hooks/speckit-helper.sh:*)` | ✅ **matches** |
+| `Bash(/home/you/.claude-framework/hooks/speckit-helper.sh:*)` — one slash | ❌ blocked |
+| `Bash($HOME/.claude-framework//hooks/speckit-helper.sh:*)` | ❌ blocked — `$HOME` is **not** expanded |
+| `Bash(~/.claude-framework//hooks/speckit-helper.sh:*)` | ❌ blocked — `~` is **not** expanded |
+| a leading wildcard | ❌ blocked |
+
+So: **write your absolute home directory literally.** Merge this into
+`~/.claude/settings.json`, preserving everything already there, and replace `/home/you` with
+your real path (`echo $HOME`):
 
 ```jsonc
 {
   "permissions": {
     "allow": [
-      "Bash($HOME/.claude-framework//hooks/speckit-helper.sh:*)",
-      "Bash($HOME/.claude-framework/hooks/speckit-helper.sh:*)"
+      "Bash(/home/you/.claude-framework//hooks/speckit-helper.sh:*)",
+      "Bash(/home/you/.claude-framework/hooks/speckit-helper.sh:*)"
     ]
   }
 }
 ```
 
-Both entries are deliberate, and the doubled slash in the first is not a typo.
-`${CLAUDE_PLUGIN_ROOT}` expands **with a trailing slash**, so the command
-`${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh` reaches the permission matcher as
-`…/.claude-framework//hooks/…`. The matcher compares strings literally and does not
-normalise `//`, so a rule written with a single slash silently fails to match it. The second
-entry covers the case where a future release drops the trailing slash. Keep both.
+**The doubled slash in the first entry is not a typo, and it is the one that works today.**
+`${CLAUDE_PLUGIN_ROOT}` expands *with* a trailing slash, so the command
+`${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh` reaches the matcher as
+`…/.claude-framework//hooks/…`. The matcher compares literally and does not collapse `//`.
+The single-slash entry is a hedge for a future release that drops the trailing slash; it
+matches nothing today. Keep both.
+
+If you get this wrong the failure is quiet: the helper prompts on every call, and in any
+non-interactive context the prompt is denied — so the command either degrades or produces
+nothing.
 
 **Do not "fix" the commands by moving these calls back into a `` !`…` `` pre-execution
 block.** It does not work, and the failure is confusing: a `!` block is permission-checked

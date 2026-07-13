@@ -145,6 +145,31 @@ while read -r sub; do
 done < <(grep -rhoE 'speckit-helper\.sh [a-z-]+' "$REPO/commands/" | awk '{print $2}' | sort -u)
 [ "$missing" -eq 0 ] && ok "every helper subcommand used by a command is implemented"
 
+# --- Tier 1: the permission rule the docs prescribe ----------------------------------
+head_ "Documented permission rule"
+
+# The permission matcher does NO expansion and NO normalisation. It compares the rule to the
+# command string literally. Every shortcut silently fails to match — verified against the
+# live matcher:
+#
+#   Bash(/home/you/...//hooks/speckit-helper.sh:*)   matches
+#   Bash($HOME/...)                                  BLOCKED — $HOME is not expanded
+#   Bash(~/...)                                      BLOCKED — ~ is not expanded
+#
+# A rule that does not match means the helper prompts on every call, and a non-interactive
+# context denies prompts — so the command degrades or produces nothing. SETUP shipped the
+# $HOME form for three releases, so the rule it told every user to add never worked.
+# Inspect only what the docs PRESCRIBE — the contents of fenced code blocks. Both files also
+# document $HOME and ~ as counter-examples ("❌ blocked"), in prose and tables, and flagging
+# those would be a false positive. Only a rule inside a code block is one a user will paste.
+for doc in SETUP.md README.md; do
+  if awk '/^```/{f=!f; next} f' "$REPO/$doc" | grep -qE 'Bash\((\$HOME|~)/[^)]*speckit-helper'; then
+    bad "$doc prescribes a helper rule using \$HOME or ~ — neither is expanded, so it never matches"
+  else
+    ok "$doc prescribes a literal-path helper rule"
+  fi
+done
+
 # --- Tier 1: helper runs ------------------------------------------------------------
 head_ "Helper"
 
@@ -156,20 +181,19 @@ done
 
 # --- Tier 2: live install ------------------------------------------------------------
 #
-# What this CANNOT do, and why it matters: a plugin's slash commands are not reachable
-# from `claude -p`. Verified — a bare `/context` silently resolves to Claude Code's
-# BUILT-IN /context (the token-usage readout, nothing to do with this plugin);
-# `/pr-summary` and `/ai-development-framework:context` both return "Unknown command";
-# and asking the model to invoke the skill by name does nothing. Plugin commands exist
-# only in an interactive session.
+# Two things you must not do here, both of which produce a green test against a broken plugin:
 #
-# That is precisely why the #7 bug survived four releases: the real invocation cannot be
-# scripted, so nobody ever ran it. Do not "fix" this by asserting on `claude -p /context`
-# — it will pass against a completely broken plugin, because it is testing a built-in.
+# 1. Do NOT assert on `claude -p "/project-context"`. A plugin's SLASH commands do not exist
+#    in headless mode — `/project-context` returns "Unknown command", and before the rename
+#    a bare `/context` silently resolved to Claude Code's BUILT-IN /context (a token-usage
+#    readout that has nothing to do with this plugin). Asserting on that passes always.
+#    Plugin commands ARE reachable headlessly as SKILLS. That is what tier 3 below drives.
 #
-# So instead of invoking the command, reproduce what the command hands the model: take the
-# helper invocations out of the shipped command files, substitute the plugin root exactly
-# as the harness does, and run them.
+# 2. Do NOT assert that the helper's DATA appears in the output. When the helper is blocked,
+#    the model cheerfully falls back to plain `git log` / `git branch` and produces the same
+#    data by hand. An assertion on the data goes green while every helper call is being
+#    denied — this exact false positive happened while writing tier 3. Assert on the TOOL
+#    CALLS instead: the helper was invoked, and was not denied.
 if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   head_ "Live install (isolated config)"
 
@@ -233,6 +257,62 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   else
     bad "SETUP's permission rule lacks the doubled slash, so it will never match"
     printf '       commands send: <plugin-root>//hooks/speckit-helper.sh\n'
+  fi
+
+  # --- Tier 3: end to end, through a real model session -------------------------------
+  #
+  # Drive the command the way a user does and assert the helper actually ran. This is the
+  # only check that exercises the whole chain at once: skill loads -> ${CLAUDE_PLUGIN_ROOT}
+  # substitutes -> model runs the helper with Bash -> the PERMISSION RULE MATCHES -> output
+  # comes back. Every bug in 4.5.0 lived somewhere on that chain.
+  #
+  # Needs an authenticated `claude` and spends tokens, so it cannot run in CI. It is worth
+  # it: it is the only check that would have caught the $HOME permission rule, which three
+  # releases of SETUP told every user to add and which never matched anything.
+  #
+  # The plugin is loaded from the working tree with --plugin-dir, so this tests THIS
+  # checkout, not whatever is installed.
+  head_ "End to end (real session, spends tokens)"
+
+  # Tier 2 pointed CLAUDE_CONFIG_DIR at a throwaway config. That config has no credentials,
+  # so leaving it set here makes every model call fail with "Not logged in" — and the check
+  # would skip itself forever while looking like it had run. Restore the real config.
+  unset CLAUDE_CONFIG_DIR
+
+  probe="$(claude -p "reply with exactly: ok" 2>&1 || true)"
+  if grep -qi 'not logged in' <<<"$probe"; then
+    printf '  \033[33mskip\033[0m not logged in — `claude /login` to run the end-to-end check\n'
+  else
+    E2E="$(mktemp -d)"
+    git -C "$E2E" init -q -b main
+    printf '{"name":"scratch","version":"1.0.0"}' > "$E2E/package.json"
+    git -C "$E2E" add -A
+    git -C "$E2E" -c user.email=smoke@test -c user.name=smoke commit -q -m "SMOKE_MARKER_COMMIT"
+
+    # Both slash forms. The trailing slash on ${CLAUDE_PLUGIN_ROOT} is NOT stable: a
+    # marketplace/directory install yields `//`, --plugin-dir yields a single `/`. Neither
+    # entry is redundant.
+    rules="$(jq -n --arg a "Bash($REPO//hooks/speckit-helper.sh:*)" \
+                   --arg b "Bash($REPO/hooks/speckit-helper.sh:*)" \
+                   '{permissions:{allow:[$a,$b],deny:[]}}')"
+
+    run="$(cd "$E2E" && timeout 300 claude -p \
+        "Invoke the skill ai-development-framework:project-context and follow its instructions." \
+        --plugin-dir "$REPO" --settings "$rules" --output-format json 2>&1 || true)"
+    rm -rf "$E2E"
+
+    called="$(jq -r '.. | objects | select(.name=="Bash") | .input.command' <<<"$run" 2>/dev/null \
+              | grep -c 'speckit-helper' || true)"
+
+    if [ "${called:-0}" -eq 0 ]; then
+      bad "the command never made the model run the helper at all"
+    elif grep -qF 'requires approval' <<<"$run"; then
+      bad "the helper was DENIED by the permission checker — the rule in SETUP does not match what the command sends"
+      jq -r '.. | objects | select(.name=="Bash") | .input.command' <<<"$run" 2>/dev/null \
+        | grep 'speckit-helper' | head -1 | sed 's|^|       sent: |'
+    else
+      ok "end to end: the skill ran the helper and the permission rule matched ($called calls)"
+    fi
   fi
 else
   head_ "Live install"
