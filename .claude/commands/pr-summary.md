@@ -7,13 +7,17 @@ Generate a comprehensive pull request summary from the data below.
 ## Live Branch Data
 
 ### Commits on this branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-commits`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-commits`
 
 ### Files changed
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-files`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-files`
 
 ### Diff stats
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-stats`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh pr-stats`
 
 ## Output Format
 

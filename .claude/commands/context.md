@@ -17,13 +17,17 @@ For deep or repository-wide search, delegate to the built-in `Explore` agent rat
 ## Live Project Data
 
 ### Recent commits
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh recent-commits`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh recent-commits`
 
 ### Active branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Directory structure (top 2 levels)
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh project-files`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh project-files`
 
 ## Output Format
 

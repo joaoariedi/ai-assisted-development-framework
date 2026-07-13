@@ -9,19 +9,23 @@ Review the implementation plan before generating tasks.
 ## Pre-Flight
 
 ### Current branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Plan status
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-plan-review`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-plan-review`
 
 ### Load spec
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
 
 ### Load plan
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan`
 
 ### Constitution
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ## Instructions
 
