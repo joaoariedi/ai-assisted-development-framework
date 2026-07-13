@@ -69,6 +69,34 @@ for d in commands agents skills hooks workflows; do
 done
 [ "$shadowed" -eq 0 ] && ok "no plugin payload under .claude/ — nothing shadows the plugin"
 
+# --- Tier 1: built-in name collisions ------------------------------------------------
+head_ "Command names"
+
+# A command whose name a Claude Code BUILT-IN already owns is unreachable: typing the bare
+# name gets the built-in, every time. `/context` shipped this way and nobody noticed for
+# four releases, because the repo's own project-scope copy shadowed the built-in while
+# dogfooding — so it worked here and nowhere else. Fixing that shadowing (#9) is what made
+# it visible: /context started returning the built-in's token-usage readout.
+#
+# Keep this list current by hand; there is no API that enumerates built-in slash commands.
+BUILTINS="add-dir agents bashes bug clear code-review compact config context cost doctor
+export fast feedback help hooks ide init install-github-app login logout mcp memory model
+output-style permissions pr-comments privacy-settings release-notes resume review run
+schedule security-review simplify skills status statusline teleport terminal-setup todos
+upgrade usage verify vim loop"
+
+collided=0
+for f in "$REPO"/commands/*.md; do
+  name="$(basename "$f" .md)"
+  for b in $BUILTINS; do
+    if [ "$name" = "$b" ]; then
+      bad "command /$name collides with Claude Code's built-in /$b — the built-in wins, so this command is unreachable"
+      collided=$((collided + 1))
+    fi
+  done
+done
+[ "$collided" -eq 0 ] && ok "no command name is shadowed by a Claude Code built-in"
+
 # --- Tier 1: hooks ------------------------------------------------------------------
 head_ "Hooks"
 

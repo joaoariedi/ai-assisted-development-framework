@@ -24,7 +24,7 @@ Move sessions between surfaces:
 ## Phase 1: Planning & Context (Steps 1-4)
 
 ### Step 1: Context Preparation
-- Use built-in `Explore` agent or `/context` command for project analysis
+- Use built-in `Explore` agent or `/project-context` command for project analysis
 - Auto-detect tech stack from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`
 - Identify existing patterns, conventions, and quality tools
 - Use `ultrathink` for complex architectural analysis or ambiguous requirements
