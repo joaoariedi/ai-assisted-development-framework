@@ -10,13 +10,17 @@ Explore and refine the idea before writing a formal spec: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Current branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Project context
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-stack`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-stack`
 
 ### Existing specs
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs-dir`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs-dir`
 
 ## Hard Gate
 

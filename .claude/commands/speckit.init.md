@@ -9,10 +9,14 @@ Bootstrap a `.specify/` directory in the current project to enable spec-driven d
 ## Pre-Flight Checks
 
 ### Git root detection
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-git-root`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-git-root`
 
 ### Existing .specify/ detection
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-specify-dir`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-specify-dir`
 
 ## Instructions
 

@@ -9,19 +9,23 @@ Execute the implementation plan using strict TDD cycles with quality gates.
 ## Pre-Flight
 
 ### Current branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Load artifacts
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-artifacts`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-artifacts`
 
 ### Constitution
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Checklists
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists`
 
 ### Test framework detection
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-test-framework`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-test-framework`
 
 ## Instructions
 

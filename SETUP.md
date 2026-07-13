@@ -73,19 +73,41 @@ claude plugin list
 
 Expect `ai-development-framework@ai-development-framework` with `Status: ✔ enabled`. This writes `enabledPlugins` into `~/.claude/settings.json`, so the install is persistent and user-scoped: it applies to every project, with no flags.
 
-## Step 4 — Add the pre-flight permission rule (required in practice)
+## Step 4 — Add the helper permission rule (required in practice)
 
-Every spec-kit command begins with a pre-flight block that runs `speckit-helper.sh`. Without an allowlist entry, that call prompts — and in a non-interactive context it is **denied, which aborts the entire slash command silently: no error, no output**. A spec-kit command that appears to do nothing is almost always this.
+Most spec-kit commands gather live project data by running `speckit-helper.sh` with the Bash
+tool. Without an allowlist entry, every one of those calls prompts.
 
-Merge the following into `~/.claude/settings.json`, preserving everything already there. Substitute the real clone path; `$HOME` is expanded in permission rules, but `${CLAUDE_PLUGIN_ROOT}` is **not**, and a leading wildcard does **not** match — the path must be literal and absolute.
+Merge the following into `~/.claude/settings.json`, preserving everything already there.
+Substitute the real clone path — `$HOME` is expanded in permission rules, but
+`${CLAUDE_PLUGIN_ROOT}` is **not**, and a leading wildcard does **not** match, so the path
+must be literal and absolute.
 
 ```jsonc
 {
   "permissions": {
-    "allow": ["Bash($HOME/.claude-framework/.claude/hooks/speckit-helper.sh:*)"]
+    "allow": [
+      "Bash($HOME/.claude-framework//.claude/hooks/speckit-helper.sh:*)",
+      "Bash($HOME/.claude-framework/.claude/hooks/speckit-helper.sh:*)"
+    ]
   }
 }
 ```
+
+Both entries are deliberate, and the doubled slash in the first is not a typo.
+`${CLAUDE_PLUGIN_ROOT}` expands **with a trailing slash**, so the command
+`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh` reaches the permission matcher as
+`…/.claude-framework//.claude/hooks/…`. The matcher compares strings literally and does not
+normalise `//`, so a rule written with a single slash silently fails to match it. The second
+entry covers the case where a future release drops the trailing slash. Keep both.
+
+**Do not "fix" the commands by moving these calls back into a `` !`…` `` pre-execution
+block.** It does not work, and the failure is confusing: a `!` block is permission-checked
+*before* `${CLAUDE_PLUGIN_ROOT}` is substituted, so the checker sees a literal `${…}` and
+rejects the command with `Contains expansion` — no allowlist entry can match it, and
+`allowed-tools:` frontmatter does not help. `${CLAUDE_PROJECT_DIR}` *is* substituted before
+the check, but it points at the user's project, not the plugin. This has been shipped broken
+twice; the commands now instruct the model to run the helper with the Bash tool instead.
 
 Optional, only if the user wants Agent Teams (experimental, and it costs a full session per teammate — ask first, do not enable it silently):
 

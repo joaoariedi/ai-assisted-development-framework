@@ -9,19 +9,23 @@ Generate an implementation plan from the current branch's specification.
 ## Pre-Flight
 
 ### Current branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Auto-detect spec branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-spec`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-spec`
 
 ### Available specs
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs`
 
 ### Constitution
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Start plan phase (RIPER-style write-block)
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-start`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh plan-phase-start`
 
 ## Instructions
 

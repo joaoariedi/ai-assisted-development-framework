@@ -9,13 +9,17 @@ Generate requirement quality checklists (NOT implementation tests) for the curre
 ## Pre-Flight
 
 ### Current branch
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
+> The commands in this section must be run with the Bash tool; they cannot be
+> pre-executed in a `!` block. A `!` block is permission-checked before
+> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Load spec
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh spec`
 
 ### Existing checklists
-!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists-dir`
+Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists-dir`
 
 ## Instructions
 
