@@ -179,6 +179,22 @@ for sub in branch recent-commits rtk-available; do
   if "$HELPER" "$sub" >/dev/null 2>&1; then ok "helper '$sub' runs"; else bad "helper '$sub' exits non-zero"; fi
 done
 
+# The helper must survive the repos it will actually meet, not just this one. The pr-*
+# subcommands used to diff against `main` and fall back to HEAD~1 with nothing after it, so
+# a repo whose only commit is its first exited 128 (#16). A non-zero helper inside a command
+# yields no data and the command degrades silently — and the model papers over it by running
+# plain git instead, so nobody notices.
+hostile=0
+ROOTREPO="$(mktemp -d)"; NOGIT="$(mktemp -d)"
+git -C "$ROOTREPO" init -q -b main
+git -C "$ROOTREPO" -c user.email=smoke@test -c user.name=smoke commit -q --allow-empty -m "root commit"
+for sub in pr-commits pr-files pr-stats; do
+  (cd "$ROOTREPO" && "$HELPER" "$sub") >/dev/null 2>&1 || { bad "helper '$sub' exits non-zero in a root-commit repo (#16)"; hostile=$((hostile + 1)); }
+  (cd "$NOGIT"    && "$HELPER" "$sub") >/dev/null 2>&1 || { bad "helper '$sub' exits non-zero outside a git repo"; hostile=$((hostile + 1)); }
+done
+rm -rf "$ROOTREPO" "$NOGIT"
+[ "$hostile" -eq 0 ] && ok "pr-* subcommands survive a root-commit repo and a non-git directory"
+
 # --- Tier 2: live install ------------------------------------------------------------
 #
 # Two things you must not do here, both of which produce a green test against a broken plugin:
