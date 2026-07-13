@@ -5,6 +5,22 @@
 
 BRANCH=$(git branch --show-current 2>/dev/null | sed 's|^feature/||')
 
+# Resolve what a PR is diffed against, and never fail doing it. Prints a ref, or nothing
+# when HEAD is the root commit (no parent to compare with).
+#
+# The old chain was `main...HEAD || HEAD~1` with nothing after it, so a repo whose first
+# commit is also its only commit — a fresh project, or a test fixture — exited 128. A
+# helper that exits non-zero inside a command produces no data, and the command silently
+# degrades. Every arm below is guarded; the caller handles the empty case.
+pr_base() {
+  git rev-parse --verify -q '@{u}' >/dev/null 2>&1 && { git rev-parse --abbrev-ref '@{u}'; return; }
+  for b in main master; do
+    git rev-parse --verify -q "$b" >/dev/null 2>&1 && { echo "$b"; return; }
+  done
+  git rev-parse --verify -q 'HEAD~1' >/dev/null 2>&1 && { echo 'HEAD~1'; return; }
+  echo ""   # root commit: the caller diffs against the commit itself
+}
+
 case "$1" in
   # --- Branch & git ---
   branch)
@@ -99,13 +115,29 @@ case "$1" in
     find . -maxdepth 2 -type f \( -name "package.json" -o -name "pyproject.toml" -o -name "Cargo.toml" -o -name "go.mod" -o -name "Makefile" -o -name "*.config.*" -o -name "tsconfig*" -o -name ".eslintrc*" -o -name "Dockerfile" \) 2>/dev/null | head -20
     ;;
   pr-commits)
-    git log --oneline main..HEAD 2>/dev/null || git log --oneline -10
+    base=$(pr_base)
+    if [ -n "$base" ]; then
+      git log --oneline "$base..HEAD" 2>/dev/null || echo "Not a git repository"
+    else
+      git log --oneline -10 2>/dev/null || echo "Not a git repository"
+    fi
     ;;
   pr-files)
-    git diff --name-status main...HEAD 2>/dev/null || git diff --name-status HEAD~1
+    base=$(pr_base)
+    if [ -n "$base" ]; then
+      git diff --name-status "$base...HEAD" 2>/dev/null || echo "Not a git repository"
+    else
+      # Root commit — show what it introduced rather than exiting 128.
+      git show --name-status --format= HEAD 2>/dev/null || echo "Not a git repository"
+    fi
     ;;
   pr-stats)
-    git diff --stat main...HEAD 2>/dev/null || git diff --stat HEAD~1
+    base=$(pr_base)
+    if [ -n "$base" ]; then
+      git diff --stat "$base...HEAD" 2>/dev/null || echo "Not a git repository"
+    else
+      git show --stat --format= HEAD 2>/dev/null || echo "Not a git repository"
+    fi
     ;;
 
   # --- New commands for speckit.review, speckit.baseline, speckit.fix ---
