@@ -124,6 +124,16 @@ else
   ok "no command invokes the helper from a ! block"
 fi
 
+# The explanatory notes in those commands must survive substitution. They exist to stop the
+# `!` block being reintroduced a third time — but they are prose inside skill content, and
+# skill content is substituted. A note that spells the plugin-root variable with a $ and
+# braces gets its own warning replaced by a path, and reads as nonsense to the next reader.
+if grep -h '^>' "$REPO"/commands/*.md | grep -qF '${CLAUDE_PLUGIN_ROOT}'; then
+  bad "a note spells out the substitutable plugin-root variable — it will be replaced by a path and the warning will be gibberish"
+else
+  ok "the anti-regression notes survive substitution"
+fi
+
 # Every subcommand a command asks for must actually be implemented. A rename here fails
 # at runtime, inside a command, where nobody is watching.
 missing=0

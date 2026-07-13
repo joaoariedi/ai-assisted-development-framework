@@ -10,8 +10,10 @@ Generate an implementation plan from the current branch's specification.
 
 ### Current branch
 > The commands in this section must be run with the Bash tool; they cannot be
-> pre-executed in a `!` block. A `!` block is permission-checked before
-> `${CLAUDE_PLUGIN_ROOT}` is substituted, so it is rejected as "Contains expansion".
+> pre-executed in a `!` block. A `!` block is permission-checked before the
+> CLAUDE_PLUGIN_ROOT variable is substituted, so it is rejected as "Contains
+> expansion". Do not write that variable with a $ and braces here: it would be
+> substituted into this note and the warning would read as nonsense.
 
 Run with the Bash tool: `${CLAUDE_PLUGIN_ROOT}/hooks/speckit-helper.sh branch`
 
