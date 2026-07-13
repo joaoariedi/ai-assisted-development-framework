@@ -17,13 +17,13 @@ For deep or repository-wide search, delegate to the built-in `Explore` agent rat
 ## Live Project Data
 
 ### Recent commits
-!`~/.claude/hooks/speckit-helper.sh recent-commits`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh recent-commits`
 
 ### Active branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Directory structure (top 2 levels)
-!`~/.claude/hooks/speckit-helper.sh project-files`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh project-files`
 
 ## Output Format
 

@@ -9,19 +9,19 @@ Execute the implementation plan using strict TDD cycles with quality gates.
 ## Pre-Flight
 
 ### Current branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Load artifacts
-!`~/.claude/hooks/speckit-helper.sh check-artifacts`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh check-artifacts`
 
 ### Constitution
-!`~/.claude/hooks/speckit-helper.sh constitution`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Checklists
-!`~/.claude/hooks/speckit-helper.sh checklists`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists`
 
 ### Test framework detection
-!`~/.claude/hooks/speckit-helper.sh detect-test-framework`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-test-framework`
 
 ## Instructions
 

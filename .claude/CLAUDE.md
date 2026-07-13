@@ -48,7 +48,8 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 - Use Glob to discover project structure
 - Use Bash only for system commands and terminal operations
 - Use EnterPlanMode/ExitPlanMode for complex features requiring user approval
-- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: brainstorm → specify → plan → review → tasks → implement
+- For spec-driven development (SDD), use `/speckit.init` to bootstrap, then: brainstorm → specify → plan → (clarify) → review → tasks → (checklist, analyze) → implement
+- For a LARGE task list, run `ai-development-framework:speckit-workflow` instead of `/speckit.implement`: it executes tasks.md as a deterministic Workflow — phase order enforced in code, independent tasks in parallel, every task adversarially verified by agents that did not write it. It must be invoked by that full namespaced name; a bare `speckit-workflow` does not resolve. Run it only AFTER the human gates (clarify/review/checklist), which a workflow cannot perform.
 - For trivial changes (typos, config), use `/speckit.fix` to bypass the full pipeline
 - For brownfield projects, use `/speckit.baseline` to reverse-engineer specs from existing code
 

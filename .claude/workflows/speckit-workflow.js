@@ -1,7 +1,7 @@
 export const meta = {
-  name: 'speckit-implement',
+  name: 'speckit-workflow',
   description: 'Execute the spec-kit task list: phase-ordered TDD, [P] tasks in parallel, every task adversarially verified by agents that did not write it',
-  whenToUse: 'After /speckit.tasks has produced tasks.md. Replaces /speckit.implement when the task list is large enough that a single conversation would lose the thread.',
+  whenToUse: 'After /speckit.tasks has produced tasks.md. An alternative to the /speckit.implement command, for when the task list is large enough that a single conversation would lose the thread.',
   phases: [
     { title: 'Load', detail: 'parse tasks.md / spec.md / plan.md into a phase-ordered task graph' },
     { title: 'Implement', detail: 'TDD per task — [P] tasks concurrently, the rest sequentially' },

@@ -9,16 +9,16 @@ Perform a read-only consistency analysis across all spec-kit artifacts for the c
 ## Pre-Flight
 
 ### Current branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Load all artifacts
-!`~/.claude/hooks/speckit-helper.sh all-artifacts`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh all-artifacts`
 
 ### Constitution
-!`~/.claude/hooks/speckit-helper.sh constitution`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh constitution`
 
 ### Checklists
-!`~/.claude/hooks/speckit-helper.sh checklists-content`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh checklists-content`
 
 ## Instructions
 

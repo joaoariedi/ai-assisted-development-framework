@@ -10,13 +10,13 @@ Explore and refine the idea before writing a formal spec: **$ARGUMENTS**
 ## Pre-Flight
 
 ### Current branch
-!`~/.claude/hooks/speckit-helper.sh branch`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh branch`
 
 ### Project context
-!`~/.claude/hooks/speckit-helper.sh detect-stack`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh detect-stack`
 
 ### Existing specs
-!`~/.claude/hooks/speckit-helper.sh list-specs-dir`
+!`${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh list-specs-dir`
 
 ## Hard Gate
 

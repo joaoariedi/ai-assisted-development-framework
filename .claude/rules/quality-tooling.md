@@ -28,8 +28,8 @@ command if not installed:
 # Inline pattern
 command -v rtk >/dev/null 2>&1 && rtk pytest -q || pytest -q
 
-# Or use the framework helper
-"$HOME/.claude/hooks/speckit-helper.sh" rtk-available \
+# Or use the framework helper (plugin install: the path is substituted for you)
+"${CLAUDE_PLUGIN_ROOT}/.claude/hooks/speckit-helper.sh" rtk-available \
   && rtk pytest -q \
   || pytest -q
 ```

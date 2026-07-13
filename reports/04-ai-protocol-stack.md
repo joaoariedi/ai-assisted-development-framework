@@ -70,7 +70,7 @@ At the presentation layer, **AG-UI** (Agent-UI) and **A2UI** handle the translat
 
 ## Not Yet Adopted
 
-**MCP.** The framework currently configures exactly one MCP server — see `.claude/mcp.json`, which registers only `github` (HTTP transport, `"scope": "user"`, for the review-coordinator agent). The research-recommended granular stack of **filesystem**, **github**, and **sequential-thinking** servers is therefore only one-third present. The absence is deliberate under the curation rule, not an oversight: filesystem access is already covered by native Read/Grep/Glob tools, and no sequential-thinking equivalent has been evaluated.
+**MCP.** The framework currently configures exactly one MCP server — see the root `.mcp.json`, which registers only `github` (HTTP transport, project scope, `Bearer ${GITHUB_TOKEN}`, for the review-coordinator agent; it is shipped by the plugin's `mcpServers` key). It previously lived at `.claude/mcp.json` — a path Claude Code never reads — and was therefore inert for the framework's entire life; see `07-quality-gates.md` on silent non-loading. The research-recommended granular stack of **filesystem**, **github**, and **sequential-thinking** servers is therefore only one-third present. The absence is deliberate under the curation rule, not an oversight: filesystem access is already covered by native Read/Grep/Glob tools, and no sequential-thinking equivalent has been evaluated.
 
 **Code execution for tool orchestration.** Not adopted. The framework pre-loads its tool schemas conventionally; no sandboxed discover-and-call-on-demand path exists.
 

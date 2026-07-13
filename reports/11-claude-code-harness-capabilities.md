@@ -97,11 +97,12 @@ hooks:
 ```
 
 > **This does NOT solve the framework's distribution friction, and an earlier draft of this file
-> wrongly claimed it did.** The framework's seven hooks are *global* — `PreToolUse` on every
+> wrongly claimed it did.** The framework's eight hooks are *global* — `PreToolUse` on every
 > `Bash`, `PostToolUse` on every `Edit|Write`. A skill-scoped hook only fires while that skill is
 > active, so it cannot replace a global gate. The real fix is packaging: a
-> `.claude-plugin/plugin.json` bundles **agents, hooks, and MCP servers** together, which is the
-> only mechanism that ships a global hook without asking the user to hand-edit `settings.json`.
+> `.claude-plugin/plugin.json` bundles **skills, commands, agents, hooks, workflows, and MCP
+> servers** together, which is the only mechanism that ships a global hook without asking the
+> user to hand-edit `settings.json`.
 
 Substitutions available in a skill body: `$ARGUMENTS`, `$0`/`$1`, `${CLAUDE_PROJECT_DIR}`, `${CLAUDE_SKILL_DIR}`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_EFFORT}`.
 
@@ -150,7 +151,9 @@ A command is the right choice when it is purely a human-triggered prompt. A skil
 - **`when_to_use`** on all three, giving the model trigger phrases rather than making it infer intent from a prose description.
 - **Agent Teams rewritten** against the current API (see above).
 
-- **Packaged as a plugin.** `.claude-plugin/plugin.json` bundles skills, commands, agents, hooks, and the MCP server. This is the *only* mechanism that ships global hooks without a hand-written `settings.json`. Side benefit: `claude plugin validate --strict` type-checks the manifest, the skill/agent frontmatter, and `hooks.json` — so the class of silent-non-loading bug that hid the dead skills layer, the inert `mcp.json`, and an unregistered hook now fails **loudly**.
+- **Packaged as a plugin.** `.claude-plugin/plugin.json` bundles skills, commands, agents, hooks, **workflows**, and the MCP server; `.claude-plugin/marketplace.json` is what makes it *installable* (`claude plugin install` resolves only through a marketplace — without that file the sole install path is the session-scoped `--plugin-dir` flag). This is the *only* mechanism that ships global hooks without a hand-written `settings.json`.
+
+  **`validate` is not a load test.** `claude plugin validate --strict` checks the manifest, frontmatter, and `hooks.json` against the schema, which is why it is worth running — but it verifies that declared *paths exist*, not that the runtime *loads* what they point at. Measured: a `workflows` key was absent entirely and validation still passed; and `claude plugin details` reports `Agents (0)` for a manifest whose agents load correctly in a live session. Validation raises the floor on silent non-loading; **only invoking the component proves it loaded.**
 - **`TaskCompleted` gate.** `verify-before-task-complete.sh` exits 2 to block a completion while tests fail. The Verification Iron Law is now mechanical rather than prose.
 
 ## Not Yet Adopted
