@@ -1,0 +1,160 @@
+# Installing & Configuring
+
+[← back to README](../README.md)
+
+### 1️⃣ Install as a Plugin (recommended)
+
+The framework is a Claude Code plugin. **The hooks ship with it** — you no longer hand-write `settings.json`, which is where every previous version leaked its most-reported friction.
+
+A plugin is installed **from a marketplace**, so the framework ships one (`.claude-plugin/marketplace.json`) that lists exactly one plugin: itself. Clone once, then point the marketplace at the clone:
+
+```bash
+git clone https://github.com/joaoariedi/ai-assisted-development-framework.git ~/.claude-framework
+
+claude plugin marketplace add ~/.claude-framework
+claude plugin install ai-development-framework@ai-development-framework
+```
+
+That is a **persistent, user-scoped** install: it writes `enabledPlugins` to `~/.claude/settings.json` and applies to every project, in every session, with no flags. Confirm it:
+
+```bash
+claude plugin list          # → ai-development-framework@ai-development-framework  ✔ enabled
+```
+
+Because the marketplace source is a **directory**, the plugin is read from your clone in place — nothing is copied. **Updating is therefore just `git pull`** (see *Updating* below), and the install path is stable and predictable, which the permission rule in step 2 depends on.
+
+<details>
+<summary><b>Alternative: try it for a single session, without installing</b></summary>
+
+```bash
+claude --plugin-dir ~/.claude-framework      # this session only; nothing is written to settings
+claude plugin validate ~/.claude-framework   # check the manifest without loading it
+```
+
+</details>
+
+The plugin bundles **skills, commands, agents, hooks, workflows, and the MCP server** in one unit.
+
+> **⚠️ Do not stow the dotfiles *and* install the plugin.** Every component would register twice. If `~/.claude/agents/` or `~/.claude/commands/` already contains these files from the legacy stow install, remove them (`stow -D claude`) before installing the plugin.
+
+#### What the plugin is called once installed
+
+Plugin components are **namespaced by plugin name**, but the namespace is only *required* where a bare name is ambiguous or unsupported:
+
+| Component | How you invoke it |
+|---|---|
+| **Commands** | `/adf.context`, `/speckit.plan`, `/adf.quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
+| **Agents** | Dispatched by Claude, or by name — they appear as `ai-development-framework:code-reviewer`. |
+| **The workflow** | **Must be namespaced**: `ai-development-framework:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
+
+### 2️⃣ Optional Configuration
+
+Two things the plugin cannot ship, because they are machine-local by design:
+
+```jsonc
+// In ~/.claude/settings.json — only if you want these:
+{
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   // Agent Teams (experimental)
+  "permissions": {
+    "allow": [
+      "Bash(/home/you/.claude-framework//hooks/speckit-helper.sh:*)",   // ← your REAL home dir
+      "Bash(/home/you/.claude-framework/hooks/speckit-helper.sh:*)"
+    ]
+  }
+}
+```
+
+> ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. The commands run the helper with the Bash tool; they cannot pre-execute it in a `` !`…` `` block, because a `!` block is permission-checked *before* `${CLAUDE_PLUGIN_ROOT}` is substituted and is rejected outright as `Contains expansion`.
+>
+> **The rule must mirror the command byte for byte. The matcher does no expansion and no normalisation.** Tested against the live matcher:
+>
+> | Rule | Result |
+> |---|---|
+> | `Bash(/home/you/.claude-framework//hooks/speckit-helper.sh:*)` | ✅ matches |
+> | same, but one slash before `hooks` | ❌ blocked |
+> | `Bash($HOME/…)` | ❌ blocked — **`$HOME` is not expanded** |
+> | `Bash(~/…)` | ❌ blocked — **`~` is not expanded** |
+> | leading wildcard | ❌ blocked |
+>
+> **Write your home directory out literally** (`echo $HOME`). The doubled slash is not a typo and is the entry that works: `${CLAUDE_PLUGIN_ROOT}` expands *with* a trailing slash, so the helper reaches the matcher as `…/.claude-framework//hooks/…`. The single-slash entry is a hedge against a future release dropping that slash; it matches nothing today. Keep both.
+>
+> **This is the single most common failure.** A pre-flight command that is denied aborts the whole slash command **silently** — no error, no output, exit 0. If a spec-kit command appears to do nothing at all, this rule is the first thing to check.
+
+Export `GITHUB_TOKEN` if you want the bundled GitHub MCP server to connect.
+
+### 3️⃣ Verify the Installation
+
+```bash
+cd ~/any-project && claude
+```
+
+Three checks, in increasing strength:
+
+1. **`claude plugin list`** — the plugin is `✔ enabled`. If it is not here, nothing else matters.
+2. **The `/` menu** — every command should be listed. **A component that does not appear is not loaded**, and its absence is silent. This is the only reliable test.
+3. **Run one** — `/adf.context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
+
+> ⚠️ `claude plugin details ai-development-framework` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
+
+### 4️⃣ Your First Feature (the 60-second tour)
+
+The framework's core loop is **spec first, then code, then a gate you cannot talk your way past.**
+
+```bash
+/speckit.init                    # once per project — bootstraps .specify/
+/speckit.specify  add user login # → a spec: scenarios, requirements, success criteria
+/speckit.plan                    # → an implementation plan (writes are blocked outside .specify/)
+/speckit.tasks                   # → a phased, dependency-ordered task list
+/speckit.implement               # → TDD execution, red-green, one task at a time
+/adf.quality                         # → lint, types, secrets, SOLID — before you commit
+```
+
+For a **large** task list, swap the last implementation step for the workflow, which runs independent tasks in parallel and has every task adversarially verified by agents that did not write it:
+
+```
+ai-development-framework:speckit-workflow
+```
+
+Not every change deserves a spec. For a typo or a config tweak, `/speckit.fix` skips the pipeline. For an existing codebase with no specs, `/speckit.baseline` reverse-engineers them.
+
+**What happens without you asking:** on every edit, formatters run and tests fire; on every `git commit`, secrets detection and linting must pass or the commit is blocked; and a task cannot be marked complete while the test suite fails. You do not opt into these — they ship with the plugin.
+
+### 5️⃣ Updating
+
+The plugin is read from your clone in place, so updating is a `git pull`:
+
+```bash
+git -C ~/.claude-framework pull
+claude plugin marketplace update ai-development-framework   # re-read the manifest
+```
+
+Restart Claude Code to pick up the new components. To check what changed first, read `CHANGELOG.md` in the clone.
+
+### 6️⃣ The two things the plugin cannot ship
+
+`plugin.json` ships **skills, commands, agents, hooks, workflows, and the MCP server**. There is no plugin component for **`rules/`** or **`CLAUDE.md`** — so installing the plugin does *not* give you the framework's global rules (code quality, git workflow, the Iron Laws, security, context management). If you want those to apply everywhere, copy them into `~/.claude/` yourself:
+
+```bash
+cp -r ~/.claude-framework/.claude/rules ~/.claude/rules
+cp    ~/.claude-framework/.claude/CLAUDE.md ~/.claude/CLAUDE.md
+```
+
+> ⚠️ **These drift.** Nothing keeps them in sync — a `git pull` updates the plugin's components but not your copies. Re-copy them after an upgrade, and read `CHANGELOG.md` to see whether they changed. This is the one genuine gap in the plugin install, and it is a limitation of what a Claude Code plugin can contain, not an oversight.
+
+<details>
+<summary><b>Historical: the old dotfiles + stow install</b></summary>
+
+Before 4.4.0 the framework was installed by symlinking a dotfiles package into `~/.claude/` with GNU Stow. **That path is gone.** As of 4.5.0 the plugin payload lives at the repository root, not under `.claude/`, and the dotfiles package no longer carries `agents/`, `commands/`, `hooks/`, or `skills/` — following the old instructions today produces a half-install with none of them.
+
+If you have a legacy stow install, retire it before installing the plugin, or every component registers **twice**:
+
+```bash
+cd ~/dotfiles && stow -D claude    # then install the plugin as above
+```
+
+Keep `CLAUDE.md` and `rules/` if your dotfiles carry them — as above, the plugin cannot ship those.
+
+</details>
+
+---
+
