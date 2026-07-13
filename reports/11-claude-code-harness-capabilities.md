@@ -150,10 +150,11 @@ A command is the right choice when it is purely a human-triggered prompt. A skil
 - **`when_to_use`** on all three, giving the model trigger phrases rather than making it infer intent from a prose description.
 - **Agent Teams rewritten** against the current API (see above).
 
+- **Packaged as a plugin.** `.claude-plugin/plugin.json` bundles skills, commands, agents, hooks, and the MCP server. This is the *only* mechanism that ships global hooks without a hand-written `settings.json`. Side benefit: `claude plugin validate --strict` type-checks the manifest, the skill/agent frontmatter, and `hooks.json` — so the class of silent-non-loading bug that hid the dead skills layer, the inert `mcp.json`, and an unregistered hook now fails **loudly**.
+- **`TaskCompleted` gate.** `verify-before-task-complete.sh` exits 2 to block a completion while tests fail. The Verification Iron Law is now mechanical rather than prose.
+
 ## Not Yet Adopted
 
-- **Package the framework as a plugin.** A `.claude-plugin/plugin.json` bundles agents, hooks, and MCP servers. This is the *only* mechanism that ships the seven global hooks without asking every user to hand-write `settings.json` — the framework's single largest installation friction, and the thing the README currently apologizes for.
-- **`TaskCompleted` hook.** Exit 2 blocks a premature completion. This would convert the Verification Iron Law from prose the model can rationalize past into a gate it cannot. Given that the framework's entire Iron Law apparatus was unenforceable for three releases, this is the highest-value remaining item.
 - **`paths:` gating.** No skill limits activation by file glob, so every description competes for attention on every turn. Low value at three skills; it matters as the count grows.
 - **`/run-skill-generator`.** Would record each project's build/launch recipe so `/verify` and `/run` stop re-inferring it.
 - **Workflows.** No framework command or rule uses the deterministic `Workflow` primitive. The spec-kit pipeline (specify → plan → tasks → implement) is exactly the shape a workflow encodes, and is currently executed by model discretion at every step.

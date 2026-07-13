@@ -54,6 +54,12 @@
   settling for tests or a typecheck. Passing tests are evidence the tests pass, not evidence
   the change works.
 
+**This law is mechanically enforced.** The `TaskCompleted` hook
+(`hooks/verify-before-task-complete.sh`) exits 2 — which *blocks* the completion — if the
+test suite fails while source files are changed. It is not advisory. Do not attempt to
+route around it; if the failure is genuinely unrelated, say so explicitly and set
+`CLAUDE_SKIP_VERIFY_GATE=1` deliberately.
+
 Rationalization table — none of these excuses satisfy the Iron Law:
 
 | Excuse | Reality |
@@ -62,6 +68,7 @@ Rationalization table — none of these excuses satisfy the Iron Law:
 | "Tests passed last iteration" | Stale evidence is not evidence. Re-run. |
 | "The typecheck is green" | A typecheck is not a behavior check. Drive the code path. |
 | "It's obviously correct" | Then proving it costs one command. Run it. |
+| "That failure is pre-existing" | Prove it on *this* tree, or fix it. Assertion is not proof. |
 
 ## Security-Specific Test Files
 - For features involving auth, authorization, or data protection, create dedicated security test files

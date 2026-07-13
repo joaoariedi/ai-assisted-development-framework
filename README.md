@@ -6,63 +6,33 @@
 
 ## ⚡ Quick Start
 
-### 1️⃣ Install via Dotfiles
+### 1️⃣ Install as a Plugin (recommended)
+
+The framework is a Claude Code plugin. **The hooks ship with it** — you no longer hand-write `settings.json`, which is where every previous version leaked its most-reported friction.
 
 ```bash
-# Clone the dotfiles repo (or your own fork)
-git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
-
-# Symlink Claude Code config into ~/.claude/
-cd ~/dotfiles && stow claude
-
-# Verify symlinks
-ls -la ~/.claude/
-# CLAUDE.md → ../dotfiles/claude/.claude/CLAUDE.md
-# commands/ → ../dotfiles/claude/.claude/commands/
-# agents/   → ../dotfiles/claude/.claude/agents/
-# hooks/    → ../dotfiles/claude/.claude/hooks/
-# skills/   → ../dotfiles/claude/.claude/skills/
-# rules/    → ../dotfiles/claude/.claude/rules/
+git clone git@github.com:joaoariedi/ai-assisted-development-framework.git
+claude plugin validate ./ai-assisted-development-framework   # optional: confirm the manifest
+claude --plugin-dir ./ai-assisted-development-framework      # try it for one session
 ```
 
-### 2️⃣ Create Machine-Local Settings
+The plugin bundles **skills, commands, agents, hooks, and the MCP server** in one unit. `.claude-plugin/plugin.json` is the manifest; `claude plugin validate` checks it *and* the skill/agent frontmatter *and* `hooks/hooks.json` against the real schema, so a broken component fails loudly instead of silently not loading.
 
-`settings.json` contains hooks and env vars. It's machine-specific and **not managed by stow**:
+### 2️⃣ Optional Configuration
+
+Two things the plugin cannot ship, because they are machine-local by design:
 
 ```bash
-cat > ~/.claude/settings.json << 'EOF'
+# In ~/.claude/settings.json — only if you want these:
 {
-  "permissions": {
-    "allow": [
-      "Bash($HOME/.claude/hooks/speckit-helper.sh:*)"
-    ]
-  },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  },
-  "hooks": {
-    "PreToolUse": [
-      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "~/.claude/hooks/quality-before-commit.sh", "timeout": 120 }] },
-      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "~/.claude/hooks/block-sensitive-files.sh" }] }
-    ],
-    "PostToolUse": [
-      { "matcher": "Edit|Write", "hooks": [
-        { "type": "command", "command": "~/.claude/hooks/format-after-edit.sh", "timeout": 15 },
-        { "type": "command", "command": "~/.claude/hooks/run-tests-after-edit.sh", "timeout": 30 }
-      ]}
-    ],
-    "Notification": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/notify-on-block.sh", "timeout": 5 }] }
-    ],
-    "Stop": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "~/.claude/hooks/stop-quality-check.sh", "timeout": 10 }] }
-    ]
-  }
+  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" },   # Agent Teams (experimental)
+  "permissions": { "allow": ["Bash($HOME/.claude/hooks/speckit-helper.sh:*)"] }
 }
-EOF
 ```
 
-> ⚠️ **Important**: The `speckit-helper.sh` permission is required for all spec-kit commands to work. Claude Code blocks `$()`, `||`, and `|` operators in pre-flight commands, so all logic is routed through the helper script.
+> ⚠️ The `speckit-helper.sh` permission avoids a prompt on every spec-kit command. Claude Code blocks `$()`, `||`, and `|` in pre-flight commands, so all logic routes through that helper script.
+
+Export `GITHUB_TOKEN` if you want the bundled GitHub MCP server to connect.
 
 ### 3️⃣ Verify Installation
 
@@ -73,7 +43,21 @@ claude
 > /speckit.init     # bootstraps .specify/ for spec-driven dev
 ```
 
-After `stow claude`, every new Claude Code session loads the rules, agents, commands, and skills automatically. If you have an existing `~/.claude/` config, back it up first (`mv ~/.claude ~/.claude.backup`); to pick up newly-added files later, restow with `stow -R claude`.
+Check the `/` menu: every skill and command should be listed. **A skill that does not appear there is not loaded** — that is the only reliable test, and its absence is silent.
+
+<details>
+<summary><b>Legacy: install via dotfiles + stow</b></summary>
+
+The original mechanism still works, but it cannot ship hooks — you must hand-write `settings.json`, and every new hook needs a manual edit.
+
+```bash
+git clone git@github.com:joaoariedi/dotfiles.git ~/dotfiles
+cd ~/dotfiles && stow claude    # symlinks CLAUDE.md, rules/, agents/, commands/, skills/, hooks/ into ~/.claude/
+```
+
+> ⚠️ **Do not use both.** Stowing the config *and* installing the plugin registers every skill, command, and agent **twice**. Pick one. Stow remains useful for `CLAUDE.md` and `rules/`, which are not plugin components — so if you want those globally, stow them and install the plugin only in projects that need it.
+
+</details>
 
 ---
 
@@ -237,7 +221,7 @@ sequenceDiagram
 
 ## 🛡️ Automated Quality Gates
 
-Seven hooks enforce quality automatically — no manual intervention needed:
+Eight hooks enforce quality automatically — and they ship with the plugin, so there is nothing to register:
 
 - 🔍 **Pre-commit** — secrets detection (gitleaks) + language-specific linting blocks the commit on errors
 - 🔒 **File protection** — writes to `.env`, `*.key`, `*.pem`, credentials, and `.git/` internals are blocked
@@ -446,17 +430,30 @@ The framework ships only what Claude Code does **not** already do natively:
 
 ## ⚙️ Hooks
 
-Shell-script hooks run automatically via `settings.json`:
+Hooks ship **inside the plugin** (`.claude/hooks/hooks.json`), so installing the plugin registers all of them. No `settings.json` editing.
 
 | Hook | Trigger | What It Does |
 |------|---------|--------------|
+| ✅ `verify-before-task-complete.sh` | **TaskCompleted** | **Blocks** a task from being marked complete while the test suite fails. Exit 2 is a hard gate. |
 | 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — runs gitleaks + language-specific linters, blocks on errors |
 | 🔒 `block-sensitive-files.sh` | PreToolUse on `Edit\|Write` | Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*`, `secrets/` |
+| 📐 `plan-phase-write-block.sh` | PreToolUse on `Edit\|Write` | Blocks writes outside `.specify/` while `/speckit.plan` is active |
 | 🎨 `format-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-formats edited files (ruff, biome/prettier, gofmt, rustfmt), 10s throttle |
 | 🧪 `run-tests-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-runs test suite after source edits, 15s throttle, non-blocking |
 | 🔔 `notify-on-block.sh` | Notification | Desktop alert when agent needs attention (notify-send / osascript) |
 | 📊 `stop-quality-check.sh` | Stop event | Reminds if source files were edited but tests not run |
-| 🔧 `speckit-helper.sh` | Pre-flight commands | Routes backtick logic to avoid Claude Code permission errors |
+| 🔧 `speckit-helper.sh` | Pre-flight commands | Routes backtick logic to avoid Claude Code permission errors (not a hook — a helper) |
+
+### The `TaskCompleted` gate
+
+Every other quality mechanism in this framework is **advisory** — a rule the model can rationalize past, or a `Stop` hook that prints a reminder and exits 0. `verify-before-task-complete.sh` is the first one that is **mechanical**: exit 2 blocks the completion outright and feeds stderr back to the agent.
+
+It is the enforcement the Verification Iron Law always claimed to have:
+
+- Skips entirely when there is no test runner, or when the runner is on `PATH` but cannot execute (a version-manager shim that fails at exec time is a **tooling** fault, not a test failure — blocking on that would be a false positive, and a gate that cries wolf gets disabled).
+- Skips when the working tree has no source changes. Docs cannot break a test suite.
+- Caches the result against a hash of the working tree, so the suite is not re-run for a tree already proven green.
+- `CLAUDE_SKIP_VERIFY_GATE=1` disables it — deliberately, and visibly, rather than by quietly working around it.
 
 ---
 
