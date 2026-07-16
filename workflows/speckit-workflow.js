@@ -127,6 +127,72 @@ it — the implementer reporting green is a claim, not evidence.`,
   },
 ]
 
+// A FUNCTION DECLARATION, not `const keyOf = ...`. The _key stamp runs right after the loader's null
+// guard — above this line — and a `const` is in its temporal dead zone until its declaration executes,
+// so a const arrow throws `ReferenceError: Cannot access 'keyOf' before initialization` on EVERY path,
+// including the clean run. A function declaration hoists and the trap evaporates. Measured.
+function keyOf(pi, ti) {
+  return `${pi}:${ti}`
+}
+
+// Every spawn in this file goes through here. The call below is the ONE unwrapped invocation of the
+// harness-injected spawn primitive in the whole file, and tests/smoke.sh enforces that by counting
+// occurrences — so this comment deliberately avoids naming that primitive followed by a paren, which
+// would trip the guard against correct code. Reword prose like this; never loosen the guard.
+//
+// A THROW means the agent finished without calling StructuredOutput. That is cheap to re-ask, so retry
+// — bounded at 3 attempts, because unbounded retry against a hot API is the very failure this exists to
+// survive.
+//
+// A NULL means the harness ALREADY exhausted its own backoff against a terminal API error. Retrying
+// that pours load onto an API that is refusing us. Only the throw is retried; the null passes straight
+// through to the caller.
+//
+// `e?.message` and `opts?.label`, never `e.message` / `opts.label`: a thrown null or undefined makes the
+// ERROR HANDLER ITSELF throw a TypeError, which escapes and kills the sequential run — the exact
+// scenario this function exists to prevent. Measured. The harness's throw *type* is undocumented, so
+// reachability is unknown and the hedge costs two characters.
+async function agentTyped(prompt, opts, tries = 2) {
+  for (let i = 0; ; i++) {
+    try {
+      return await agent(prompt, opts)
+    } catch (e) {
+      const why = e?.message ?? String(e)
+      if (i >= tries) {
+        log(`${opts?.label}: gave up after ${tries + 1} attempts — ${why}`)
+        return null
+      }
+      log(`${opts?.label}: retry ${i + 1}/${tries} — ${why}`)
+    }
+  }
+}
+
+// Both halt sites and the final return share this, so "how much actually got done?" is answerable on
+// every exit. It was unanswerable exactly when it mattered most: the halts carried no `total` at all.
+//
+// Identity is POSITIONAL (`_key`), never `task.id`. tasks.md is parsed by a model and nothing validates
+// that ids are unique across phases, so keying on id lets a duplicate T001 in a later phase count as
+// "attempted" because an earlier T001 ran — and notAttempted silently under-reports. The ledger would
+// lie, inside the helper written to stop the ledger lying. This file already refuses to trust the
+// model-written [P] marker (see the batching below) and re-derives safety from file lists; ids earn
+// exactly the same distrust.
+//
+// `pending` READS the stamp rather than recomputing it. Deriving `_key` twice means the two derivations
+// agree only while both index the unfiltered p.tasks — transpose either to filter-then-map and a task
+// reindexes and reappears in notAttempted despite having run.
+function ledger(results, ctx) {
+  const attempted = new Set(results.map(r => r.task._key))
+  const pending = ctx.phases.flatMap(p => p.tasks).filter(t => !t.done)
+  return {
+    total: pending.length,
+    accepted: results.filter(r => r.accepted).map(r => r.task.id),
+    rejected: results
+      .filter(r => !r.accepted)
+      .map(r => ({ id: r.task.id, description: r.task.description, reason: r.reason })),
+    notAttempted: pending.filter(t => !attempted.has(t._key)).map(t => t.id),
+  }
+}
+
 function implPrompt(task, ctx) {
   return `Implement exactly one spec-kit task with a strict TDD cycle. Do not touch any other task.
 
@@ -202,7 +268,7 @@ if (typeof _args === 'string') {
 const requestedDir =
   typeof _args === 'string' ? _args : (_args && _args.featureDir) || ''
 
-const ctx = await agent(
+const ctx = await agentTyped(
   `Load the spec-kit artifacts for the current feature.
 
 ${
@@ -241,6 +307,11 @@ if (!ctx || !ctx.phases || ctx.phases.length === 0) {
   return { error: 'No tasks.md found, or it contains no tasks. Run /speckit.tasks first.' }
 }
 
+// AFTER the guard above, never before it. Stamping first means a dead loader throws
+// `TypeError: Cannot read properties of null (reading 'phases')` instead of returning the clean error —
+// breaking the one null path that was already handled correctly. Measured.
+ctx.phases.forEach((p, pi) => p.tasks.forEach((t, ti) => { t._key = keyOf(pi, ti) }))
+
 const pending = ctx.phases.flatMap(p => p.tasks.filter(t => !t.done))
 log(`${ctx.featureDir}: ${pending.length} pending task(s) across ${ctx.phases.length} phase(s)`)
 if (!ctx.testCommand) {
@@ -248,7 +319,7 @@ if (!ctx.testCommand) {
 }
 
 async function implementAndVerify(task) {
-  const impl = await agent(implPrompt(task, ctx), {
+  const impl = await agentTyped(implPrompt(task, ctx), {
     label: `impl:${task.id}`,
     phase: 'Implement',
     schema: IMPL_SCHEMA,
@@ -259,7 +330,7 @@ async function implementAndVerify(task) {
   const verdicts = (
     await parallel(
       LENSES.map(lens => () =>
-        agent(verifyPrompt(task, impl, lens, ctx), {
+        agentTyped(verifyPrompt(task, impl, lens, ctx), {
           label: `verify:${task.id}:${lens.key}`,
           phase: 'Verify',
           schema: VERDICT_SCHEMA,
@@ -317,8 +388,17 @@ for (const ph of ctx.phases) {
 
   const phaseResults = []
   for (const b of batches) {
-    const done = (await parallel(b.tasks.map(t => () => implementAndVerify(t)))).filter(Boolean)
-    phaseResults.push(...done)
+    // Do NOT .filter(Boolean) this. parallel() converts a thrown implementer to null, and filtering it
+    // ERASES the task: it lands in neither accepted nor rejected, the halt below cannot see it, and the
+    // run returns 1/1 — a PERFECT SCORE for a phase where the task never ran. Measured.
+    //
+    // Map the null to an explicit rejection instead. Index-mapped, so the null still knows which task it
+    // was. Belt-and-braces with agentTyped (which should stop throws escaping at all) because
+    // parallel()'s throw->null contract is the harness's, not ours.
+    const done = await parallel(b.tasks.map(t => () => implementAndVerify(t)))
+    done.forEach((r, i) =>
+      phaseResults.push(r || { task: b.tasks[i], accepted: false, reason: 'implementer crashed (unhandled error)' }),
+    )
   }
 
   // Everything else is ordered within the phase — run one at a time.
@@ -333,13 +413,12 @@ for (const ph of ctx.phases) {
       halted: true,
       haltedAt: ph.name,
       reason: 'Tasks failed adversarial verification. Later phases depend on this one, so continuing would build on unverified work.',
-      rejected: rejected.map(r => ({ id: r.task.id, description: r.task.description, reason: r.reason })),
-      accepted: results.filter(r => r.accepted).map(r => r.task.id),
+      ...ledger(results, ctx),
     }
   }
 
   // Phase gate — the whole suite, between phases, exactly as speckit.implement requires.
-  const gate = await agent(
+  const gate = await agentTyped(
     `Run the quality gate for the project at ${ctx.projectRoot} and report honestly.
 
 FIRST: cd ${ctx.projectRoot}. That is the repo under test. It is NOT necessarily your shell's
@@ -355,14 +434,29 @@ halting the run over a project that never had tests would be a false alarm.`,
     { label: `gate:${ph.name}`, phase: 'Implement', schema: GATE_SCHEMA },
   )
 
-  if (gate && !gate.passed) {
-    log(`Phase gate FAILED after ${ph.name}`)
+  // `!gate ||`, not `gate &&`. A null gate — the agent died, or exhausted its retries — used to fall
+  // straight through this check, so the phase silently skipped its gate and the next phase built on
+  // unconfirmed work. Measured: both gates dead => {"completed":2,"total":2}, six gate invocations,
+  // zero confirmations, a clean bill of health for a run where nothing was ever verified. That is the
+  // same silent drop as the batch collector above, reintroduced one function away BY the fix for it —
+  // which is why routing the gate through agentTyped and this line are one change, never two.
+  //
+  // ABSENCE OF CONFIRMATION IS NOT CONFIRMATION.
+  //
+  // Note the asymmetry with the prompt's own rule below: a project that CONFIGURES no gate is an
+  // absence of a gate and correctly reports passed:true — an OBJECT. A gate agent that DIED is null.
+  // Those are structurally different values and cannot be confused, so this check cannot punish a
+  // legitimately gateless project. Verified.
+  if (!gate || !gate.passed) {
+    log(`Phase gate ${gate ? 'FAILED' : 'DIED'} after ${ph.name}`)
     return {
       halted: true,
       haltedAt: ph.name,
-      reason: `Phase quality gate failed: ${gate.summary}`,
-      failures: gate.failures || [],
-      accepted: results.filter(r => r.accepted).map(r => r.task.id),
+      reason: gate
+        ? `Phase quality gate failed: ${gate.summary}`
+        : 'Phase gate agent died — the suite was never confirmed. Refusing to build the next phase on it.',
+      failures: gate?.failures || [],
+      ...ledger(results, ctx),
     }
   }
 }
@@ -373,7 +467,14 @@ const accepted = results.filter(r => r.accepted)
 
 // tasks.md is written exactly once, by one agent, after everything is verified.
 // Parallel implementers ticking their own boxes would race on this file.
-await agent(
+//
+// The result was once DISCARDED. When this agent died, no checkbox was ticked and the run still
+// returned {"completed":3,"total":3} — a green run whose only persisted artifact never happened, and
+// whose next invocation re-implements every task from scratch. Measured.
+//
+// `=== null`, not `!ticked`: this call has no schema, so its return type is unspecified and a
+// legitimate empty-string answer would false-positive. agentTyped returns null and only null on failure.
+const ticked = await agentTyped(
   `Mark these spec-kit tasks complete in ${ctx.featureDir}/tasks.md by changing "- [ ]" to
 "- [x]" for exactly these task IDs, and nothing else:
 
@@ -383,7 +484,23 @@ Do not alter any other line. Do not reword tasks. Do not tick a task not in this
   { label: 'update-tasks-md', phase: 'Report' },
 )
 
-const report = await agent(
+if (ticked === null) {
+  // Distinguish "the work failed" from "the bookkeeping failed". Everything IS implemented and
+  // adversarially verified; only the write died. An operator who reads this as an ordinary halt
+  // re-runs work that is already on disk.
+  log('tasks.md was NOT updated — the write agent died')
+  return {
+    halted: true,
+    haltedAt: 'Report',
+    reason:
+      'All tasks were implemented and verified, but the tasks.md update agent died — the checkboxes were ' +
+      'NOT written. The work is complete and on disk; do not re-run the implementation. Tick the accepted ' +
+      'task ids by hand, or re-run this step alone.',
+    ...ledger(results, ctx),
+  }
+}
+
+const report = await agentTyped(
   `Write the IMPLEMENTATION REPORT for this spec-kit run.
 
 Verified complete (${accepted.length}):
@@ -414,7 +531,11 @@ the failure this report exists to surface — do not paper over it.`,
 return {
   featureDir: ctx.featureDir,
   completed: accepted.length,
-  total: results.length,
   tasks: results.map(r => ({ id: r.task.id, accepted: r.accepted, reason: r.reason || undefined })),
   report,
+  // The same ledger every halt site reports, so a clean run and a halted one are read the same way.
+  // Additive: `accepted`/`rejected`/`notAttempted` are new on this path. `total` is unchanged in value —
+  // on a clean run the graph-derived pending count equals the old `results.length`, because `results`
+  // accumulates exactly the not-done tasks of each phase and empty phases are skipped.
+  ...ledger(results, ctx),
 }

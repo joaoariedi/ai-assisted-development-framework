@@ -1,4 +1,4 @@
-# 🤖 AI Development Framework v5.0
+# 🤖 AI Development Framework v5.1
 
 > A Claude Code plugin for **spec-driven development**: write the spec, then the plan, then the
 > code — with quality gates that are enforced by hooks rather than by good intentions.
@@ -200,4 +200,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**Framework Version**: 5.0.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
+**Framework Version**: 5.1.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
