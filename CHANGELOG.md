@@ -33,6 +33,88 @@ disagree — that check exists because nothing else would notice a half-bumped r
 7. Tag it: `git tag -a vX.Y.Z && git push origin vX.Y.Z`, then cut a GitHub Release from the
    entry above.
 
+## [5.1.0] - 2026-07-16
+
+**`speckit-workflow` no longer loses work to a single transient agent failure — and no longer
+reports a perfect score when it does.**
+
+Driven by a field report from a real two-repo run (`reports/12-…`, FxCube #314). That report named
+three findings; this release ships **one** of them. The other two are #29 and #30, split out after
+review found the combined plan carried ~18 defects concentrated in the multi-repo design.
+
+Every claim below was measured against the shipped file, not reasoned about.
+
+### Fixed
+
+- **A crashed `[P]` implementer no longer vanishes.** `parallel()` converts a thrown implementer to
+  `null`, and `.filter(Boolean)` then *erased the task*: it landed in neither `accepted` nor
+  `rejected`, the halt could not see it, and the run returned `{"completed":1,"total":1}` — a
+  **perfect score for a phase where the task never ran**. It now becomes an explicit rejection.
+- **A crashed sequential implementer no longer kills the run.** Same root cause, opposite symptom:
+  the sequential path had no `parallel()` wrapper, so the throw propagated out of the script and a
+  20-minute run died. *The sequential path screamed; the parallel path lied.*
+- **A non-Error throw no longer kills the error handler.** `throw null` made `e.message` inside the
+  `catch` raise a `TypeError` that escaped — the handler became the failure, on exactly the scenario
+  the retry exists to survive. Now `e?.message ?? String(e)`.
+- **A dead phase gate now halts.** *This one was introduced by the retry fix itself and caught at
+  review.* `if (gate && !gate.passed)` let a `null` straight through once the gate's throw became a
+  null, so the phase silently skipped its gate. Measured: both gates dead ⇒
+  `{"completed":2,"total":2}`, six gate invocations, **zero confirmations**, phase 2 building on
+  unverified work — strictly worse than the loud crash it replaced. Absence of confirmation is not
+  confirmation. A project that *configures* no gate still correctly passes: it returns an object,
+  and only a dead agent returns null.
+- **A run whose `tasks.md` write died no longer reports clean.** That call discarded its result, so a
+  dead writer produced `{"completed":3,"total":3}` with no checkbox written — a green run whose only
+  persisted artifact never happened, and whose next invocation re-implements everything. It now halts
+  with a reason that says the work *is* done, so the operator does not re-run it.
+- **The ledger can no longer be fooled by a duplicate task id.** Ids come from a model parsing
+  `tasks.md` and nothing enforces uniqueness; keying on them let a later duplicate count as
+  "attempted" and under-report `notAttempted` (measured: `balance 1 vs total 2` — a task vanished).
+  Identity is now positional. This file already refused to trust the model-written `[P]` marker; ids
+  earn the same distrust.
+- **A terminal API error is no longer retried.** A `null` means the harness already exhausted its own
+  backoff; retrying pours load onto an API that is refusing us. Only a *throw* is retried, bounded at
+  3 attempts.
+
+### Changed
+
+- **Halts now report the full ledger** — `total`, `accepted`, `rejected`, `notAttempted`. Previously
+  a halt carried no `total` at all, so "how much got done?" was unanswerable exactly when it mattered.
+- **The success return additionally gains `accepted`/`rejected`/`notAttempted`** — additive, but it is
+  a shape change on the success path, declared rather than discovered. `total`'s *value* is unchanged.
+- `.claude/rules/code-quality.md`: the 500-line file limit now counts **code**, not raw lines. It sits
+  among complexity limits and comments add no complexity — a raw cap would have deleted documentation
+  and kept the complexity. If the *code* exceeds 500, split the file.
+
+### Added
+
+- **`tests/workflow.test.js`** — the workflow's first behaviour tests. Drives the **shipped file** by
+  rewriting `export const meta` and wrapping it in `new Function` with stub agents, so it tests the
+  artifact that ships rather than a copy of its logic. `node --test`, zero-install: no `package.json`,
+  no lockfile, no `node_modules`. 18 tests; every one was **red against the unmodified file first**,
+  and every mutation named in the spec was executed to prove the test can fail.
+- **Six smoke guards** for shape invariants a behaviour test cannot reach, each mutation-tested. Two
+  details worth keeping: the unwrapped-spawn guard counts **occurrences**, not lines (`grep -c` passes
+  two calls smuggled onto one line — verified), and the null-gate guard anchors both halves to
+  `^if`, without which commenting *out* the fix reads as green.
+- CI runs `node --test` with no `setup-node` step.
+
+### Known issues
+
+Six defects were found while building this and filed rather than folded in:
+
+- **#27** — `speckit-helper` returns `NO_SPEC` at **exit 0**, so a command cannot distinguish a missing
+  spec from a real one. Bit this very run.
+- **#28** — two null verdicts silently shrink the verifier quorum, accepting a task on a single lens.
+- **#29** — **B**: fan-out amplitude self-inflicts 429/529 (2 tasks ⇒ 12 agents, peak 6, three full
+  suites where one would do).
+- **#30** — **C**: the single-repo `projectRoot` assumption blocks monorepos.
+- **#31** — `testCommand: ""` conflates "no tests exist" with "detection failed". **This repo is that
+  case**: running `speckit-workflow` on the framework itself silently disables every verification gate
+  and reports a clean run.
+- **#32** — `redConfirmed`/`greenConfirmed` are collected, rendered into the verifier's prompt, and
+  **never read by any code**. The Iron Law's own mechanical evidence is discarded.
+
 ## [5.0.0] - 2026-07-13
 
 **Every command is renamed.** This is the first release under the versioning policy stated
