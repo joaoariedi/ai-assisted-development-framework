@@ -22,3 +22,18 @@ jobs:
       # commands cannot be driven headlessly at all.
       - name: Smoke test (structural + regression)
         run: tests/smoke.sh
+
+      # No `actions/setup-node`: ubuntu-latest ships node, and `node --test` is built into node >=18.
+      # No package.json, no npm install, no lockfile — that is what keeps this inside the project's
+      # zero-install rule, which forbids the install STEP rather than the runtime.
+      #
+      # `node --test`, NOT `node --test tests/`: passing the directory makes node try to load it as a
+      # module and fail with "Cannot find module .../tests". Bare `node --test` discovers *.test.js
+      # from the repo root. This was written the other way in the plan and only surfaced on the first
+      # real run.
+      #
+      # Caveat, accepted deliberately: skipping setup-node leaves the node version unpinned, so a
+      # runner image change can shift it silently. Pinning would require the install step the rule
+      # exists to avoid.
+      - name: Workflow behaviour tests
+        run: node --test

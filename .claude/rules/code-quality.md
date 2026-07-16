@@ -2,9 +2,20 @@
 
 ## Complexity Limits
 - Maximum function length: 50 lines
-- Maximum file length: 500 lines
+- Maximum file length: 500 lines **of code** — comments and blank lines do not count
 - Maximum cyclomatic complexity: 10
 - Clear, descriptive naming always
+
+> **Why the file limit counts code, not lines.** These are *complexity* limits — they sit beside
+> cyclomatic complexity and function length because each is a proxy for how much a reader must hold in
+> their head. A comment adds none of that; it *reduces* it. Counting raw lines would penalise exactly
+> the practice this project mandates elsewhere: comments that state the trap and why the obvious fix is
+> wrong. `workflows/speckit-workflow.js` is the case that forced the clarification — 372 lines of code
+> and 104 of commentary, where every comment records a defect that was measured, not imagined, and where
+> the Workflow harness offers no module system to extract into. A raw cap would have deleted the
+> documentation and kept the complexity.
+>
+> This is a clarification of intent, not a relaxation. If the *code* exceeds 500 lines, split the file.
 
 ## Testing Requirements
 - Test existing patterns when framework present

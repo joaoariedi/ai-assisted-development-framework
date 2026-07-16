@@ -280,6 +280,102 @@ else
 fi
 
 # --- Tier 1: helper runs ------------------------------------------------------------
+head_ "Workflow resilience"
+
+# These guard shape invariants that tests/workflow.test.js CANNOT reach. A behaviour test proves the
+# code was right on the paths its fixture walked; only a grep proves no OTHER path bypasses the choke
+# point, and only a grep sees prompt text at all (the stub agent never runs a suite).
+#
+# For the crashed-implementer invariant the guards are the PRIMARY defence, not the backstop: the
+# behaviour test's mutation cannot fail on its own, because with the retry wrapper in place no null can
+# ever reach the collector. Guards 5 and 6 are what stand between that line and a silent regression.
+# That inverts the usual "grep is the backstop, behaviour is the proof" relationship. It is written down
+# here because it is exactly the sort of thing a handoff loses.
+WF="$REPO/workflows/speckit-workflow.js"
+
+# 1. The node harness loads the shipped file by rewriting `export const meta` -> `const meta`. If that
+#    declaration is ever reworded, String.replace matches nothing. The harness asserts this itself, but
+#    it only runs where node does; CI gates on THIS suite, so the coupling is guarded in both places.
+meta_n="$(grep -cE '^export const meta = \{' "$WF" || true)"
+if [ "$meta_n" -eq 1 ]; then
+  ok "workflow declares 'export const meta' exactly once — the test harness's rewrite still matches"
+else
+  bad "workflow has $meta_n 'export const meta' declarations, expected 1 — tests/workflow.test.js rewrites that exact string and would silently test nothing"
+fi
+
+# 2. Every spawn must route through agentTyped, which owns the retry and the never-retry-a-null rule.
+#    A call that reaches the primitive directly is unretried, and on the sequential path an unretried
+#    schema failure kills the whole run.
+#
+#    Count OCCURRENCES, not lines. `grep -c` counts LINES: two raw calls smuggled onto one line read as
+#    1 and the bypass ships. This is not hypothetical — the first draft of the comment above agentTyped
+#    put two of them on one line and tripped this guard, which is how we know it works.
+#
+#    THIS PIPE IS SAFE and must not be "fixed" into capture-then-match. The header's ban is on
+#    `producer | grep -q`, where grep exits on first match and SIGPIPEs the producer. `wc -l` reads to
+#    EOF and never exits early: no SIGPIPE, no race. Here grep is the PRODUCER, not the matcher.
+raw_n="$(grep -oP '(?<![A-Za-z0-9_$.])agent\s*\(' "$WF" | wc -l || true)"
+if [ "$raw_n" -eq 1 ]; then
+  ok "exactly one unwrapped spawn — every other call routes through agentTyped"
+else
+  bad "$raw_n unwrapped spawn occurrences, expected exactly 1 (the one inside agentTyped) — the rest bypass the retry choke point"
+  sed 's|^|       |' <<<"$(grep -nP '(?<![A-Za-z0-9_$.])agent\s*\(' "$WF" || true)" | head -6
+fi
+
+# 5. The [P] batch collector must not filter its parallel() results. parallel() converts a thrown
+#    implementer to null; .filter(Boolean) then ERASES the task — it lands in neither accepted nor
+#    rejected, the halt cannot see it, and the run returns 1/1: a perfect score for a phase where the
+#    task never ran. Measured. The verdict filter elsewhere is a DIFFERENT and legitimate
+#    .filter(Boolean) on its own line, so this match is scoped to a filter on the SAME line as the
+#    parallel() call — the exact shape of the bug.
+drop="$(grep -nE 'parallel\(.*\)[[:space:]]*\)?\.filter\(' "$WF" || true)"
+if [ -n "$drop" ]; then
+  bad "a parallel() result is filtered inline — a crashed implementer is dropped, not rejected"
+  sed 's|^|       |' <<<"$drop"
+else
+  ok "no parallel() result is filtered inline — a crashed implementer becomes an explicit rejection"
+fi
+
+# 6. ...and the mapped-null fallback must EXIST. Guard 5 only forbids the bug's known shape;
+#    reformatting the collector across two lines slips past it silently. This one requires the
+#    replacement to be present. Neither is sufficient alone.
+if grep -qF 'implementer crashed' "$WF"; then
+  ok "the batch collector maps a crashed implementer to an explicit rejection"
+else
+  bad "the batch collector's null-to-rejection fallback is gone — a crashed [P] implementer will vanish again"
+fi
+
+# 7. A dead gate must HALT, not fall through. Routing the gate through agentTyped converts its throw
+#    into a null, and `gate && !gate.passed` let a null straight through — so the phase silently skipped
+#    its gate. Measured: both gates dead => {"completed":2,"total":2}, six invocations, zero
+#    confirmations. That is the silent drop reintroduced one function away BY the fix for it.
+#
+#    Ceiling AND floor. The negative alone passes if the whole gate block is deleted; the positive alone
+#    passes if a second, wrong check is added beside the right one. The PAIR is the invariant.
+#
+#    BOTH halves are anchored to `^[[:space:]]*if` and that is load-bearing: unanchored, commenting OUT
+#    the fix gives a FALSE GREEN (the negative finds no bug while the positive still matches the
+#    commented line), and this repo's convention of quoting the trap in a comment FALSE-ALARMS on a
+#    correct file.
+#
+#    KNOWN LIABILITY: the floor pins one spelling and rejects valid ones — line-wrapped, extra parens,
+#    `gate === null`, `!gate?.passed`, reordered operands. If a formatter or a cleanup trips it, reword
+#    the code or widen this match DELIBERATELY. Never delete the guard.
+bad_gate="$(grep -nE '^[[:space:]]*if \(gate[[:space:]]*&&[[:space:]]*!gate\.passed\)' "$WF" || true)"
+if [ -n "$bad_gate" ]; then
+  bad "the phase gate falls through on a NULL gate — a dead gate agent would pass the phase"
+  sed 's|^|       |' <<<"$bad_gate"
+else
+  ok "no fall-through on a null gate"
+fi
+
+good_gate="$(grep -nE '^[[:space:]]*if \(!gate[[:space:]]*\|\|[[:space:]]*!gate\.passed\)' "$WF" || true)"
+if [ -n "$good_gate" ]; then
+  ok "a dead gate halts the phase — absence of confirmation is not confirmation"
+else
+  bad "the null-gate halt is GONE — grep found neither the bug nor the fix, so the negative half above is passing on nothing"
+fi
+
 head_ "Helper"
 
 if [ -x "$HELPER" ]; then ok "speckit-helper.sh is executable"; else bad "speckit-helper.sh is not executable"; fi
