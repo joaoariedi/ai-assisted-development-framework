@@ -161,9 +161,15 @@ inputs rather than implementing the general rule.`,
   },
   {
     key: 'regression',
-    ask: `Run the FULL test suite yourself. Refute if anything outside this task's own test
-is now failing, or if the suite cannot run. Do not take the implementer's word for
-it — the implementer reporting green is a claim, not evidence.`,
+    ask: `Run ONLY this task's own test file — the one reported above — and nothing else. Do NOT run
+the full suite: the phase gate owns the whole-suite regression check, and it runs once per
+phase. Refute if that test does not pass, cannot run, or does not exist. Do not take the
+implementer's word for it — the implementer reporting green is a claim, not evidence.
+
+Why the narrow scope: this lens used to run the whole suite, so a 2-task phase ran three
+full suites (two lenses plus the gate) where one would do. On a 728-test, ~12-minute suite
+that is what tripped the shared rate limit, and the retries then added load of their own.
+Cross-task regression is still caught — at the phase barrier, before anything depends on it.`,
   },
 ]
 
@@ -194,15 +200,27 @@ function keyOf(pi, ti) {
 // reachability is unknown and the hedge costs two characters.
 async function agentTyped(prompt, opts, tries = 2) {
   for (let i = 0; ; i++) {
+    await acquire()
     try {
-      return await agent(prompt, opts)
+      const r = await agent(prompt, opts)
+      if (r === null) noteTerminal(opts?.label)
+      return r
     } catch (e) {
       const why = e?.message ?? String(e)
       if (i >= tries) {
         log(`${opts?.label}: gave up after ${tries + 1} attempts — ${why}`)
+        // Retry exhaustion IS a terminal failure. Counting only the harness's null was the drafted
+        // design's blind spot: a run dying of repeated schema failures would never have tripped the
+        // throttle, and that is the symptom under load.
+        noteTerminal(opts?.label)
         return null
       }
       log(`${opts?.label}: retry ${i + 1}/${tries} — ${why}`)
+    } finally {
+      // `finally`, so the permit is returned on ALL THREE paths: success, give-up, and the
+      // fall-through that loops round to retry. A leak here would shrink the cap toward zero and
+      // stall the run — the hang the validation above exists to prevent, arriving by another door.
+      release()
     }
   }
 }
@@ -319,6 +337,79 @@ if (typeof _args === 'string') {
 }
 const requestedDir =
   typeof _args === 'string' ? _args : (_args && _args.featureDir) || ''
+// --- the concurrency cap ------------------------------------------------------------------------
+//
+// Measured, on a 2-task graph: 12 agents, peak 6. The harness caps at min(16, cores-2), which is a
+// CPU bound and says nothing about a shared API — so a single phase put a dozen agents in flight,
+// several driving a 12-minute suite, and the run self-inflicted sustained 429/529. One verifier hit
+// 529 twenty-one times. The retries then added load of their own.
+//
+// The cap lives here because this is the one function every spawn passes through. Chunking each
+// fan-out separately would not work: the verifier fan-out NESTS inside the batch fan-out, so a cap of
+// 4 per level is 16 in flight. Gating at the choke point is what makes the cap global.
+//
+// VALIDATE. This is A's first argument surface, and `args` is documented as possibly arriving
+// JSON-encoded, so the value is whatever the caller put there. Measured on the drafted design:
+// `0`/`-1` hang the run forever having spawned nothing (`??` does not catch 0, and `while (active >= 0)`
+// never lets anyone through — while `0` is exactly how a user writes "unlimited"); `"abc"` deletes the
+// cap entirely, peak 20/20, because `active >= NaN` is always false; `2.5` silently becomes 3.
+const DEFAULT_CONCURRENCY = 4
+const _capArg = Number(_args?.maxConcurrency)
+if (_args?.maxConcurrency !== undefined && !(Number.isInteger(_capArg) && _capArg > 0)) {
+  log(`ignoring args.maxConcurrency: ${JSON.stringify(_args.maxConcurrency)} is not a positive integer — using ${DEFAULT_CONCURRENCY}`)
+}
+let limit = _args?.sequential
+  ? 1
+  : Number.isInteger(_capArg) && _capArg > 0
+    ? _capArg
+    : DEFAULT_CONCURRENCY
+
+let active = 0
+let terminal = 0
+const waiters = []
+
+// `while`, not `if`: the limit can DROP mid-run (see the throttle below), so a woken waiter must
+// re-check rather than assume a permit is free. The algorithm survived adversarial attack — no lost
+// wakeup, no starvation at 200 arrivals, balanced accounting across the retry path. It is not the part
+// that was ever broken; the input validation above is.
+async function acquire() {
+  while (active >= limit) await new Promise(r => waiters.push(r))
+  active++
+}
+const release = () => {
+  active--
+  waiters.shift()?.()
+}
+
+// A terminal failure is an agent we could not get an answer from after exhausting our retries — a null
+// from the harness (its own backoff is spent) OR a throw that survived all attempts. Counting only the
+// null was the drafted design's gap: a run dying of repeated schema failures never tripped the
+// throttle, and "completed without calling StructuredOutput" under load is the symptom the field
+// report actually describes.
+//
+// Two, not one: a single flake should not serialize a healthy run; two suggests the API is genuinely
+// hot. A slow sequential finish beats a fast failure.
+// Say the cap out loud, before anything fans out. An operator debugging an overloaded run needs to
+// know what the limit actually was, and learning it after the fan-out is learning it after the damage.
+log(
+  _args?.sequential
+    ? 'concurrency: 1 (args.sequential)'
+    // Say "agents in flight" — never the singular followed by a parenthesised plural. That spelling
+    // reads as an unwrapped spawn to the smoke guard and reddens CI on correct code. (This comment
+    // is deliberately periphrastic for the same reason: naming the bad spelling would BE the bad
+    // spelling. Reword prose; never loosen the guard.)
+    : `concurrency: ${limit} agents in flight${limit === DEFAULT_CONCURRENCY && _args?.maxConcurrency === undefined ? ' (default — pass args.maxConcurrency to change it)' : ''}`,
+)
+
+const THROTTLE_AT = 2
+function noteTerminal(label) {
+  terminal++
+  if (terminal >= THROTTLE_AT && limit > 1) {
+    limit = 1
+    log(`API looks hot (${terminal} terminal agent failures) — dropping concurrency to 1 for the rest of the run`)
+  }
+}
+
 
 const ctx = await agentTyped(
   `Load the spec-kit artifacts for the current feature.

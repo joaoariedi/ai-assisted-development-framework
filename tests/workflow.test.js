@@ -783,6 +783,196 @@ test('#28: all three reporting and none refuting still accepts — the happy pat
   }
 })
 
+// =============================================================================================
+// #29 — fan-out amplitude. Measured, not argued: 2 tasks => 12 agents, peak 6, of which THREE run
+// a full test suite where one would do. On a 728-test / ~12-minute suite that is the shape that
+// trips a shared rate limit, and the retries then pile on more load. One verifier hit 529 twenty-one
+// times before the run died.
+//
+// PRIOR ART — the adversarial review measured all of this; do not re-derive it:
+//   * the semaphore ALGORITHM survived every attack (no lost wakeup, no starvation at 200 arrivals,
+//     balanced accounting across the retry path, correct under drop-to-1 and nested fan-out). It is
+//     not the thing that was broken.
+//   * its INPUT VALIDATION was: `0`/`-1` hang the run forever having spawned nothing; `"abc"` deletes
+//     the cap entirely (measured peak 20/20, because `active >= NaN` is always false); `2.5` silently
+//     becomes 3. `??` does not catch `0` — which is how a user writes "unlimited".
+//   * `assert.ok(peak <= cap)` is a CEILING WITH NO FLOOR: it passes more easily the more broken the
+//     file is. Break the loader and peak collapses to 1. Assertions below use strictEqual against the
+//     cap the test passed in, plus a floor, plus a fixture whose UNBOUNDED peak exceeds the cap.
+// =============================================================================================
+
+/** Drive with an instrumented stub that records true concurrency. The stub MUST await. */
+async function driveMeasuringPeak({ canned, args }) {
+  let inFlight = 0, peak = 0
+  const spawned = []
+  const logs = []
+  const agent = async (p, o = {}) => {
+    spawned.push(o.label)
+    peak = Math.max(peak, ++inFlight)
+    await new Promise(r => setTimeout(r, 2))   // a real yield — see the un-awaited-stub trap
+    inFlight--
+    return canned(o.label, o)
+  }
+  const result = await makeRun(loadWorkflowSource())(
+    agent, parallelThrowToNull, () => {}, m => logs.push(m), args ?? { featureDir: '/f' })
+  return { result, peak, spawned, logs }
+}
+
+/** N parallel tasks: unbounded peak is well above any cap we test, so the assertion can fail. */
+const wideGraph = (n) => graph([{
+  name: 'Phase 1',
+  tasks: Array.from({ length: n }, (_, i) => task(`T${String(i + 1).padStart(3, '0')}`, { parallel: true, files: [`f${i}.js`] })),
+}])
+
+test('#29: concurrency is capped at 4 by default', async () => {
+  const g = wideGraph(8)
+  const { peak } = await driveMeasuringPeak({ canned: baseCanned(g) })
+  // 8 [P] tasks x (1 impl + 3 verifiers) is an unbounded peak far above 4 — so this CAN fail.
+  assert.equal(peak, 4, `expected peak exactly 4, got ${peak} — a cap that never binds is not a cap`)
+})
+
+test('#29: args.maxConcurrency is honoured, and the assertion uses the cap the test passed in', async () => {
+  for (const cap of [1, 2, 6]) {
+    const g = wideGraph(8)
+    const { peak } = await driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', maxConcurrency: cap } })
+    // Hardcoding 4 here would let a fixture with cap:2 and a broken cap of 4 pass green.
+    assert.equal(peak, cap, `maxConcurrency=${cap} but peak was ${peak}`)
+  }
+})
+
+test('#29: args.sequential runs one agent at a time', async () => {
+  const g = wideGraph(6)
+  const { peak, result } = await driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', sequential: true } })
+  assert.equal(peak, 1, `sequential must mean one in flight, got ${peak}`)
+  assert.ok(!result.halted, 'sequential must still complete the run')
+})
+
+test('#29: maxConcurrency 0 and -1 must not hang the run', async () => {
+  // MEASURED on the drafted design: `??` does not catch 0, `while (active >= 0)` is always true, and
+  // every agent blocks on its first acquire — 20 agents spawned, none completed, forever. The plan's
+  // own risk table called a hang "worse than crashing". `0` is how a user writes "unlimited".
+  for (const bad of [0, -1]) {
+    const g = wideGraph(4)
+    const done = await Promise.race([
+      driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', maxConcurrency: bad } }).then(() => 'completed'),
+      new Promise(r => setTimeout(() => r('HUNG'), 2000)),
+    ])
+    assert.equal(done, 'completed', `maxConcurrency=${bad} hung the run`)
+  }
+})
+
+test('#29: a non-numeric maxConcurrency must not delete the cap', async () => {
+  // MEASURED: `"abc"` makes `active >= "abc"` always false, the semaphore vanishes, and peak hit 20/20
+  // — the exact overload the cap exists to prevent, from a one-character typo. `args` is documented as
+  // possibly arriving JSON-encoded, so a string is live, not paranoia.
+  for (const bad of ['abc', null, {}, [], '4']) {
+    const g = wideGraph(8)
+    const { peak } = await driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', maxConcurrency: bad } })
+    assert.ok(peak <= 4 && peak > 0,
+      `maxConcurrency=${JSON.stringify(bad)} must fall back to the default cap, not remove it; peak was ${peak}`)
+  }
+})
+
+test('#29: a fractional maxConcurrency does not silently round up', async () => {
+  const g = wideGraph(8)
+  const { peak } = await driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', maxConcurrency: 2.5 } })
+  assert.equal(peak, 4, `2.5 is not an integer cap — it must be rejected for the default, not become 3; peak was ${peak}`)
+})
+
+// The throttle is asserted through the workflow's OWN log, not inferred from peak. Peak is the wrong
+// instrument here: the drop lands mid-fan-out, so agents already past acquire() still finish and the
+// observed peak reflects the cap *before* the drop. A racy fixture that infers it produces a test that
+// passes for the wrong reason — the first version of these two did exactly that.
+
+test('#29: the throttle drops concurrency to 1 after two terminal failures', async () => {
+  let nulls = 0
+  const g = wideGraph(8)
+  const { logs } = await driveMeasuringPeak({
+    canned: (label) => {
+      // Two agents the harness gives up on — a null means its own backoff is spent.
+      if (label.startsWith('verify:') && nulls < 2) { nulls++; return null }
+      return baseCanned(g)(label)
+    },
+  })
+  const drop = logs.find(l => /dropping concurrency to 1/i.test(l))
+  assert.ok(drop, `the throttle must fire and say so; logs were:\n  ${logs.join('\n  ')}`)
+  assert.match(drop, /2 terminal/i, 'the log must say how many failures tripped it, or it is unactionable')
+})
+
+test('#29: ONE terminal failure does NOT throttle — a single flake must not serialize a healthy run', async () => {
+  let nulls = 0
+  const g = wideGraph(8)
+  const { logs } = await driveMeasuringPeak({
+    canned: (label) => {
+      if (label.startsWith('verify:') && nulls < 1) { nulls++; return null }
+      return baseCanned(g)(label)
+    },
+  })
+  // The floor for the test above: without this, a throttle that fires on the FIRST failure also
+  // passes, and "2" would be decoration.
+  assert.ok(!logs.some(l => /dropping concurrency/i.test(l)),
+    'one terminal failure must not trip the throttle')
+})
+
+test('#29: retry exhaustion counts toward the throttle, not just a null return', async () => {
+  // The drafted design incremented `terminal` only on a null from agent(), so a run dying of repeated
+  // SCHEMA failures never tripped the throttle — and that is the symptom the field report actually
+  // describes ("completed without calling StructuredOutput", alongside 21 consecutive 529s). A throw
+  // that survives every retry is a terminal failure by any useful definition.
+  //
+  // Sequential fixture, deliberately: with [P] tasks retrying concurrently against a shared counter
+  // the throws scatter, every task can burn one and then succeed, and nothing is exhausted. The first
+  // version of this test did that and asserted a halt that never came.
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001'), task('T002')] }])
+  const { logs } = await driveMeasuringPeak({
+    canned: (label) => {
+      if (label.startsWith('impl:')) throw new Error('completed without calling StructuredOutput')
+      return baseCanned(g)(label)
+    },
+  })
+  // Two implementers, each exhausting all 3 attempts => two terminal failures => throttle.
+  assert.ok(logs.some(l => /gave up after 3 attempts/i.test(l)), 'precondition: an implementer must exhaust its retries')
+  assert.ok(logs.some(l => /dropping concurrency to 1/i.test(l)),
+    `retry exhaustion must count as terminal; logs were:\n  ${logs.join('\n  ')}`)
+})
+
+test('#29: the effective cap is logged before the first implementer spawns', async () => {
+  const g = wideGraph(4)
+  const { logs, spawned } = await driveMeasuringPeak({ canned: baseCanned(g), args: { featureDir: '/f', maxConcurrency: 2 } })
+  const capLog = logs.findIndex(l => /concurrency/i.test(l) && /2/.test(l))
+  assert.ok(capLog >= 0, `the effective cap must be logged; logs were:\n  ${logs.join('\n  ')}`)
+  // An operator debugging an overloaded run needs to know what the cap actually was — after the fact
+  // is too late to be useful, and after the fan-out is after the damage.
+  assert.ok(!spawned.slice(0, 1).some(l => l?.startsWith('impl:')), 'cap must be known before implementers spawn')
+})
+
+test('#29: the regression lens no longer runs the full suite — the gate owns that', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const prompts = {}
+  const kit = makeAgentStub(baseCanned(g))
+  const agent = async (p, o = {}) => { prompts[o.label] = p; return kit.agent(p, o) }
+  await makeRun(loadWorkflowSource())(agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f' })
+
+  const lensPrompt = Object.entries(prompts).find(([k]) => k.startsWith('verify:T001:') && !k.includes('integrity') && !k.includes('requirement'))?.[1] ?? ''
+  assert.ok(!/FULL test suite|full test suite/i.test(lensPrompt),
+    'no verifier may run the full suite — 2 tasks meant 3 full suites where 1 would do')
+  assert.match(lensPrompt, /only this task|own test file/i,
+    'the lens must be told to run only the task\'s own test')
+})
+
+test('#29: ...and the phase gate STILL runs it — the pair is the invariant', async () => {
+  // The half that makes the previous test meaningful. "No lens runs the suite" passes vacuously if
+  // the suite check is DELETED rather than MOVED: no lens asks, no gate asks, nothing runs the tests,
+  // and both assertions are green. Neither half is the invariant; the pair is.
+  const g = FIXTURES.twoPhasesSequential()
+  let gatePrompt = ''
+  const kit = makeAgentStub(baseCanned(g))
+  const agent = async (p, o = {}) => { if (o.label?.startsWith('gate:')) gatePrompt = p; return kit.agent(p, o) }
+  await makeRun(loadWorkflowSource())(agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f' })
+  assert.match(gatePrompt, /Full test suite/,
+    'the gate must still own the full-suite check — if it is gone from both, nothing runs the suite at all')
+})
+
 test('SC-017: a done:true task is excluded from total, and an unreached phase is notAttempted', async () => {
   const g = FIXTURES.twoPhases()
   const { result } = await drive({
