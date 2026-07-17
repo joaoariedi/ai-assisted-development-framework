@@ -17,6 +17,25 @@
 >
 > This is a clarification of intent, not a relaxation. If the *code* exceeds 500 lines, split the file.
 
+### The one exemption: `workflows/speckit-workflow.js`
+
+The file limit's remedy is "split the file." For a Claude Code **Workflow script** that remedy does not
+exist, so the limit is scoped to exclude this one file — deliberately, and with the reason on record.
+
+The Workflow harness executes the script as a **function body**, injecting `agent`/`parallel`/`phase`/
+`log`/`args` as globals. A static `import` is therefore a **compile error** — *"Cannot use import
+statement outside a module"* — not a policy choice we could argue with. Verified, not assumed. `require`
+is undefined (ESM context), and the harness documents no filesystem or Node API access, so dynamic
+`import()` is not something the plugin's core may bet on either. There is no module to extract into.
+
+The alternative was deleting comments to fit, and in this file that is the worst available trade: each
+one records a defect that was *measured* — a `throw null` that killed the error handler, a `const` that
+threw on every path, a `gate &&` that reported 2/2 across six dead gates. Deleting them keeps the
+complexity and loses the only reason anyone would not reintroduce it.
+
+**Every other file keeps the 500-line limit.** If a second file ever needs this exemption, that is a
+signal the harness constraint has spread, and it deserves a fresh argument rather than a precedent.
+
 ## Testing Requirements
 - Test existing patterns when framework present
 - Focus on business logic and edge cases
