@@ -292,8 +292,11 @@ The cycle, in this order:
             fail, and fail for the RIGHT reason (not an import error or a typo). If it
             passes already, the test is not testing new behavior — rewrite it.
  2. GREEN — write the minimum code to make it pass. Run the test again.
- 3. SUITE — run the full test suite. No regressions. If something else broke, fix the
-            IMPLEMENTATION. Never edit another test to make it pass.
+ 3. CONFIRM — re-run THIS task's own test and confirm it still passes. Do NOT run the full
+            suite: the phase gate runs it once per repo and owns whole-suite regression, so N
+            implementers all running it is wasted work. If your change broke something outside
+            this task, the gate catches it — and the fix is always the IMPLEMENTATION, never a
+            weakened test.
 
 Hard rules:
  - Touch ONLY the files this task needs. Other tasks are running in parallel on other files.
