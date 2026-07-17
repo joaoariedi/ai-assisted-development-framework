@@ -52,6 +52,26 @@ const TASKS_SCHEMA = {
         'Never guess between the last two: "none-exist" makes the run proceed without mechanical ' +
         'verification, so claiming it about a project that has tests silently disables every gate.',
     },
+    repos: {
+      type: 'array',
+      description:
+        'MULTI-REPO only. Omit for a normal single-repo project (projectRoot + testCommand above are ' +
+        'enough). Fill this ONLY when the tasks reference code in more than one repository — e.g. a ' +
+        'monorepo whose spec lives in one directory and whose code lives in sibling repos with ' +
+        'different test commands. Each task will be routed to the repo whose path prefixes its files, ' +
+        'so list every repo the tasks touch. Order matters: the FIRST entry is the default for a task ' +
+        'that declares no files.',
+      items: {
+        type: 'object',
+        required: ['path', 'testCommandStatus'],
+        properties: {
+          path: { type: 'string', description: 'absolute path to the repo root' },
+          testCommand: { type: 'string', description: 'this repo\'s full-suite command; empty unless testCommandStatus is "detected"' },
+          testCommandStatus: { type: 'string', enum: ['detected', 'none-exist', 'undetectable'], description: 'same meaning as the top-level field, but for THIS repo' },
+          lintCommand: { type: 'string' },
+        },
+      },
+    },
     phases: {
       type: 'array',
       items: {
@@ -251,16 +271,17 @@ function ledger(results, ctx) {
   }
 }
 
-function implPrompt(task, ctx) {
+function implPrompt(task, ctx, repo) {
   return `Implement exactly one spec-kit task with a strict TDD cycle. Do not touch any other task.
 
 TASK ${task.id}: ${task.description}
 ${task.requirement ? `Requirement: ${task.requirement}` : ''}
 ${task.files?.length ? `Target files: ${task.files.join(', ')}` : ''}
 Feature directory: ${ctx.featureDir}
-PROJECT ROOT: ${ctx.projectRoot}
-  Run every command from PROJECT ROOT and resolve every relative path against it. It is NOT
-  necessarily your shell's starting directory — cd there first.
+REPO ROOT: ${repo.path}
+  This task's files live in this repo. Run every command from here and resolve every relative path
+  against it — it is NOT necessarily your shell's starting directory, and in a monorepo it is NOT the
+  directory the spec lives in. cd there first.${repo.testCommandStatus === 'detected' ? `\n  This repo's test command is: ${repo.testCommand}` : ''}
 
 Read ${ctx.featureDir}/spec.md and ${ctx.featureDir}/plan.md for the requirement and the
 design decisions. Follow .claude/rules/code-quality.md (functions <50 lines, files <500,
@@ -293,7 +314,7 @@ succeeded:false. That costs one round. Claiming a cycle you did not run ships a 
 nothing, and the agent reading your test diff is looking for exactly that.`
 }
 
-function verifyPrompt(task, impl, lens, ctx) {
+function verifyPrompt(task, impl, lens, ctx, repo) {
   return `You are verifying a spec-kit task that ANOTHER agent implemented. Your job is to
 REFUTE it. Default to refuted=true when uncertain — a task wrongly accepted ships a bug;
 a task wrongly refuted costs one more round.
@@ -301,7 +322,8 @@ a task wrongly refuted costs one more round.
 TASK ${task.id}: ${task.description}
 ${task.requirement ? `Requirement: ${task.requirement}` : ''}
 Feature directory: ${ctx.featureDir}
-PROJECT ROOT: ${ctx.projectRoot}  (cd here — it is NOT necessarily your starting directory)
+REPO ROOT: ${repo.path}  (cd here — it is NOT necessarily your starting directory, and in a monorepo
+  NOT where the spec lives)${repo.testCommandStatus === 'detected' ? `\nThis repo's test command: ${repo.testCommand}` : ''}
 
 The implementer claims:
   ${impl.summary}
@@ -456,6 +478,14 @@ Do not report "none-exist" because the search was hard. Absence of tests is a st
 off every verification gate in this workflow. If you can see test files, test directories, or a CI
 job running tests, then tests exist — say "undetectable" and let a human supply the command.
 
+MULTI-REPO: look at the task file paths. If they reference code in MORE THAN ONE repository — a
+monorepo whose spec lives in one directory (e.g. tasks/) and whose code lives in sibling repos with
+their OWN, DIFFERENT test commands (e.g. operations_api/ on pytest, cube_ui/ on vitest) — then fill
+the repos[] array: one entry per repo the tasks touch, each with its own path, testCommand and
+testCommandStatus. Detect each repo's command the same careful way. Order the array so the repo that
+should own tasks with no file paths (setup, migrations) comes FIRST. Leave repos[] empty for an
+ordinary single-repo project; projectRoot and the top-level testCommand are enough there.
+
 Report tasks in the order they appear. Do not invent, reorder, or merge tasks.`,
   { schema: TASKS_SCHEMA, label: 'load-artifacts' },
 )
@@ -472,61 +502,102 @@ ctx.phases.forEach((p, pi) => p.tasks.forEach((t, ti) => { t._key = keyOf(pi, ti
 const pending = ctx.phases.flatMap(p => p.tasks.filter(t => !t.done))
 log(`${ctx.featureDir}: ${pending.length} pending task(s) across ${ctx.phases.length} phase(s)`)
 
-// --- the test command: three states, three fates -------------------------------------------------
+// --- resolve the repo (or repos) the tasks run in ------------------------------------------------
 //
-// `""` used to mean both "no tests exist" and "detection failed", and this site WARNED AND PROCEEDED
-// on either. The warning is precisely why nobody noticed: a detection failure sailed past it, the
-// gate was then told to report passed:true for a project with no gate, and the run finished N/N clean
-// having verified nothing. THIS repo was that case — its suite is tests/smoke.sh, and the loader was
-// told to look only for package.json/pytest/cargo/go.
-//
-// An operator-supplied command wins outright: it is a fact, not an inference. Validate it, because
-// `args` can arrive as a JSON blob (see the normalisation above) and a value that is not a usable
-// command must not silently become one — "" must never mean "detected an empty command".
+// Single-repo is the common case and it stays one code path: a repos[] of length 1, synthesised from
+// projectRoot + the top-level testCommand. Multi-repo (#30 — a monorepo whose spec and code live in
+// different directories, with per-repo test commands) supplies repos[], detected by the loader or
+// overridden by args.repos. Nothing downstream branches on "how many repos": a task is routed to the
+// repo that owns its files, and a single repo simply owns everything.
+
+function normPath(p) {
+  return String(p ?? '').trim().replace(/\/+$/, '')   // "/foo/" -> "/foo"; "/" -> ""
+}
+
+// The operator's word is a fact, not an inference: args.projectRoot and args.repos win outright.
+const projectRoot = normPath(_args?.projectRoot || ctx.projectRoot)
+
+// The single explicit testCommand (the #31 escape hatch) still applies, but only in single-repo mode —
+// with args.repos present each repo carries its own command and a lone override would be ambiguous.
 const argTest = typeof _args?.testCommand === 'string' ? _args.testCommand.trim() : ''
 if (_args?.testCommand !== undefined && !argTest) {
   log(`ignoring args.testCommand: ${JSON.stringify(_args.testCommand)} is not a usable command`)
 }
-if (argTest) {
-  ctx.testCommand = argTest
-  ctx.testCommandStatus = 'detected'
-  log(`test command supplied by the operator: ${argTest}`)
+
+const _rawRepos =
+  Array.isArray(_args?.repos) && _args.repos.length ? _args.repos
+    : Array.isArray(ctx.repos) && ctx.repos.length ? ctx.repos
+      : [{ path: projectRoot, testCommand: argTest || ctx.testCommand, testCommandStatus: argTest ? 'detected' : ctx.testCommandStatus, lintCommand: '' }]
+
+// Normalise, and DROP any repo whose path is empty after normalisation. A path of "/" normalises to ""
+// and would otherwise match every absolute path (a catch-all router) while sorting last (the default) —
+// simultaneously the router for everything and the fallback for nothing, with the gate emitting a bare
+// `cd `. Per-repo status is normalised the same way #31 does it for the single case.
+const repos = _rawRepos
+  .map(r => {
+    const cmd = (r.testCommand || '').trim()
+    let status = r.testCommandStatus
+    if (status === 'detected' && !cmd) status = 'undetectable' // self-contradictory (#31)
+    if (!['detected', 'none-exist', 'undetectable'].includes(status)) status = 'undetectable' // unknown => unknown
+    return { path: normPath(r.path), testCommand: cmd, testCommandStatus: status, lintCommand: (r.lintCommand || '').trim() }
+  })
+  .filter(r => {
+    if (r.path) return true
+    log('ignoring a repo with an empty path (a path of "/" is a catch-all, not a repo)')
+    return false
+  })
+
+if (repos.length === 0) {
+  return { halted: true, haltedAt: 'Load', reason: 'No usable repo: every declared repo path was empty after normalisation.', ...ledger([], ctx) }
 }
 
-// The status is model-authored, so check what can be checked. "detected" with no command is
-// self-contradictory; this file already refuses to trust the model-written [P] marker on the same
-// grounds. An unrecognised status is treated as undetectable for the same reason: the safe reading of
-// a value we do not understand is "we do not know", never "everything is fine".
-if (ctx.testCommandStatus === 'detected' && !ctx.testCommand) {
-  ctx.testCommandStatus = 'undetectable'
-}
-if (!['detected', 'none-exist', 'undetectable'].includes(ctx.testCommandStatus)) {
-  ctx.testCommandStatus = 'undetectable'
-}
-
-if (ctx.testCommandStatus === 'undetectable') {
-  // Halt BEFORE spawning anything. Nothing downstream can verify a thing: implementers cannot confirm
-  // RED or GREEN, the task-test lens has no suite to run, and the gate cannot honestly pass. Refusing
-  // costs the operator one re-run with args.testCommand; proceeding costs a full run that reports
-  // clean while checking nothing. A task wrongly refused costs one round; wrongly accepted ships a bug.
-  log('HALTED at Load: tests exist but the command to run them is unknown')
+// #31, per repo: a repo whose tests plainly EXIST but whose command is unknown halts the WHOLE run
+// before anything spawns — the gate for that repo could never honestly pass, so every task routed
+// there would be unverifiable.
+const undetectableRepo = repos.find(r => r.testCommandStatus === 'undetectable')
+if (undetectableRepo) {
+  log(`HALTED at Load: ${undetectableRepo.path} has tests but the command to run them is unknown`)
   return {
     halted: true,
     haltedAt: 'Load',
     reason:
-      `Tests exist in ${ctx.projectRoot} but the loader could not determine the command that runs them, ` +
-      'so nothing in this run could be mechanically verified — every gate would pass vacuously and the ' +
-      'run would report success having checked nothing. Re-run with an explicit command, e.g. ' +
-      'args.testCommand = "tests/smoke.sh".',
+      `Tests exist in ${undetectableRepo.path} but the loader could not determine the command that runs them, ` +
+      'so nothing routed there could be mechanically verified — its gate would pass vacuously. Re-run with an ' +
+      'explicit command: args.testCommand = "..." for a single repo, or args.repos = [{path, testCommand, ' +
+      'testCommandStatus: "detected"}, ...] for a monorepo.',
     ...ledger([], ctx),
   }
 }
+for (const r of repos.filter(r => r.testCommandStatus === 'none-exist')) {
+  log(`${r.path} has no automated tests — its tasks proceed without mechanical verification`)
+}
 
-if (ctx.testCommandStatus === 'none-exist') {
-  // The carve-out is correct for the case it was written for: halting over a project that never had
-  // tests would be a false alarm. It is only wrong when a DETECTION FAILURE is routed here, which the
-  // status now prevents.
-  log('this project has no automated tests — proceeding without mechanical verification of TDD cycles')
+// The FIRST listed repo is the default — operator-ordered, explicit. NEVER positional-by-path-length:
+// the drafted design used repos[repos.length-1] after a longest-first sort, which is the SHORTEST path,
+// so renaming a directory silently flipped the default. reposByLen is only for prefix matching.
+const defaultRepo = repos[0]
+const reposByLen = [...repos].sort((a, b) => b.path.length - a.path.length)
+
+const absFile = f => (String(f).startsWith('/') ? String(f) : `${projectRoot}/${f}`)
+
+// Route a task to the repo that owns its files. Longest-prefix, so app/ui/x resolves to app/ui, not
+// app. Returns { repo, unmatched } or { error:'spans-repos' }. A file matching no repo is returned in
+// `unmatched` for the caller to LOG — never silently dropped (#30 Q2). No files => the default repo.
+function repoFor(task) {
+  const files = task.files || []
+  if (files.length === 0) return { repo: defaultRepo, unmatched: [] }
+  const hits = new Set()
+  const unmatched = []
+  for (const f of files) {
+    const a = absFile(f)
+    const hit = reposByLen.find(r => a === r.path || a.startsWith(r.path + '/'))
+    if (hit) hits.add(hit.path)
+    else unmatched.push(f)
+  }
+  const matched = [...hits]
+  if (matched.length > 1) return { error: 'spans-repos', repos: matched }
+  const repo = matched.length === 1 ? repos.find(r => r.path === matched[0]) : defaultRepo
+  return { repo, unmatched }
 }
 
 // The Iron Law's evidence, finally read.
@@ -539,11 +610,39 @@ if (ctx.testCommandStatus === 'none-exist') {
 // guarantees the barrier precisely because a model can talk itself into skipping ahead.
 //
 // Returns null when the evidence is satisfactory, or the reason it is not.
-function tddEvidenceGap(impl, ctx) {
+function gatePrompt(repo, ctx) {
+  return `Run the quality gate for the repo at ${repo.path} and report honestly.
+
+FIRST: cd ${repo.path}. That is the repo under test. It is NOT necessarily your shell's starting
+directory — in a monorepo it is a specific sibling of where the spec lives — and running these
+commands anywhere else tells you nothing.
+
+${
+    repo.testCommandStatus === 'none-exist'
+      ? `  1. The loader reported that this repo has NO automated test suite, so there is no suite to run.
+     CHECK THAT CLAIM before you accept it. You are standing in the repo and the loader is not; it is
+     a different agent and it may simply have failed to find the tests. Look for test files, a tests/
+     directory, a Makefile test target, a test script, a CI job that runs tests. If you find ANY of
+     them, the claim is false — report passed:false, name what you found, and say the command could
+     not be determined. Do NOT run a suite you discover: reporting the discovery is the job here.
+  2. Lint / format / typecheck, whichever that repo configures.`
+      : `  1. Full test suite (\`${repo.testCommand}\`) — must be green. Run exactly that command.
+  2. Lint / format / typecheck, whichever that repo configures${repo.lintCommand ? ` (e.g. \`${repo.lintCommand}\`)` : ''}.`
+  }
+
+Show real command output. Do not fix anything; only report.
+"passed" means you SAW the gate pass. If the repo configures no gate at all, that is an ABSENCE of a
+gate, not a failure — report passed:true and say so, because halting over a repo that never had tests
+would be a false alarm. That carve-out is about a repo that HAS no gate. It is not licence to report
+passed:true because a command was missing, unclear, or inconvenient — if you cannot run what you were
+asked to run, say so and report passed:false.`
+}
+
+function tddEvidenceGap(impl, repo) {
   // No suite means RED and GREEN are unobservable by construction. Demanding them here would halt
   // every genuinely test-less project — the false alarm #31's carve-out exists to prevent. The status
   // is trustworthy now: an undetectable command halts at load, so "none-exist" really does mean it.
-  if (ctx.testCommandStatus === 'none-exist') return null
+  if (repo.testCommandStatus === 'none-exist') return null
 
   if (impl.tddStatus === 'not-applicable') {
     // A bare "not applicable" is a free pass any implementer can claim, and a check anyone can opt out
@@ -571,7 +670,27 @@ function tddEvidenceGap(impl, ctx) {
 }
 
 async function implementAndVerify(task) {
-  const impl = await agentTyped(implPrompt(task, ctx), {
+  // Route to the owning repo BEFORE spawning anything — a task we cannot place is one we cannot verify.
+  const routed = repoFor(task)
+  if (routed.error === 'spans-repos') {
+    // #30 Q1: a task touching two repos has two test commands and no single RED->GREEN cycle. Reject
+    // with a reason that names both, so the operator splits it into one task per repo.
+    return {
+      task,
+      accepted: false,
+      reason: `spans multiple repos (${routed.repos.join(', ')}) — a task has one test cycle and these repos have different suites; split it into one task per repo`,
+    }
+  }
+  const repo = routed.repo
+  // #30 Q2: a file matching no repo is a root/shared file. Log it — never silently ignore it, which is
+  // exactly the bug the old hits.size===1 had.
+  if (routed.unmatched?.length) {
+    log(`${task.id}: ${routed.unmatched.join(', ')} matched no repo — attributed to ${repo.path}`)
+  }
+  // The task is stamped with its repo so the phase gate can later run once per repo that was touched.
+  task._repo = repo.path
+
+  const impl = await agentTyped(implPrompt(task, ctx, repo), {
     label: `impl:${task.id}`,
     phase: 'Implement',
     schema: IMPL_SCHEMA,
@@ -583,7 +702,7 @@ async function implementAndVerify(task) {
   // work that already failed its own evidence check, and this workflow spawns too many agents as it
   // is (#29). Rejecting here also gives the operator a reason that names the gap precisely, rather
   // than a lens's prose about it.
-  const tddGap = tddEvidenceGap(impl, ctx)
+  const tddGap = tddEvidenceGap(impl, repo)
   if (tddGap) return { task, impl, accepted: false, reason: `TDD evidence: ${tddGap}` }
 
   // Do NOT .filter(Boolean) these — that is what let a dead lens vanish. A null verdict became an
@@ -592,7 +711,7 @@ async function implementAndVerify(task) {
   // exactly as the batch collector does, so a lens that did not answer is a fact rather than a gap.
   const raw = await parallel(
     LENSES.map(lens => () =>
-      agentTyped(verifyPrompt(task, impl, lens, ctx), {
+      agentTyped(verifyPrompt(task, impl, lens, ctx, repo), {
         label: `verify:${task.id}:${lens.key}`,
         phase: 'Verify',
         schema: VERDICT_SCHEMA,
@@ -700,59 +819,44 @@ for (const ph of ctx.phases) {
     }
   }
 
-  // Phase gate — the whole suite, between phases, exactly as speckit.implement requires.
-  const gate = await agentTyped(
-    `Run the quality gate for the project at ${ctx.projectRoot} and report honestly.
+  // Phase gate — the whole suite, between phases, exactly as speckit.implement requires. ONE gate per
+  // repo the phase actually TOUCHED (#30): a monorepo phase that changed operations_api/ and cube_ui/
+  // must have both suites run, each in its own repo with its own command. In single-repo this is one
+  // gate, exactly as before. The repos are those stamped on the accepted tasks by implementAndVerify;
+  // a rejected phase never reaches here.
+  const touchedPaths = [...new Set(phaseResults.map(r => r.task._repo).filter(Boolean))]
+  const touchedRepos = touchedPaths.map(p => repos.find(r => r.path === p)).filter(Boolean)
+  const gatesToRun = touchedRepos.length ? touchedRepos : [defaultRepo]
 
-FIRST: cd ${ctx.projectRoot}. That is the repo under test. It is NOT necessarily your shell's
-starting directory, and running these commands anywhere else tells you nothing.
-
-${
-      ctx.testCommandStatus === 'none-exist'
-        ? `  1. The loader reported that this project has NO automated test suite, so there is no suite to run.
-     CHECK THAT CLAIM before you accept it. You are standing in the repo and the loader is not; it is
-     a different agent and it may simply have failed to find the tests. Look for test files, a tests/
-     directory, a Makefile test target, a test script, a CI job that runs tests. If you find ANY of
-     them, the claim is false — report passed:false, name what you found, and say the command could
-     not be determined. Do NOT run a suite you discover: reporting the discovery is the job here.
-  2. Lint / format / typecheck, whichever that project configures.`
-        : `  1. Full test suite (\`${ctx.testCommand}\`) — must be green. Run exactly that command.
-  2. Lint / format / typecheck, whichever that project configures.`
-    }
-
-Show real command output. Do not fix anything; only report.
-"passed" means you SAW the gate pass. If the project configures no gate at all, that is an
-ABSENCE of a gate, not a failure — report passed:true and say so in the summary, because
-halting the run over a project that never had tests would be a false alarm.
-
-That carve-out is about a project that HAS no gate. It is not licence to report passed:true because
-a command was missing, unclear, or inconvenient — if you cannot run what you were asked to run, say
-so and report passed:false.`,
-    { label: `gate:${ph.name}`, phase: 'Implement', schema: GATE_SCHEMA },
+  const gates = await parallel(
+    gatesToRun.map(repo => () =>
+      agentTyped(gatePrompt(repo, ctx), {
+        label: `gate:${ph.name}:${repo.path.split('/').pop() || repo.path}`,
+        phase: 'Implement',
+        schema: GATE_SCHEMA,
+      }).then(g => ({ repo, g })),
+    ),
   )
 
-  // `!gate ||`, not `gate &&`. A null gate — the agent died, or exhausted its retries — used to fall
-  // straight through this check, so the phase silently skipped its gate and the next phase built on
-  // unconfirmed work. Measured: both gates dead => {"completed":2,"total":2}, six gate invocations,
-  // zero confirmations, a clean bill of health for a run where nothing was ever verified. That is the
-  // same silent drop as the batch collector above, reintroduced one function away BY the fix for it —
-  // which is why routing the gate through agentTyped and this line are one change, never two.
+  // `!g ||`, not `g &&`. A null gate — the agent died, or exhausted its retries — used to fall straight
+  // through, so the phase silently skipped its gate and the next phase built on unconfirmed work.
+  // Measured: both gates dead => {"completed":2,"total":2}, zero confirmations. ABSENCE OF CONFIRMATION
+  // IS NOT CONFIRMATION. A project that CONFIGURES no gate returns an OBJECT (passed:true); a DIED agent
+  // is null — structurally different, so this cannot punish a legitimately gateless repo.
   //
-  // ABSENCE OF CONFIRMATION IS NOT CONFIRMATION.
-  //
-  // Note the asymmetry with the prompt's own rule below: a project that CONFIGURES no gate is an
-  // absence of a gate and correctly reports passed:true — an OBJECT. A gate agent that DIED is null.
-  // Those are structurally different values and cannot be confused, so this check cannot punish a
-  // legitimately gateless project. Verified.
-  if (!gate || !gate.passed) {
-    log(`Phase gate ${gate ? 'FAILED' : 'DIED'} after ${ph.name}`)
+  // With N gates the rule is unchanged, applied to each: any repo whose gate died OR failed halts the
+  // phase. A null in the array is parallel()'s throw->null, treated the same as a dead gate.
+  const badGate = gates.find(x => !x || !x.g || !x.g.passed)
+  if (badGate) {
+    const { repo, g } = badGate
+    log(`Phase gate ${g ? 'FAILED' : 'DIED'} for ${repo?.path ?? '(unknown repo)'} after ${ph.name}`)
     return {
       halted: true,
       haltedAt: ph.name,
-      reason: gate
-        ? `Phase quality gate failed: ${gate.summary}`
-        : 'Phase gate agent died — the suite was never confirmed. Refusing to build the next phase on it.',
-      failures: gate?.failures || [],
+      reason: g
+        ? `Phase quality gate failed in ${repo.path}: ${g.summary}`
+        : `Phase gate agent died for ${repo?.path ?? 'a repo'} — the suite was never confirmed. Refusing to build the next phase on it.`,
+      failures: g?.failures || [],
       ...ledger(results, ctx),
     }
   }

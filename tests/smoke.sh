@@ -414,35 +414,36 @@ else
   bad "the batch collector's null-to-rejection fallback is gone — a crashed [P] implementer will vanish again"
 fi
 
-# 7. A dead gate must HALT, not fall through. Routing the gate through agentTyped converts its throw
-#    into a null, and `gate && !gate.passed` let a null straight through — so the phase silently skipped
-#    its gate. Measured: both gates dead => {"completed":2,"total":2}, six invocations, zero
-#    confirmations. That is the silent drop reintroduced one function away BY the fix for it.
+# 7. A dead gate must HALT, not fall through. A null gate result — the agent died or exhausted its
+#    retries — must be treated as a failure, never passed. Measured before the fix: both gates dead
+#    => {"completed":2,"total":2}, zero confirmations. That is the silent drop, one function away.
 #
-#    Ceiling AND floor. The negative alone passes if the whole gate block is deleted; the positive alone
-#    passes if a second, wrong check is added beside the right one. The PAIR is the invariant.
+#    #30 made the gate PER-REPO, so the shape moved from `if (!gate || !gate.passed)` to a finder over
+#    the per-repo results: `gates.find(x => !x || !x.g || !x.g.passed)`. Widened DELIBERATELY to the new
+#    shape, per this guard's own standing instruction — never delete it, re-aim it.
 #
-#    BOTH halves are anchored to `^[[:space:]]*if` and that is load-bearing: unanchored, commenting OUT
-#    the fix gives a FALSE GREEN (the negative finds no bug while the positive still matches the
-#    commented line), and this repo's convention of quoting the trap in a comment FALSE-ALARMS on a
-#    correct file.
-#
-#    KNOWN LIABILITY: the floor pins one spelling and rejects valid ones — line-wrapped, extra parens,
-#    `gate === null`, `!gate?.passed`, reordered operands. If a formatter or a cleanup trips it, reword
-#    the code or widen this match DELIBERATELY. Never delete the guard.
-bad_gate="$(grep -nE '^[[:space:]]*if \(gate[[:space:]]*&&[[:space:]]*!gate\.passed\)' "$WF" || true)"
-if [ -n "$bad_gate" ]; then
-  bad "the phase gate falls through on a NULL gate — a dead gate agent would pass the phase"
-  sed 's|^|       |' <<<"$bad_gate"
+#    Ceiling AND floor, and the pair is the invariant:
+#      * FLOOR — the finder must test a FALSY gate (`!x || !x.g`) before/while testing `.passed`.
+#        Without the null arm a dead gate slips through, which is the whole bug.
+#      * CEILING — forbid the shape that requires the gate truthy before checking passed
+#        (`x.g && !x.g.passed` / `x && !x.g.passed`), which is `gate &&` spelled for the finder.
+gate_finder="$(grep -nE 'gates\.find\(' "$WF" || true)"
+if [ -z "$gate_finder" ]; then
+  bad "the per-repo gate finder is GONE — grep found no gates.find(...), so the null-gate halt cannot be verified (#30)"
+elif ! grep -qE 'gates\.find\(x => !x \|\| !x\.g \|\| !x\.g\.passed\)' "$WF"; then
+  bad "the gate finder does not treat a falsy gate as a halt — a dead gate agent would pass the phase"
+  sed 's|^|       |' <<<"$gate_finder"
 else
-  ok "no fall-through on a null gate"
+  ok "a dead gate halts the phase — the per-repo finder treats null as failure (absence of confirmation is not confirmation)"
 fi
 
-good_gate="$(grep -nE '^[[:space:]]*if \(!gate[[:space:]]*\|\|[[:space:]]*!gate\.passed\)' "$WF" || true)"
-if [ -n "$good_gate" ]; then
-  ok "a dead gate halts the phase — absence of confirmation is not confirmation"
+# CEILING: the `gate &&`-equivalent — requiring the gate truthy before checking passed, so null slips by.
+bad_finder="$(grep -nE 'gates\.find\(x => x(\.g)? &&' "$WF" || true)"
+if [ -n "$bad_finder" ]; then
+  bad "the gate finder requires a truthy gate before checking .passed — a null (dead) gate would fall through"
+  sed 's|^|       |' <<<"$bad_finder"
 else
-  bad "the null-gate halt is GONE — grep found neither the bug nor the fix, so the negative half above is passing on nothing"
+  ok "no truthy-first gate finder — a dead gate cannot slip past the passed check"
 fi
 
 head_ "Helper"
