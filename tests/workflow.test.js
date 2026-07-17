@@ -667,6 +667,122 @@ test('#32: the test-integrity lens is told to refute a FALSE not-applicable clai
     'the lens needs the line between a genuine exemption and an inconvenient test')
 })
 
+// =============================================================================================
+// #28 — a dead verifier silently shrank the quorum.
+//
+// The verdicts were collected with `.filter(Boolean)` — the same shape as the batch collector's
+// silent drop — and acceptance read `refutations.length === 0 && verdicts.length > 0`. All three
+// dead correctly blocked the task. TWO dead did not: the task was accepted on the strength of a
+// SINGLE lens, with no signal that the other two never reported.
+//
+// The lenses are deliberately DIVERSE, not redundant — "redundant verifiers find the same thing;
+// diverse ones catch failure modes the others are blind to". So losing two of three is not 33% less
+// confidence. It can mean the one dimension that would have caught the defect is the one that went
+// silent — including test-integrity, the lens that reads the test diff for a weakened assertion,
+// described in this file as "the single most common way an agent fakes completion".
+// =============================================================================================
+
+const LENS_KEYS = ['test-integrity', 'requirement', 'regression']
+
+test('#28: two dead verifiers must not accept a task on the strength of one', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withOverrides(baseCanned(g), [
+      [l => l === 'verify:T001:test-integrity', () => null],
+      [l => l === 'verify:T001:requirement', () => null],
+      // only `regression` reports, and it says fine
+    ]),
+  })
+  assert.ok(result.halted,
+    `a task must not be accepted on 1 of 3 lenses; got ${JSON.stringify(result)}`)
+  assert.match(JSON.stringify(result.rejected), /verif|lens|quorum|1 of 3|did not report/i,
+    'the rejection must say the verification was incomplete, not invent a different reason')
+})
+
+test('#28: even ONE dead verifier blocks — a dead lens is uncertainty, and uncertainty refutes', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withOverrides(baseCanned(g), [[l => l === 'verify:T001:test-integrity', () => null]]),
+  })
+  // The file's own bias, verbatim: "Default to refuted=true when uncertain — a task wrongly accepted
+  // ships a bug; a task wrongly refuted costs one more round." A lens that never reported is the
+  // uncertainty that rule is about.
+  assert.ok(result.halted, `2 of 3 lenses is not a verified task; got ${JSON.stringify(result)}`)
+})
+
+test('#28: all three dead still blocks (regression guard — this half already worked)', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withOverrides(baseCanned(g), [[l => l.startsWith('verify:T001'), () => null]]),
+  })
+  assert.ok(result.halted, 'three dead verifiers must never accept')
+})
+
+test('#28: the reason names WHICH lenses went silent, not just that something did', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withOverrides(baseCanned(g), [
+      [l => l === 'verify:T001:test-integrity', () => null],
+      [l => l === 'verify:T001:requirement', () => null],
+    ]),
+  })
+  const reason = JSON.stringify(result.rejected)
+  // "verification incomplete" sends the operator to read three transcripts. Naming the lens tells
+  // them whether the dimension that matters to this task is the one that died.
+  assert.match(reason, /test-integrity/, 'the reason must name the silent lens')
+  assert.match(reason, /requirement/, 'both silent lenses must be named')
+  assert.ok(!/regression/.test(reason.replace(/regression check|regressions/g, '')),
+    'the lens that DID report must not be listed as silent')
+})
+
+test('#28: a lens whose THUNK throws is silent too, not vanished', async () => {
+  // agentTyped returning null is handled by the .then() — that null never reaches the collector. The
+  // index-map exists for the other path: a throw inside the thunk itself. verifyPrompt interpolates
+  // impl fields, so a hostile impl reaches it. parallel() then converts that throw to null, and
+  // filtering the null away would drop the lens, leave silent.length === 0, and accept the task on
+  // two lenses — the bug, reintroduced through the back door.
+  //
+  // This test exists because the mutation `raw.map(...)` -> `raw.filter(Boolean)` was GREEN without
+  // it: none of the other fixtures put a real null in `raw`, so the belt-and-braces looked like dead
+  // code while actually being load-bearing.
+  const g = FIXTURES.twoPhasesSequential()
+  let boom = false
+  const hostileImpl = {
+    id: 'T001', succeeded: true, tddStatus: 'cycle-confirmed', redConfirmed: true, greenConfirmed: true,
+    // verifyPrompt reads .summary — throw the first time a lens's prompt is built.
+    get summary() { if (!boom) { boom = true; throw new Error('prompt construction exploded') } return 's' },
+  }
+  const { result } = await drive({
+    canned: (label) => (label.startsWith('impl:') ? hostileImpl : baseCanned(g)(label)),
+  })
+  assert.ok(result.halted, `a lens whose thunk threw must not silently shrink the quorum; got ${JSON.stringify(result)}`)
+  assert.match(JSON.stringify(result.rejected), /never reported|unverified/i,
+    'a thrown thunk must be reported as a lens that did not report')
+})
+
+test('#28: a refutation still wins over a dead lens — the refuter is the more urgent news', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withOverrides(baseCanned(g), [
+      [l => l === 'verify:T001:test-integrity', () => ({ refuted: true, reason: 'assertion was deleted' })],
+      [l => l === 'verify:T001:requirement', () => null],
+    ]),
+  })
+  assert.ok(result.halted)
+  assert.match(JSON.stringify(result.rejected), /assertion was deleted/,
+    'a real refutation must survive into the reason, not be masked by the quorum complaint')
+})
+
+test('#28: all three reporting and none refuting still accepts — the happy path is untouched', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result, spawned } = await drive({ canned: baseCanned(g) })
+  assert.ok(!result.halted, `a fully verified task must still be accepted; got ${JSON.stringify(result)}`)
+  assert.equal(result.completed, 2)
+  for (const k of LENS_KEYS) {
+    assert.ok(spawned.includes(`verify:T001:${k}`), `lens ${k} should have run`)
+  }
+})
+
 test('SC-017: a done:true task is excluded from total, and an unreached phase is notAttempted', async () => {
   const g = FIXTURES.twoPhases()
   const { result } = await drive({
