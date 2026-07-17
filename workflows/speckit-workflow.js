@@ -82,7 +82,11 @@ const TASKS_SCHEMA = {
 
 const IMPL_SCHEMA = {
   type: 'object',
-  required: ['id', 'succeeded', 'summary'],
+  // `tddStatus` is REQUIRED. redConfirmed/greenConfirmed were optional, so an implementer could simply
+  // omit the Iron Law's evidence and be accepted — and they were read by no code anyway. Requiring the
+  // status means the harness re-asks an implementer that leaves it out, instead of the workflow
+  // quietly deciding that silence means yes.
+  required: ['id', 'succeeded', 'summary', 'tddStatus'],
   properties: {
     id: { type: 'string' },
     succeeded: { type: 'boolean' },
@@ -90,8 +94,22 @@ const IMPL_SCHEMA = {
     testFile: { type: 'string' },
     testName: { type: 'string' },
     filesChanged: { type: 'array', items: { type: 'string' } },
-    redConfirmed: { type: 'boolean', description: 'the test was observed FAILING before the implementation existed' },
-    greenConfirmed: { type: 'boolean', description: 'the test was observed PASSING afterwards' },
+    redConfirmed: { type: 'boolean', description: 'the test was observed FAILING before the implementation existed. Required when tddStatus is "cycle-confirmed".' },
+    greenConfirmed: { type: 'boolean', description: 'the test was observed PASSING afterwards. Required when tddStatus is "cycle-confirmed".' },
+    tddStatus: {
+      type: 'string',
+      enum: ['cycle-confirmed', 'not-applicable'],
+      description:
+        '"cycle-confirmed": you ran the test, SAW it fail, then SAW it pass. Report redConfirmed and ' +
+        'greenConfirmed from output you actually observed. ' +
+        '"not-applicable": this task has no behaviour to test — a version bump, a config edit, a docs ' +
+        'change — so there was no RED to observe. You must give tddNotApplicableReason, and an agent ' +
+        'that did not write this code will read the task and refute a false claim.',
+    },
+    tddNotApplicableReason: {
+      type: 'string',
+      description: 'why this task had no testable behaviour. Required when tddStatus is "not-applicable".',
+    },
   },
 }
 
@@ -124,7 +142,15 @@ const LENSES = [
 git history for this change. Refute if: the assertion was loosened, the test was
 made tautological, an assertion was deleted, the test was skipped/xfailed, or the
 test does not actually exercise the behavior the task describes. A test that passes
-because it asserts nothing is the single most common way an agent fakes completion.`,
+because it asserts nothing is the single most common way an agent fakes completion.
+
+AND, if the implementer reported tddStatus "not-applicable" — claiming this task had no
+testable behaviour, so no test was needed and no RED was observed — CHECK THAT CLAIM. It is
+the one declaration that skips the TDD evidence check entirely, and the implementer is the
+party that benefits from it. Read the task. A version bump, a config edit or a docs change
+genuinely has nothing to assert. A task that adds behaviour, fixes a bug, or changes a code
+path does not qualify, however inconvenient the test would have been. If the reason does not
+hold up, the claim is FALSE — refute it and say what should have been tested.`,
   },
   {
     key: 'requirement',
@@ -236,7 +262,17 @@ Hard rules:
  - Do NOT weaken, skip, or delete any test to get to green. You will be checked by agents
    that did not write this code, and one of them reads the test diff specifically for that.
 
-Report redConfirmed/greenConfirmed based on output you actually observed, not intent.`
+Report tddStatus, and report it honestly — it is now READ, not just recorded:
+ - "cycle-confirmed" — you ran the test, SAW it fail, then SAW it pass. Set redConfirmed and
+   greenConfirmed from output you actually observed, not intent. Claiming this without both is a
+   rejection, not a shortcut.
+ - "not-applicable" — this task has no behaviour to test (a version bump, a config edit, a docs
+   change), so there was no RED to observe. Give tddNotApplicableReason. An agent that did not write
+   this code will read the task and refute the claim if the task plainly needed a test.
+
+If you could not get a RED for a task that clearly has testable behaviour, say so in summary and set
+succeeded:false. That costs one round. Claiming a cycle you did not run ships a test that asserts
+nothing, and the agent reading your test diff is looking for exactly that.`
 }
 
 function verifyPrompt(task, impl, lens, ctx) {
@@ -253,7 +289,9 @@ The implementer claims:
   ${impl.summary}
   test: ${impl.testFile || '(none reported)'} :: ${impl.testName || '(none reported)'}
   files changed: ${(impl.filesChanged || []).join(', ') || '(none reported)'}
-  red confirmed: ${impl.redConfirmed} | green confirmed: ${impl.greenConfirmed}
+  TDD: ${impl.tddStatus === 'not-applicable'
+    ? `claims NO test was needed — "${impl.tddNotApplicableReason}"`
+    : `cycle-confirmed (red: ${impl.redConfirmed}, green: ${impl.greenConfirmed})`}
 
 YOUR LENS — ${lens.key}:
 ${lens.ask}
@@ -400,6 +438,47 @@ if (ctx.testCommandStatus === 'none-exist') {
   log('this project has no automated tests — proceeding without mechanical verification of TDD cycles')
 }
 
+// The Iron Law's evidence, finally read.
+//
+// redConfirmed/greenConfirmed were declared in the schema, rendered into the verifier's prompt, and
+// consulted by NO code — zero conditionals. So an implementer reporting redConfirmed:false — openly
+// admitting the test never failed first, which is to say it may assert nothing — was accepted exactly
+// like one that ran the whole cycle. The only thing standing in the way was that a verifier MIGHT
+// refute on the prose. That is model judgment, in the file whose opening comment says a script
+// guarantees the barrier precisely because a model can talk itself into skipping ahead.
+//
+// Returns null when the evidence is satisfactory, or the reason it is not.
+function tddEvidenceGap(impl, ctx) {
+  // No suite means RED and GREEN are unobservable by construction. Demanding them here would halt
+  // every genuinely test-less project — the false alarm #31's carve-out exists to prevent. The status
+  // is trustworthy now: an undetectable command halts at load, so "none-exist" really does mean it.
+  if (ctx.testCommandStatus === 'none-exist') return null
+
+  if (impl.tddStatus === 'not-applicable') {
+    // A bare "not applicable" is a free pass any implementer can claim, and a check anyone can opt out
+    // of enforces nothing. The reason is what a verifier can then refute.
+    return impl.tddNotApplicableReason?.trim()
+      ? null
+      : 'claimed the TDD cycle was not applicable but gave no reason — an unexplained exemption is not a declaration'
+  }
+
+  if (impl.tddStatus === 'cycle-confirmed') {
+    // `!== true` deliberately: `undefined` must not pass. Absence of evidence is not evidence, and the
+    // old prompt rendered exactly that absence as the literal text "red confirmed: undefined".
+    if (impl.redConfirmed !== true) {
+      return 'claimed cycle-confirmed but did not confirm RED — the test was never observed failing before the implementation existed, so it may assert nothing'
+    }
+    if (impl.greenConfirmed !== true) {
+      return 'claimed cycle-confirmed but did not confirm GREEN — the test was never observed passing afterwards'
+    }
+    return null
+  }
+
+  // Unrecognised, missing, or non-string. The safe reading of a value we do not understand is "we do
+  // not know", never "everything is fine".
+  return `reported an unrecognised tddStatus (${JSON.stringify(impl.tddStatus)}) — the TDD cycle is unverified`
+}
+
 async function implementAndVerify(task) {
   const impl = await agentTyped(implPrompt(task, ctx), {
     label: `impl:${task.id}`,
@@ -408,6 +487,13 @@ async function implementAndVerify(task) {
   })
   if (!impl) return { task, accepted: false, reason: 'implementer died or was skipped' }
   if (!impl.succeeded) return { task, impl, accepted: false, reason: impl.summary }
+
+  // Before the fan-out, not after: there is nothing for three agents to adversarially verify about
+  // work that already failed its own evidence check, and this workflow spawns too many agents as it
+  // is (#29). Rejecting here also gives the operator a reason that names the gap precisely, rather
+  // than a lens's prose about it.
+  const tddGap = tddEvidenceGap(impl, ctx)
+  if (tddGap) return { task, impl, accepted: false, reason: `TDD evidence: ${tddGap}` }
 
   const verdicts = (
     await parallel(
