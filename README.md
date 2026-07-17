@@ -101,11 +101,18 @@ For a **large** task list, swap the implementation step for the workflow, which 
 tasks in parallel and has every task adversarially verified by agents that did not write it:
 
 ```
-ai-development-framework:speckit-workflow
+ai-development-framework:speckit-workflow          # (full name required)
 ```
 
+It **caps how many run at once** so a big task list does not self-inflict API rate limits
+(`args.maxConcurrency`, default 4; `args.sequential` to force one at a time). It handles **monorepos**:
+each task is routed to the repo that owns its files, with a separate test command and quality gate per
+repo, so a spec in one directory can drive code in several. And it refuses to fake success — a run that
+cannot mechanically verify a task **halts and says why** rather than reporting green.
+
 It must be called by that full name; a bare `speckit-workflow` does not resolve. Run it only
-**after** the human gates — a workflow cannot pause to ask you a question.
+**after** the human gates — a workflow cannot pause to ask you a question. Full argument reference:
+[`docs/spec-kit.md`](docs/spec-kit.md).
 
 ### ✨ 2. A feature, in a project already set up
 
@@ -200,4 +207,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**Framework Version**: 5.2.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-13 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
+**Framework Version**: 5.2.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-17 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
