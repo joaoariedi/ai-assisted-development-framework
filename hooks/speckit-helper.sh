@@ -2,8 +2,58 @@
 # speckit-helper.sh - Pre-flight helper for speckit commands
 # Centralizes all pre-flight shell logic to avoid Claude Code permission
 # issues with $(), ||, &&, and | operators in !` ` commands.
+#
+# ---------------------------------------------------------------------------------------------
+# THE CONTRACT. Every subcommand is one of two kinds, and the difference is the exit code.
+#
+#   FETCHER  — "give me X". Prints X on stdout, exit 0. If X does not exist that is a FAILURE:
+#              the reason goes to STDERR and the exit code is NON-ZERO. It must be impossible for
+#              a caller to mistake the reason for the answer.
+#
+#   PREDICATE — "is X true?". Prints the answer on stdout AND returns it as the exit code
+#              (0 = yes, 1 = no). Both, deliberately: a shell caller writes `helper foo && ...`,
+#              a model reads the string. Neither contract is privileged, so neither breaks.
+#
+# This used to be one undifferentiated pile that printed a sentinel and exited 0 for everything,
+# and it cost real work twice:
+#
+#   * `spec` printed the six characters NO_SPEC at exit 0 when the artifact was missing. A command
+#     told to "load spec.md" loaded that string and carried on. It happened during the 5.1.0 run —
+#     the spec directory did not match the branch, every artifact subcommand reported NO_SPEC at
+#     exit 0, and nothing noticed until a human read the output. (#27)
+#   * `rtk-available` printed RTK_MISSING at exit 0, while quality-tooling.md documented
+#     `helper rtk-available && rtk pytest || pytest`. The && branch ALWAYS ran. The guard did not
+#     guard; the pattern only fell back because rtk itself then died with 127 — which is what plain
+#     `rtk pytest || pytest` does, except noisier, in a rule that calls rtk "a silent, non-blocking
+#     enhancement". The helper's contract was "branch on the string"; the rule's was "branch on the
+#     exit code"; they disagreed and the failure was silent. (#27, same class)
+#
+# Constitution principle 5: helpers fail loudly; no exit-0 sentinel a caller can ignore.
+# ---------------------------------------------------------------------------------------------
+
+# A fetcher could not fetch. STDERR, never stdout — a caller redirecting stdout into a variable
+# must get nothing, not an explanation it might use as the answer.
+die() {
+  echo "$*" >&2
+  exit 1
+}
 
 BRANCH=$(git branch --show-current 2>/dev/null | sed 's|^feature/||')
+
+# The spec directory name and the branch name are ONE contract, not two: artifacts live at
+# .specify/specs/$(git branch --show-current | sed 's|^feature/||')/. Nothing states this — not
+# /speckit.specify, which asks for a 2-4 word kebab-case name and separately says to branch
+# `feature/<name>`, leaving the equality implied by juxtaposition. When they diverge, every artifact
+# is missing for a reason that has nothing to do with the artifacts. Say so specifically.
+missing_artifact() {  # $1 = artifact filename, e.g. spec.md
+  local want=".specify/specs/$BRANCH/$1"
+  local found
+  found="$(ls -d .specify/specs/*/ 2>/dev/null | sed 's|.specify/specs/||; s|/$||' | tr '\n' ' ')"
+  if [ -z "$found" ]; then
+    die "no $1: $want does not exist, and .specify/specs/ holds no feature directories at all. Run /speckit.specify first."
+  fi
+  die "no $1: expected it at $want (the spec directory MUST be named after the branch, minus any 'feature/' prefix). Existing spec directories: ${found% }. Either rename the directory to '$BRANCH', or switch to the branch that matches it."
+}
 
 # Resolve what a PR is diffed against, and never fail doing it. Prints a ref, or nothing
 # when HEAD is the root commit (no parent to compare with).
@@ -31,17 +81,29 @@ case "$1" in
     ;;
 
   # --- Spec artifacts (branch-scoped) ---
+  # --- FETCHERS: absence is a failure, and it goes to stderr with a non-zero exit ---
   spec)
-    cat ".specify/specs/$BRANCH/spec.md" 2>/dev/null || echo "NO_SPEC"
+    cat ".specify/specs/$BRANCH/spec.md" 2>/dev/null || missing_artifact spec.md
     ;;
   plan)
-    cat ".specify/specs/$BRANCH/plan.md" 2>/dev/null || echo "NO_PLAN"
+    cat ".specify/specs/$BRANCH/plan.md" 2>/dev/null || missing_artifact plan.md
     ;;
+  # --- PREDICATE: the answer is the exit code AND the string ---
   check-spec)
-    ls ".specify/specs/$BRANCH/spec.md" 2>/dev/null && echo "SPEC_FOUND: $BRANCH" || echo "NO_SPEC_FOR_BRANCH"
+    if [ -f ".specify/specs/$BRANCH/spec.md" ]; then
+      echo "SPEC_FOUND: $BRANCH"
+    else
+      echo "NO_SPEC_FOR_BRANCH: $BRANCH"
+      exit 1
+    fi
     ;;
   check-plan)
-    test -f ".specify/specs/$BRANCH/plan.md" && echo "PLAN_FOUND: $BRANCH" || echo "NO_PLAN_FOR_BRANCH"
+    if [ -f ".specify/specs/$BRANCH/plan.md" ]; then
+      echo "PLAN_FOUND: $BRANCH"
+    else
+      echo "NO_PLAN_FOR_BRANCH: $BRANCH"
+      exit 1
+    fi
     ;;
   check-artifacts)
     for f in tasks.md plan.md spec.md; do
@@ -55,6 +117,10 @@ case "$1" in
     done
     ;;
   clarifications)
+    # Two different absences, and they are not the same news: no spec at all is a broken
+    # precondition; a spec with no Clarifications section is a normal, expected state that
+    # /speckit.clarify exists to fix.
+    [ -f ".specify/specs/$BRANCH/spec.md" ] || missing_artifact spec.md
     grep -A 100 "## Clarifications" ".specify/specs/$BRANCH/spec.md" 2>/dev/null || echo "NO_CLARIFICATIONS_SECTION"
     ;;
 
@@ -78,16 +144,18 @@ case "$1" in
 
   # --- Global spec-kit resources ---
   constitution)
-    cat .specify/memory/constitution.md 2>/dev/null || echo "NO_CONSTITUTION"
+    cat .specify/memory/constitution.md 2>/dev/null || die "no constitution: .specify/memory/constitution.md does not exist. Run /speckit.init to scaffold it, or /speckit.constitution to populate it."
     ;;
   list-specs)
-    ls -d .specify/specs/*/ 2>/dev/null || echo "NO_SPECS"
+    ls -d .specify/specs/*/ 2>/dev/null || die "no specs: .specify/specs/ holds no feature directories. Run /speckit.specify first."
     ;;
   list-specs-dir)
     ls .specify/specs/ 2>/dev/null || echo "NO_SPECS_DIR"
     ;;
   check-specify-dir)
-    test -d .specify && echo "EXISTS" || echo "NOT_FOUND"
+    # PREDICATE. /speckit.init asks this precisely to learn the answer, so NOT_FOUND is a normal
+    # reply, never a failure — it is the whole reason init exists.
+    if [ -d .specify ]; then echo "EXISTS"; else echo "NOT_FOUND"; exit 1; fi
     ;;
 
   # --- Project detection ---
@@ -185,12 +253,25 @@ case "$1" in
 
   # --- RTK CLI output compression (optional, auto-detected) ---
   rtk-available)
-    # Prints RTK_AVAILABLE or RTK_MISSING; always exits 0 so callers can
-    # branch on the output without tripping `set -e`.
+    # PREDICATE. The answer is BOTH the string and the exit code.
+    #
+    # This used to always exit 0 — the comment said so on purpose, "so callers can branch on the
+    # output". But the only caller is quality-tooling.md, which branches on the EXIT CODE:
+    #
+    #     helper rtk-available && rtk pytest -q || pytest -q
+    #
+    # With a constant 0 the && branch ALWAYS ran, rtk or no rtk. The guard did not guard: the
+    # pattern only fell back because `rtk` itself then died with 127, which is exactly what a bare
+    # `rtk pytest || pytest` does — except it prints a command-not-found error, in a rule whose
+    # whole point is that rtk stays "a silent, non-blocking enhancement". Verified by running the
+    # documented line with rtk off PATH: it took the rtk branch.
+    #
+    # The string still prints, so a model reading output loses nothing.
     if command -v rtk >/dev/null 2>&1; then
       echo "RTK_AVAILABLE"
     else
       echo "RTK_MISSING"
+      exit 1
     fi
     ;;
   rtk-run)
