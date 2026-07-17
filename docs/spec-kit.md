@@ -65,6 +65,38 @@ Every decision in the framework balances four concerns:
 
 ---
 
+## ⚡ `speckit-workflow` — deterministic execution of a task list
+
+For a large task list, `ai-development-framework:speckit-workflow` executes `tasks.md` as a
+deterministic Workflow instead of `/speckit.implement`: phase order is enforced in code, independent
+tasks run in parallel, and every task is adversarially verified by three agents that did not write it
+(one reads the test diff for a weakened assertion, one checks the requirement, one runs the task's own
+test). `tasks.md` is ticked once, at the end, by a single agent. Run it **only after** the human gates —
+a Workflow cannot pause to ask a question.
+
+It refuses to fake success. A task whose implementer cannot confirm the RED→GREEN cycle is rejected; a
+dead phase gate **halts** rather than passing; a run whose test command cannot be determined halts at
+load and tells you to supply one. *Absence of confirmation is not confirmation.*
+
+### Arguments (all optional)
+
+Pass these as the Workflow's `args`. Every one has a safe default, so a normal single-repo run needs
+none of them.
+
+| Argument | Default | What it does |
+|----------|---------|--------------|
+| `maxConcurrency` | `4` | Caps how many agents run at once. The harness's own cap is a CPU bound that says nothing about a shared API, so a big task list could self-inflict sustained 429/529 — this bounds it. A non-positive or non-integer value is rejected (falling back to 4) rather than silently removing the cap. |
+| `sequential` | `false` | `true` forces one agent at a time — the safest setting when you already know the API is hot. |
+| `testCommand` | — | An explicit full-suite command for a single-repo project, when the loader cannot detect one. Without it, an undetectable command halts the run at load rather than skipping verification. |
+| `repos` | — | **Monorepo support.** An array of `{ path, testCommand, testCommandStatus, lintCommand }`, one per repository the tasks touch. Each task is routed to the repo whose path prefixes its files, and the quality gate runs once per repo — so a spec in `tasks/` can drive code in `operations_api/` (pytest) and `cube_ui/` (vitest), each verified with its own command. The loader detects these automatically; pass `repos` only to override it. The **first** entry is the default for a task that declares no files. |
+| `projectRoot` | detected | Overrides the repo-root the loader infers from the spec location — needed when the spec does not live inside the code repo. |
+
+Beyond two terminal agent failures the workflow throttles itself to one agent at a time for the rest of
+the run: a slow finish beats a fast failure. A task whose files span two repos is rejected with a reason
+naming both — split it into one task per repo.
+
+---
+
 
 
 ## 📦 Spec-Kit Artifacts
