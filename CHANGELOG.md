@@ -33,6 +33,65 @@ disagree — that check exists because nothing else would notice a half-bumped r
 7. Tag it: `git tag -a vX.Y.Z && git push origin vX.Y.Z`, then cut a GitHub Release from the
    entry above.
 
+## [5.2.0] - 2026-07-17
+
+**The FxCube #314 field report is fully delivered, and every defect found building it is fixed.**
+5.1.0 shipped feature A (resilience). This ships B (overload) and C (multi-repo), plus five defects
+surfaced while building them. Seven issues, all measured against the shipped file, none reasoned about.
+
+Minor, not major: the new capabilities are additive (`args.repos`, `args.maxConcurrency`,
+`args.sequential`), single-repo runs behave as before, and only *failure paths* change — no command is
+renamed, no path moves, no permission rule needs editing.
+
+### Added
+
+- **Multi-repo support** (#30). A `repos[]` map — `{path, testCommand, testCommandStatus, lintCommand}`,
+  detected by the loader or overridden with `args.repos` — routes each task to the repo whose path
+  prefixes its files (longest-prefix, with a `+ '/'` boundary so `apple/` is not a match for a repo
+  `app`). The motivating case now runs: a monorepo whose spec lives in `tasks/` and whose code lives in
+  `operations_api/` (pytest) and `cube_ui/` (vitest). A cross-repo task is rejected naming both repos; a
+  file matching no repo is logged, not silently dropped; a no-files task goes to the first listed repo
+  (operator-ordered, never positional-by-path-length); the phase gate runs once per repo the phase
+  touched. **Single-repo is a `repos[]` of length 1 — one code path, unchanged behaviour.**
+- **Concurrency control** (#29). `args.maxConcurrency` (default **4**) caps how many agents run at once,
+  via a global semaphore at the one choke point every spawn passes — the harness's `min(16, cores-2)`
+  is a CPU bound that says nothing about a shared API. `args.sequential` forces 1. An adaptive throttle
+  drops to 1 after two terminal agent failures. Measured before: 2 tasks ⇒ peak 6, self-inflicting
+  sustained 429/529 (one verifier hit 529 twenty-one times). After: peak 4.
+
+### Changed
+
+- **Fan-out amplitude cut from `2N+1` to `1` full-suite run per phase** (#29, #38). The regression lens
+  and every implementer used to run the whole suite; now each runs only the task's own test and the
+  phase gate owns whole-suite regression, running it once per repo. Measured on a 3-task phase: full-
+  suite run instructions 4 → 1.
+- **The Iron Law's evidence is now read** (#32). `redConfirmed`/`greenConfirmed` were collected,
+  rendered into the verifier's prompt, and consulted by no code — so an implementer admitting
+  `redConfirmed:false` was accepted like one that ran the full cycle. `tddStatus` is now required and
+  enforced; a task with no testable behaviour must declare `not-applicable` with a reason, which the
+  test-integrity lens is told to refute.
+- **Every verifier lens must report** (#28). Two null verdicts used to silently shrink the quorum,
+  accepting a task on a single lens; the lenses are diverse, not redundant, so the dimension that would
+  have caught the defect could be the one that went quiet. A silent lens is now a rejection, naming
+  which lens. There is no `.filter(Boolean)` on a `parallel()` result left in the file.
+- `.claude/rules/code-quality.md`: the 500-line file limit now counts **code, not comments**, and
+  `workflows/speckit-workflow.js` is the one documented exemption — the Workflow harness runs the script
+  as a function body, so a static `import` is a compile error and the limit's remedy ("split the file")
+  does not exist there.
+
+### Fixed
+
+- **`testCommand: ""` conflated "no tests exist" with "detection failed"** (#31), silently disabling
+  every verification gate on a detection failure — and *this repo was that case*, so the workflow could
+  not run on its own monorepo. The status is now a schema-forced tri-state (`detected`/`none-exist`/
+  `undetectable`); `undetectable` halts at load; the gate agent is told to *refute* a false `none-exist`
+  claim, because asking a model nicely is not a mechanism.
+- **Helpers returned sentinels at exit 0** (#27). `speckit-helper.sh spec` printed `NO_SPEC` and exited
+  0, so a command told to load the spec loaded that string — the bug that cost the 5.1.0 run an hour.
+  Subcommands are now explicitly fetchers (absence ⇒ stderr + non-zero, nothing on stdout) or predicates
+  (answer in both the string and the exit code). This surfaced a second instance: `rtk-available` also
+  exited 0 always, so `quality-tooling.md`'s documented `&& rtk … || …` guard never guarded.
+
 ## [5.1.0] - 2026-07-16
 
 **`speckit-workflow` no longer loses work to a single transient agent failure — and no longer

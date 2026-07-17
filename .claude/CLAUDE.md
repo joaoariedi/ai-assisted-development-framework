@@ -1,4 +1,4 @@
-# AI Development Framework v5.1
+# AI Development Framework v5.2
 
 ## Custom Agents
 
