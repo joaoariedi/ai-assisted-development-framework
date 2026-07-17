@@ -495,27 +495,51 @@ async function implementAndVerify(task) {
   const tddGap = tddEvidenceGap(impl, ctx)
   if (tddGap) return { task, impl, accepted: false, reason: `TDD evidence: ${tddGap}` }
 
-  const verdicts = (
-    await parallel(
-      LENSES.map(lens => () =>
-        agentTyped(verifyPrompt(task, impl, lens, ctx), {
-          label: `verify:${task.id}:${lens.key}`,
-          phase: 'Verify',
-          schema: VERDICT_SCHEMA,
-        }).then(v => (v ? { ...v, lens: lens.key } : null)),
-      ),
-    )
-  ).filter(Boolean)
+  // Do NOT .filter(Boolean) these — that is what let a dead lens vanish. A null verdict became an
+  // absence, the quorum silently shrank, and a task could be accepted on the strength of ONE lens
+  // while the other two never reported. Index-map the nulls into an explicit `silent` record instead,
+  // exactly as the batch collector does, so a lens that did not answer is a fact rather than a gap.
+  const raw = await parallel(
+    LENSES.map(lens => () =>
+      agentTyped(verifyPrompt(task, impl, lens, ctx), {
+        label: `verify:${task.id}:${lens.key}`,
+        phase: 'Verify',
+        schema: VERDICT_SCHEMA,
+      }).then(v => (v ? { ...v, lens: lens.key } : { lens: lens.key, silent: true })),
+    ),
+  )
+  const verdicts = raw.map((v, i) => v || { lens: LENSES[i].key, silent: true })
 
-  // ANY lens refuting blocks the task. This is not a majority vote: the lenses look at
-  // different things, so a single one finding a weakened test is decisive on its own.
   const refutations = verdicts.filter(v => v.refuted)
+  const silent = verdicts.filter(v => v.silent).map(v => v.lens)
+
+  // ANY lens refuting blocks the task. This is not a majority vote: the lenses look at different
+  // things, so a single one finding a weakened test is decisive on its own.
+  //
+  // And EVERY lens must report. The old rule — `verdicts.length > 0` — correctly blocked when all
+  // three died, and quietly accepted when two did. But the lenses are diverse, not redundant (see
+  // LENSES above), so two silent lenses are not "a third less confidence": the dimension that would
+  // have caught this defect may be precisely the one that went quiet, and test-integrity — the lens
+  // that reads the test diff for a deleted assertion — can vanish without a trace.
+  //
+  // A lens that never reported is uncertainty, and this file's rule for uncertainty is written into
+  // the verifier prompt itself: default to refuted, because a task wrongly accepted ships a bug while
+  // a task wrongly refuted costs one more round. Halting on a dead lens costs a resume, which replays
+  // the cached prefix. Accepting on a shrunken quorum costs a bug that three agents were supposed to
+  // catch and one of them wasn't asked.
+  const reasons = [
+    ...refutations.map(r => `[${r.lens}] ${r.reason}`),
+    ...(silent.length
+      ? [`${silent.length} of ${LENSES.length} lenses never reported (${silent.join(', ')}) — the task is unverified, not verified`]
+      : []),
+  ]
+
   return {
     task,
     impl,
     verdicts,
-    accepted: refutations.length === 0 && verdicts.length > 0,
-    reason: refutations.map(r => `[${r.lens}] ${r.reason}`).join(' | '),
+    accepted: refutations.length === 0 && silent.length === 0,
+    reason: reasons.join(' | '),
   }
 }
 
