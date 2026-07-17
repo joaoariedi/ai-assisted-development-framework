@@ -145,7 +145,7 @@ export async function drive({ canned, parallel = parallelThrowToNull, args = { f
 
 /** Build a `load-artifacts` payload. */
 export const graph = (phases, extra = {}) => ({
-  featureDir: '/f', projectRoot: '/r', testCommand: 'pytest', phases, ...extra,
+  featureDir: '/f', projectRoot: '/r', testCommand: 'pytest', testCommandStatus: 'detected', phases, ...extra,
 })
 
 export const task = (id, o = {}) => ({
@@ -428,6 +428,124 @@ test('SC-005 + SC-013 + SC-017: the ledger balances and is not fooled by a dupli
     `BALANCE: accepted+rejected+notAttempted must equal total; got ${sum} vs ${result.total} — ` +
     `a task vanished. Keying on the model-authored id does exactly this.`)
   assert.deepEqual(result.notAttempted, ['T001'], "phase 2's T001 was never attempted and must say so")
+})
+
+// =============================================================================================
+// #31 — `testCommand: ""` conflated "this project has no tests" with "I could not detect them".
+//
+// Nothing distinguished them, and every consumer treated the second as the first: implementers
+// could not confirm RED/GREEN, the lens had no suite, and the gate was TOLD to report passed:true
+// for a project with no gate — so a DETECTION FAILURE produced a clean N/N run that verified
+// nothing. This repo is that case: its suite is tests/smoke.sh, and the loader was told to look
+// only for package.json/pytest/cargo/go.
+// =============================================================================================
+
+test('#31: an UNDETECTABLE test command halts at load — before any work is spawned', async () => {
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'undetectable' })
+  const { result, spawned } = await drive({ canned: baseCanned(g) })
+  // Nothing downstream can verify anything, so refuse to start rather than burn a full run and
+  // report clean. The file's own bias: a task wrongly refused costs one round; wrongly accepted
+  // ships a bug.
+  assert.ok(result.halted, `must halt; got ${JSON.stringify(result)}`)
+  assert.equal(result.haltedAt, 'Load')
+  assert.match(result.reason, /could not|undetectable|args\.testCommand/i,
+    'the reason must name the remedy — the operator has to know to pass args.testCommand')
+  assert.deepEqual(spawned, ['load-artifacts'], 'NO implementer may spawn — that is the point of halting at load')
+})
+
+test('#31: a project that genuinely has NO tests still runs — absence is not failure', async () => {
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'none-exist' })
+  const { result, spawned } = await drive({ canned: baseCanned(g) })
+  // The carve-out is CORRECT for the case it was written for. Halting over a project that never
+  // had tests would be a false alarm — this is the regression guard for that.
+  assert.ok(!result.halted, `a genuinely test-less project must still run; got ${JSON.stringify(result)}`)
+  assert.equal(result.completed, 1)
+  assert.ok(spawned.includes('gate:Phase 1'), 'the gate still runs — it just has no suite to assert')
+})
+
+test('#31: the gate is not asked to run a suite that does not exist', async () => {
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'none-exist' })
+  let gatePrompt = ''
+  const { } = await drive({
+    canned: withOverrides(baseCanned(g), [
+      ['gate:Phase 1', () => ({ passed: true, summary: 'no suite' })],
+    ]),
+    // capture the prompt the gate actually receives
+    args: { featureDir: '/f' },
+  })
+  // Re-drive capturing the prompt text (the stub kit records labels, not prompts).
+  const kit = makeAgentStub(baseCanned(g))
+  const agent = async (p, o = {}) => { if (o.label?.startsWith('gate:')) gatePrompt = p; return kit.agent(p, o) }
+  await makeRun(loadWorkflowSource())(agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f' })
+  assert.ok(!/Full test suite.*must be green/i.test(gatePrompt),
+    'with no suite in existence the gate must NOT be told "Full test suite — must be green" with no command')
+  assert.match(gatePrompt, /no automated test suite|has no tests/i,
+    'the gate must be told plainly that this project has no suite')
+  // The loader must not grade its own homework. "none-exist" is the one status that silently disables
+  // every verification gate, and it is model-authored — so the gate agent, which is a DIFFERENT agent
+  // standing in the repo, is told to refute it. A prompt asking the model nicely is not a mechanism;
+  // an independent agent that can say "I found tests/" is.
+  assert.match(gatePrompt, /CHECK THAT CLAIM|claim is false/i,
+    'the gate must be told to REFUTE the no-tests claim, not take the loader\'s word for it')
+  assert.match(gatePrompt, /passed:false/,
+    'the gate must know what to do when it finds tests the loader missed')
+})
+
+test('#31: args.testCommand overrides detection and makes an otherwise-undetectable repo runnable', async () => {
+  // Without this, halt-on-undetectable has no remedy but editing the workflow. With it, THIS repo
+  // can run its own workflow: args.testCommand = 'tests/smoke.sh'.
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'undetectable' })
+  let gatePrompt = ''
+  const kit = makeAgentStub(baseCanned(g))
+  const agent = async (p, o = {}) => { if (o.label?.startsWith('gate:')) gatePrompt = p; return kit.agent(p, o) }
+  const result = await makeRun(loadWorkflowSource())(
+    agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f', testCommand: 'tests/smoke.sh' })
+  assert.ok(!result.halted, `an explicit testCommand must override an undetectable status; got ${JSON.stringify(result)}`)
+  assert.match(gatePrompt, /tests\/smoke\.sh/, 'the gate must be given the operator-supplied command')
+})
+
+test('#31: a non-string or empty args.testCommand is rejected, not silently honoured', async () => {
+  // A had no argument surface until now, so it inherits #29's lesson the moment it gains one:
+  // `args` can arrive as a JSON blob, and a value that is not a usable command must not silently
+  // become one. "" must not mean "detected an empty command".
+  for (const bad of ['', '   ', 42, null, {}]) {
+    const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+      { testCommand: '', testCommandStatus: 'undetectable' })
+    const result = await makeRun(loadWorkflowSource())(
+      makeAgentStub(baseCanned(g)).agent, parallelThrowToNull, () => {}, () => {},
+      { featureDir: '/f', testCommand: bad })
+    assert.ok(result.halted,
+      `args.testCommand=${JSON.stringify(bad)} is not a usable command and must NOT override the undetectable halt`)
+  }
+})
+
+test('#31: an unrecognised testCommandStatus is treated as undetectable, never as fine', async () => {
+  // The status is model-authored, so the model can return something outside the enum — a typo, a
+  // hallucinated fourth state, or nothing at all if an older loader payload is replayed from cache.
+  // The safe reading of a value we do not understand is "we do not know", never "everything is fine".
+  // That is the whole of #31 in one line, so it gets a test: without one, deleting the fallback goes
+  // unnoticed (verified — the mutation was green until this existed).
+  for (const status of ['DETECTED', 'maybe', '', undefined, null, 42]) {
+    const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+      { testCommand: '', testCommandStatus: status })
+    const { result } = await drive({ canned: baseCanned(g) })
+    assert.ok(result.halted,
+      `testCommandStatus=${JSON.stringify(status)} is not a status we understand and must halt, not proceed`)
+    assert.equal(result.haltedAt, 'Load')
+  }
+})
+
+test('#31: an incoherent loader answer (detected + empty command) is treated as undetectable', async () => {
+  // The status is model-authored. `detected` with no command is self-contradictory, and this file
+  // does not trust model-authored fields it can check — the [P] marker sets that precedent.
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'detected' })
+  const { result } = await drive({ canned: baseCanned(g) })
+  assert.ok(result.halted, 'a "detected" status with no command must not be believed')
 })
 
 test('SC-017: a done:true task is excluded from total, and an unreached phase is notAttempted', async () => {
