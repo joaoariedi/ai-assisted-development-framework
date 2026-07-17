@@ -156,7 +156,7 @@ export const task = (id, o = {}) => ({
 /** Default happy answers for every label the workflow spawns. */
 export const baseCanned = (loadPayload) => (label) => {
   if (label === 'load-artifacts') return loadPayload
-  if (label.startsWith('impl:')) return { id: label.slice(5), succeeded: true, summary: 's', redConfirmed: true, greenConfirmed: true }
+  if (label.startsWith('impl:')) return { id: label.slice(5), succeeded: true, summary: 's', tddStatus: 'cycle-confirmed', redConfirmed: true, greenConfirmed: true }
   if (label.startsWith('verify:')) return { refuted: false, reason: 'ok' }
   if (label.startsWith('gate:')) return { passed: true, summary: 'green' }
   return 'report text'
@@ -546,6 +546,125 @@ test('#31: an incoherent loader answer (detected + empty command) is treated as 
     { testCommand: '', testCommandStatus: 'detected' })
   const { result } = await drive({ canned: baseCanned(g) })
   assert.ok(result.halted, 'a "detected" status with no command must not be believed')
+})
+
+// =============================================================================================
+// #32 — the Iron Law's own evidence was collected and thrown away.
+//
+// The implementer was asked to report redConfirmed/greenConfirmed "based on output you actually
+// observed, not intent". Those fields were declared in the schema, rendered into the verifier's
+// prompt, and read by NO CODE — zero conditionals. So an implementer reporting redConfirmed:false,
+// openly admitting the test never failed first, was accepted exactly like one that ran the full
+// cycle. The only mitigation was that a verifier MIGHT refute on the prose — model judgment, in a
+// file whose founding thesis is that a script guarantees the barrier because a model can talk
+// itself past it.
+//
+// Not every task has a RED phase: this repo's own T012 was "bump the version in six files". So the
+// implementer DECLARES tddStatus and a different agent REFUTES a false claim — the #31 pattern.
+// =============================================================================================
+
+const implSays = (over) => (label) =>
+  label.startsWith('impl:') ? { id: label.slice(5), succeeded: true, summary: 's', ...over } : undefined
+
+/** baseCanned, with the impl payload replaced. */
+const withImpl = (g, over) => (label, opts) => implSays(over)(label) ?? baseCanned(g)(label, opts)
+
+test('#32: an implementer that admits the test never failed first is NOT accepted', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withImpl(g, { tddStatus: 'cycle-confirmed', redConfirmed: false, greenConfirmed: true }),
+  })
+  // redConfirmed:false IS the admission that the test may assert nothing — which the test-integrity
+  // lens calls "the single most common way an agent fakes completion". It was accepted anyway.
+  assert.ok(result.halted, `must not accept an unconfirmed RED; got ${JSON.stringify(result)}`)
+  assert.match(JSON.stringify(result.rejected), /red|never observed failing|TDD/i,
+    'the rejection must name the missing RED evidence')
+})
+
+test('#32: omitting the evidence entirely is not acceptance either', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({ canned: withImpl(g, { tddStatus: 'cycle-confirmed' }) })
+  // `undefined` rendered into the verifier's prompt as the literal text "red confirmed: undefined".
+  // Absence of evidence is not evidence.
+  assert.ok(result.halted, 'claiming cycle-confirmed while reporting no red/green must not be accepted')
+})
+
+test('#32: greenConfirmed is required too, not just red', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withImpl(g, { tddStatus: 'cycle-confirmed', redConfirmed: true, greenConfirmed: false }),
+  })
+  assert.ok(result.halted, 'a cycle is not confirmed until the test was seen to PASS as well')
+})
+
+test('#32: a task with no RED phase still runs, if the implementer says why', async () => {
+  // The regression guard that keeps this usable. This repo's own tasks.md is full of these: the
+  // version bump, the CI step, the CHANGELOG. Strict enforcement would halt on all of them and
+  // someone would rightly rip the check out.
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({
+    canned: withImpl(g, { tddStatus: 'not-applicable', tddNotApplicableReason: 'bumps a version string in six files; there is no behaviour to test' }),
+  })
+  assert.ok(!result.halted, `a declared non-TDD task must still run; got ${JSON.stringify(result)}`)
+  assert.equal(result.completed, 2)
+})
+
+test('#32: "not applicable" without a reason is not a declaration, it is an escape hatch', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { result } = await drive({ canned: withImpl(g, { tddStatus: 'not-applicable' }) })
+  // Without this, `not-applicable` is a free pass any implementer can claim — the check would exist
+  // and enforce nothing.
+  assert.ok(result.halted, 'an unexplained not-applicable must not be accepted')
+})
+
+test('#32: an unrecognised tddStatus is unverified, never fine', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  for (const s of ['confirmed', '', undefined, null, true]) {
+    const { result } = await drive({ canned: withImpl(g, { tddStatus: s, redConfirmed: true, greenConfirmed: true }) })
+    assert.ok(result.halted, `tddStatus=${JSON.stringify(s)} is not a status we understand and must not be accepted`)
+  }
+})
+
+test('#32: a project with NO test suite cannot be asked for a cycle it could never observe', async () => {
+  // The #31 interaction. With no suite, RED/GREEN are unobservable by construction — demanding them
+  // would halt every test-less project, which is the false alarm #31's carve-out exists to prevent.
+  const g = graph([{ name: 'Phase 1', tasks: [task('T001')] }],
+    { testCommand: '', testCommandStatus: 'none-exist' })
+  const { result } = await drive({ canned: withImpl(g, { tddStatus: 'cycle-confirmed', redConfirmed: false }) })
+  assert.ok(!result.halted, `a test-less project must not be held to TDD evidence; got ${JSON.stringify(result)}`)
+})
+
+test('#32: a task rejected on TDD evidence does not spawn three verifiers', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  const { spawned } = await drive({
+    canned: withImpl(g, { tddStatus: 'cycle-confirmed', redConfirmed: false }),
+  })
+  // Reject before the fan-out: there is nothing for three agents to adversarially verify about work
+  // that already failed its own evidence check. This thing already spawns too many agents (#29).
+  assert.ok(!spawned.some(l => l.startsWith('verify:')),
+    `no verifier should spawn for an already-rejected task; got ${spawned.join(', ')}`)
+})
+
+test('#32: the test-integrity lens is told to refute a FALSE not-applicable claim', async () => {
+  const g = FIXTURES.twoPhasesSequential()
+  let lensPrompt = ''
+  const kit = makeAgentStub(withImpl(g, { tddStatus: 'not-applicable', tddNotApplicableReason: 'nah' }))
+  const agent = async (p, o = {}) => { if (o.label?.includes('test-integrity')) lensPrompt = p; return kit.agent(p, o) }
+  await makeRun(loadWorkflowSource())(agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f' })
+  // The implementer must not grade its own homework. `not-applicable` is the one status that skips
+  // the evidence check, so the lens that already reads the test diff is told to contradict it.
+  //
+  // Assert on text UNIQUE to the cross-check. The obvious assertions — /not-applicable/ and /refute/ —
+  // both pass with the cross-check deleted: the base lens already says "Refute if: the assertion was
+  // loosened", and verifyPrompt itself renders "claims NO test was needed". Matching those proves the
+  // prompt exists, not that the cross-check does. Verified: with the loose assertions, removing the
+  // whole block left this test green.
+  assert.match(lensPrompt, /CHECK THAT CLAIM/,
+    'the lens must be told to check the not-applicable claim, not just to look for weakened tests')
+  assert.match(lensPrompt, /the claim is FALSE/,
+    'the lens must be told what to conclude when the reason does not hold up')
+  assert.match(lensPrompt, /version bump|config edit|docs change/i,
+    'the lens needs the line between a genuine exemption and an inconvenient test')
 })
 
 test('SC-017: a done:true task is excluded from total, and an unreached phase is notAttempted', async () => {
