@@ -217,7 +217,7 @@ test('harness: drives the SHIPPED file end to end', async () => {
   const { result, spawned } = await drive({ canned: baseCanned(FIXTURES.parallelPair()) })
   assert.equal(result.completed, 2, 'both tasks should be accepted on the happy path')
   assert.ok(spawned.includes('load-artifacts'), 'loader never ran')
-  assert.ok(spawned.includes('gate:Phase 1'), 'phase gate never ran')
+  assert.ok(spawned.some(l => l.startsWith('gate:Phase 1')), 'phase gate never ran')
   // Spike 3's measured amplitude: 2 tasks => 12 agents (1 loader + 2 impl + 6 verify + 1 gate +
   // update-tasks-md + completion-report). If this number moves, the fan-out changed. (#29)
   assert.equal(spawned.length, 12, `expected 12 agents for 2 tasks, got ${spawned.length}: ${spawned.join(', ')}`)
@@ -377,7 +377,7 @@ test('SC-004: a DEAD phase gate halts — absence of confirmation is not confirm
   //
   // THREE POSITIVE FLOORS. The negative alone ("phase 2 never ran") is vacuous — it holds whenever
   // phase 2 doesn't run for ANY reason, including the :329 halt firing before the gate ever spawns.
-  assert.ok(spawned.includes('gate:Phase 1'), 'FLOOR (a): the gate path must actually have been reached')
+  assert.ok(spawned.some(l => l.startsWith('gate:Phase 1')), 'FLOOR (a): the gate path must actually have been reached')
   assert.ok(result.halted, 'the phase must halt on a dead gate')
   assert.equal(result.haltedAt, 'Phase 1', 'FLOOR (c): must halt at the gate, not elsewhere')
   assert.match(result.reason, /gate agent died|never confirmed/i,
@@ -389,7 +389,7 @@ test('SC-016: a gate FAILURE still reports the failing tests', async () => {
   const g = FIXTURES.twoPhasesSequential()
   const { result } = await drive({
     canned: withOverrides(baseCanned(g), [
-      ['gate:Phase 1', () => ({ passed: false, summary: '3 tests failed', failures: ['test_a', 'test_b'] })],
+      [l => l.startsWith('gate:'), () => ({ passed: false, summary: '3 tests failed', failures: ['test_a', 'test_b'] })],
     ]),
   })
   // :364 carried `failures`. Dropping it loses the failing-test list at exactly the moment the gate
@@ -462,7 +462,7 @@ test('#31: a project that genuinely has NO tests still runs — absence is not f
   // had tests would be a false alarm — this is the regression guard for that.
   assert.ok(!result.halted, `a genuinely test-less project must still run; got ${JSON.stringify(result)}`)
   assert.equal(result.completed, 1)
-  assert.ok(spawned.includes('gate:Phase 1'), 'the gate still runs — it just has no suite to assert')
+  assert.ok(spawned.some(l => l.startsWith('gate:Phase 1')), 'the gate still runs — it just has no suite to assert')
 })
 
 test('#31: the gate is not asked to run a suite that does not exist', async () => {
@@ -971,6 +971,181 @@ test('#29: ...and the phase gate STILL runs it — the pair is the invariant', a
   await makeRun(loadWorkflowSource())(agent, parallelThrowToNull, () => {}, () => {}, { featureDir: '/f' })
   assert.match(gatePrompt, /Full test suite/,
     'the gate must still own the full-suite check — if it is gone from both, nothing runs the suite at all')
+})
+
+// =============================================================================================
+// #30 — multi-repo. The loader computed projectRoot by stripping /.specify/specs/<name>, which is
+// right ONLY when the spec lives inside the repo it describes. In the FxCube monorepo the spec is in
+// tasks/, and the code is in operations_api/ (pytest) and cube_ui/ (vitest) — so the strip yielded
+// fxcube/tasks, a directory containing none of the code, and there is no single testCommand.
+//
+// Design decisions settled up front (issue #30 listed four open questions):
+//   Q1 cross-repo task  -> REJECT with a tagged reason naming both repos
+//   Q2 unmatched file   -> logged and attributed, never silently dropped
+//   Q3 default repo     -> the FIRST listed repo (operator-ordered), never positional-by-path-length
+//   Q4 normalisation    -> strip trailing slashes; a path of "/" is rejected, not a catch-all
+// =============================================================================================
+
+const REPOS = [
+  { path: '/mono/operations_api', testCommand: 'poetry run pytest', testCommandStatus: 'detected', lintCommand: 'ruff check .' },
+  { path: '/mono/cube_ui', testCommand: 'npx vitest run', testCommandStatus: 'detected', lintCommand: 'npm run typecheck' },
+]
+const monoGraph = (tasks, repos = REPOS, extra = {}) => ({
+  featureDir: '/f', projectRoot: '/mono', repos, phases: [{ name: 'Phase 1', tasks }], ...extra,
+})
+
+/** Drive and capture every prompt by label, plus logs. */
+async function driveCapturing({ canned, args }) {
+  const prompts = {}
+  const logs = []
+  const kit = makeAgentStub(canned)
+  const agent = async (p, o = {}) => { prompts[o.label] = p; return kit.agent(p, o) }
+  const result = await makeRun(loadWorkflowSource())(
+    agent, parallelThrowToNull, () => {}, m => logs.push(m), args ?? { featureDir: '/f' })
+  return { result, prompts, logs, spawned: kit.spawned }
+}
+
+test('#30: a task routes to the repo that owns its files, and that repo\'s command reaches its prompts', async () => {
+  const g = monoGraph([task('T001', { files: ['operations_api/operation/models.py'] })])
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.match(prompts['impl:T001'], /operations_api/, 'the implementer must cd into the owning repo')
+  assert.ok(!/cube_ui/.test(prompts['impl:T001'] ?? ''), 'and not the other repo')
+  // its GATE must run that repo's suite, not the frontend's
+  assert.match(prompts['gate:Phase 1:operations_api'] ?? Object.values(prompts).find(p => /poetry run pytest/.test(p)) ?? '', /poetry run pytest/,
+    'the gate for this repo must use its own test command')
+})
+
+test('#30: longest-prefix wins — app/ui/x goes to app/ui, not app', async () => {
+  const repos = [
+    { path: '/r/app', testCommand: 'a', testCommandStatus: 'detected', lintCommand: '' },
+    { path: '/r/app/ui', testCommand: 'b', testCommandStatus: 'detected', lintCommand: '' },
+  ]
+  const g = monoGraph([task('T001', { files: ['app/ui/button.tsx'] })], repos, { projectRoot: '/r' })
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.match(prompts['impl:T001'], /\/r\/app\/ui/, 'must resolve to the deepest matching repo')
+})
+
+test('#30: a task spanning two repos is REJECTED, and the reason names both', async () => {
+  const g = monoGraph([task('T001', { files: ['operations_api/api.py', 'cube_ui/src/App.tsx'] })])
+  const { result } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(result.halted, `a cross-repo task must halt; got ${JSON.stringify(result)}`)
+  const reason = JSON.stringify(result.rejected)
+  assert.match(reason, /operations_api/, 'must name the first repo')
+  assert.match(reason, /cube_ui/, 'must name the second repo')
+  assert.match(reason, /split|one task per repo|different suites/i, 'must tell the operator what to do')
+})
+
+test('#30: a no-files task goes to the FIRST listed repo, never positional-by-length', async () => {
+  // The drafted bug chose the default by path length. To catch BOTH "longest" and "shortest"
+  // mutations, the first-listed repo must be neither the longest nor the shortest — so it takes THREE
+  // repos, ordered [middle, longest, shortest]. Only "first-listed" gives the right answer for all.
+  const repos = [
+    { path: '/w/svc_mid', testCommand: 'm', testCommandStatus: 'detected', lintCommand: '' },      // first, middle length
+    { path: '/w/service_longest', testCommand: 'l', testCommandStatus: 'detected', lintCommand: '' }, // longest
+    { path: '/w/ui', testCommand: 's', testCommandStatus: 'detected', lintCommand: '' },            // shortest
+  ]
+  const g = monoGraph([task('T001', { files: [] })], repos, { projectRoot: '/w' })
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.match(prompts['impl:T001'], /\/w\/svc_mid\b/, 'a no-files task must go to the FIRST listed repo, not the longest or shortest path')
+})
+
+test('#30: a prefix-sibling directory is not a false match — apple/x must not match repo app', async () => {
+  // The `+ '/'` boundary earns its keep only when a SHORTER repo is a false prefix and no longer repo
+  // matches (a longer real match would win the longest-first `find` and hide the bug). Construct that:
+  // repos [service (first/default), app], and a file in `apple/` — which belongs to neither.
+  //   with the boundary:    /r/apple/x startsWith neither /r/service/ nor /r/app/ -> unmatched
+  //                         -> the DEFAULT repo (service, first-listed).
+  //   WITHOUT the boundary: /r/apple/x startsWith /r/app -> falsely matched to app.
+  // So the boundary is the difference between routing to `service` and misrouting to `app`.
+  const repos = [
+    { path: '/r/service', testCommand: 's', testCommandStatus: 'detected', lintCommand: '' },
+    { path: '/r/app', testCommand: 'a', testCommandStatus: 'detected', lintCommand: '' },
+  ]
+  const g = monoGraph([task('T001', { files: ['apple/button.tsx'] })], repos, { projectRoot: '/r' })
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.match(prompts['impl:T001'], /REPO ROOT: \/r\/service(\s|$)/m,
+    'apple/x belongs to no repo -> it must fall to the default (service), never falsely match app')
+  assert.ok(!/REPO ROOT: \/r\/app(\s|$)/m.test(prompts['impl:T001']), 'and must NOT misroute to app')
+})
+
+test('#30: a file matching no repo is logged and attributed, not silently ignored', async () => {
+  // ["CHANGELOG.md", "operations_api/api.py"] — CHANGELOG.md matches no repo. The old hits.size===1
+  // silently dropped it. It must be surfaced.
+  const g = monoGraph([task('T001', { files: ['CHANGELOG.md', 'operations_api/api.py'] })])
+  const { result, logs, prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(!result.halted, 'one matched repo + a root file still routes (to the matched repo)')
+  assert.match(prompts['impl:T001'], /operations_api/, 'routes to the repo the matched file owns')
+  assert.ok(logs.some(l => /CHANGELOG\.md/.test(l) && /operations_api|attributed|matched no repo/i.test(l)),
+    `the unmatched file must be logged, not dropped; logs:\n  ${logs.join('\n  ')}`)
+})
+
+test('#30: args.repos overrides loader detection', async () => {
+  const g = monoGraph([task('T001', { files: ['svc/main.go'] })], REPOS)   // loader says operations_api/cube_ui
+  const override = [{ path: '/w/svc', testCommand: 'go test ./...', testCommandStatus: 'detected', lintCommand: '' }]
+  const { prompts } = await driveCapturing({ canned: baseCanned(g), args: { featureDir: '/f', repos: override } })
+  assert.match(prompts['impl:T001'], /\/w\/svc/, 'args.repos must win over the loader')
+  assert.match(prompts['gate:Phase 1:svc'] ?? Object.values(prompts).find(p => /go test/.test(p)) ?? '', /go test/, 'and carry its command')
+})
+
+test('#30: a repo path with a trailing slash still matches its files (normalisation)', async () => {
+  const repos = [{ path: '/mono/operations_api/', testCommand: 'pytest', testCommandStatus: 'detected', lintCommand: '' }]
+  const g = monoGraph([task('T001', { files: ['operations_api/models.py'] })], repos)
+  const { result, prompts } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(!result.halted, `a trailing slash must not break matching; got ${JSON.stringify(result.rejected ?? result)}`)
+  assert.match(prompts['impl:T001'], /operations_api/, 'the file must still resolve to the repo')
+})
+
+test('#30: a repo path of "/" is rejected, not treated as a catch-all', async () => {
+  const repos = [
+    { path: '/', testCommand: 'x', testCommandStatus: 'detected', lintCommand: '' },
+    { path: '/mono/operations_api', testCommand: 'pytest', testCommandStatus: 'detected', lintCommand: '' },
+  ]
+  // A no-files task exposes the filter: if "/" survives, it normalises to "" and becomes repos[0] —
+  // the DEFAULT — and the prompt gets a bare `REPO ROOT: ` / `cd `. A task with files alone would be
+  // saved by longest-prefix and hide the bug, so this drives the default path.
+  const g = monoGraph([
+    task('T001', { files: ['operations_api/models.py'] }),
+    task('T002', { files: [] }),
+  ], repos)
+  const { prompts, result } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(!result.halted, `should route, not halt; got ${JSON.stringify(result.rejected ?? result)}`)
+  assert.match(prompts['impl:T001'], /operations_api/, 'a file task must route to the real repo, not the "/" catch-all')
+  // The no-files task must land in the real repo (the only surviving one), never an empty path.
+  assert.match(prompts['impl:T002'], /REPO ROOT: \/mono\/operations_api/, 'the default repo must be real, not the dropped "/"')
+  assert.ok(!/REPO ROOT: *(\n|$)/.test(prompts['impl:T002']), 'no bare REPO ROOT from an empty repo path')
+})
+
+test('#30: an undetectable status on ANY repo halts at load, naming the repo', async () => {
+  const repos = [
+    { path: '/mono/operations_api', testCommand: 'pytest', testCommandStatus: 'detected', lintCommand: '' },
+    { path: '/mono/cube_ui', testCommand: '', testCommandStatus: 'undetectable', lintCommand: '' },
+  ]
+  const g = monoGraph([task('T001', { files: ['operations_api/a.py'] })], repos)
+  const { result } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(result.halted, 'a repo whose command is undetectable must halt the whole run')
+  assert.equal(result.haltedAt, 'Load')
+  assert.match(result.reason, /cube_ui/, 'the halt must name the offending repo')
+})
+
+test('#30: the phase gate runs once per repo the phase touched', async () => {
+  const g = monoGraph([
+    task('T001', { parallel: true, files: ['operations_api/a.py'] }),
+    task('T002', { parallel: true, files: ['cube_ui/b.tsx'] }),
+  ])
+  const { spawned } = await driveCapturing({ canned: baseCanned(g) })
+  const gates = spawned.filter(l => l.startsWith('gate:'))
+  assert.equal(gates.length, 2, `two repos touched => two gates; got ${gates.join(', ')}`)
+  assert.ok(gates.some(l => /operations_api/.test(l)) && gates.some(l => /cube_ui/.test(l)),
+    'one gate per repo, each identifiable')
+})
+
+test('#30: single-repo mode is unchanged — a payload with no repos[] still works', async () => {
+  // The regression that matters most: every existing fixture is single-repo (testCommand at ctx level,
+  // no repos). Single-repo must remain one code path, behaving exactly as before this feature.
+  const g = FIXTURES.twoPhasesSequential()   // testCommand:'pytest', testCommandStatus:'detected', no repos
+  const { result, spawned } = await driveCapturing({ canned: baseCanned(g) })
+  assert.ok(!result.halted, `single-repo must still complete; got ${JSON.stringify(result)}`)
+  assert.equal(spawned.filter(l => l.startsWith('gate:')).length, 2, 'one gate per phase, as before (2 phases)')
 })
 
 test('SC-017: a done:true task is excluded from total, and an unreached phase is notAttempted', async () => {
