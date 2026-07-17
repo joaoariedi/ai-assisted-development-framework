@@ -280,6 +280,75 @@ else
 fi
 
 # --- Tier 1: helper runs ------------------------------------------------------------
+head_ "Helper contract"
+
+# A fetcher that prints a sentinel at exit 0 lets a command sail past a missing precondition and
+# invent its own answer. `spec` printed the six characters NO_SPEC and exited 0; a command told to
+# "load spec.md" loaded that string. It happened during the 5.1.0 run and nothing noticed until a
+# human read the output. Constitution principle 5. (#27)
+#
+# Driven in a scratch repo, because the assertion is about what happens when the artifact is ABSENT
+# and this repo has one.
+hc_tmp="$(mktemp -d)"
+(
+  cd "$hc_tmp" || exit 1
+  git init -q . 2>/dev/null
+  git checkout -q -b feature/nothing-here 2>/dev/null
+  mkdir -p .specify/specs/some-other-name
+  : > .specify/specs/some-other-name/spec.md
+) >/dev/null 2>&1
+
+hc_fail=0
+# spec/plan: the directory exists but is named for a DIFFERENT branch — the 5.1.0 case exactly.
+# constitution: never scaffolded.
+for sub in spec plan constitution; do
+  out="$(cd "$hc_tmp" && "$HELPER" "$sub" 2>/dev/null)"; rc=$?
+  if [ "$rc" -eq 0 ]; then
+    bad "helper '$sub' exits 0 with the artifact absent — a caller cannot tell the answer from the failure (#27)"
+    hc_fail=1
+  elif [ -n "$out" ]; then
+    bad "helper '$sub' printed '$out' to STDOUT while failing — a caller capturing stdout would use it as the answer (#27)"
+    hc_fail=1
+  fi
+done
+
+# list-specs needs its own fixture: in the one above a spec directory DOES exist, so exiting 0 is the
+# correct answer. Its failure case is a .specify/ with no feature directories at all.
+hc_empty="$(mktemp -d)"; mkdir -p "$hc_empty/.specify/specs"
+out="$(cd "$hc_empty" && "$HELPER" list-specs 2>/dev/null)"; rc=$?
+if [ "$rc" -eq 0 ] || [ -n "$out" ]; then
+  bad "helper 'list-specs' must fail loudly when .specify/specs/ is empty; got '$out' at exit $rc (#27)"
+  hc_fail=1
+fi
+rm -rf "$hc_empty"
+
+[ "$hc_fail" -eq 0 ] && ok "fetchers fail loudly: non-zero exit, nothing on stdout, reason on stderr (#27)"
+
+# The reason must be actionable. Every artifact goes missing at once when the spec directory does not
+# match the branch, and that is a fact about the DIRECTORY, not the artifacts — the run that hit this
+# lost an hour to it. The message has to say so.
+#
+# Assert on text unique to the CONTRACT, not merely on the word "branch" — the message says "switch
+# to the branch that matches it" elsewhere, so a loose `grep -qi branch` stays green with the whole
+# contract sentence deleted. Verified: it did.
+hint="$(cd "$hc_tmp" && "$HELPER" spec 2>&1 >/dev/null)"
+hint_fail=0
+grep -q "some-other-name" <<<"$hint" || { bad "the message must LIST the spec directories that do exist; got: $hint"; hint_fail=1; }
+grep -q "MUST be named after the branch" <<<"$hint" || { bad "the message must state the branch↔directory contract, which is the actual cause; got: $hint"; hint_fail=1; }
+[ "$hint_fail" -eq 0 ] && ok "a missing artifact names the branch↔directory contract and lists what does exist"
+
+# PREDICATES answer; they do not fail. /speckit.init asks check-specify-dir precisely to learn that
+# .specify/ is absent — that is the whole reason init exists, so the string must still be there.
+pred_out="$(cd "$hc_tmp" && "$HELPER" check-specify-dir 2>/dev/null)"
+if [ "$pred_out" = "EXISTS" ]; then
+  ok "check-specify-dir still answers on stdout"
+else
+  # .specify EXISTS in the scratch repo, so this branch means the predicate lost its string.
+  bad "check-specify-dir must print its answer, not just signal it — /speckit.init branches on the string"
+fi
+
+rm -rf "$hc_tmp"
+
 head_ "Workflow resilience"
 
 # These guard shape invariants that tests/workflow.test.js CANNOT reach. A behaviour test proves the
@@ -380,9 +449,44 @@ head_ "Helper"
 
 if [ -x "$HELPER" ]; then ok "speckit-helper.sh is executable"; else bad "speckit-helper.sh is not executable"; fi
 
-for sub in branch recent-commits rtk-available; do
+for sub in branch recent-commits; do
   if "$HELPER" "$sub" >/dev/null 2>&1; then ok "helper '$sub' runs"; else bad "helper '$sub' exits non-zero"; fi
 done
+
+# `rtk-available` is a PREDICATE, and "does it run" is the wrong question for one — that is exactly
+# how the broken contract survived. It used to always exit 0, so quality-tooling.md's documented
+# `helper rtk-available && rtk pytest || pytest` took the rtk branch even with rtk absent. The guard
+# did not guard. This suite asserted "helper 'rtk-available' runs" and was satisfied.
+#
+# The right question is whether the ANSWER matches reality — on this machine, and on CI, where rtk is
+# not installed and the exit code must therefore be 1.
+rtk_out="$("$HELPER" rtk-available 2>/dev/null)"; rtk_rc=$?
+if command -v rtk >/dev/null 2>&1; then
+  if [ "$rtk_out" = "RTK_AVAILABLE" ] && [ "$rtk_rc" -eq 0 ]; then
+    ok "helper rtk-available agrees with reality (present: RTK_AVAILABLE, exit 0)"
+  else
+    bad "rtk is on PATH but the helper said '$rtk_out' / exit $rtk_rc"
+  fi
+else
+  if [ "$rtk_out" = "RTK_MISSING" ] && [ "$rtk_rc" -ne 0 ]; then
+    ok "helper rtk-available agrees with reality (absent: RTK_MISSING, non-zero)"
+  else
+    bad "rtk is NOT on PATH but the helper said '$rtk_out' / exit $rtk_rc — the documented '&& rtk … || …' pattern would run rtk anyway"
+  fi
+fi
+
+# ...and prove the documented pattern actually branches, in both directions. This is the check that
+# would have caught the original bug: it drives quality-tooling.md's own line rather than the helper.
+if PATH=/usr/bin:/bin "$HELPER" rtk-available >/dev/null 2>&1; then
+  branch_taken="rtk"
+else
+  branch_taken="fallback"
+fi
+if [ "$branch_taken" = "fallback" ]; then
+  ok "the documented 'rtk-available && rtk … || …' pattern falls back when rtk is off PATH"
+else
+  bad "with rtk off PATH the documented pattern still took the rtk branch — rtk-available is not a usable predicate"
+fi
 
 # The helper must survive the repos it will actually meet, not just this one. The pr-*
 # subcommands used to diff against `main` and fall back to HEAD~1 with nothing after it, so
