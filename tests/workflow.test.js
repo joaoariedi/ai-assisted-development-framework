@@ -946,6 +946,38 @@ test('#29: the effective cap is logged before the first implementer spawns', asy
   assert.ok(!spawned.slice(0, 1).some(l => l?.startsWith('impl:')), 'cap must be known before implementers spawn')
 })
 
+test('#38: the implementer confirms its OWN test and does not run the full suite — the gate owns that', async () => {
+  // Step 3 used to tell every implementer to run the whole suite, so a phase of N tasks ran N full
+  // suites from implementers alone (plus the gate). #29 fixed the concurrency overload; this removes
+  // the redundant volume. The phase gate already runs the whole suite per repo and catches any
+  // regression the implementer's run would — same dedup #29 applied to the lens, one layer up.
+  const g = FIXTURES.twoPhasesSequential()
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  const impl = prompts['impl:T001']
+  assert.ok(!/full (test )?suite/i.test(impl),
+    'the implementer must NOT be told to run the full suite — that is the phase gate\'s job now')
+  assert.match(impl, /own test|the phase gate/i,
+    'it must confirm its own test and be told the gate owns whole-suite regression')
+})
+
+test('#38: only the GATE is told to RUN the full suite now — not the implementer, not the lenses', async () => {
+  // The invariant after narrowing: exactly one KIND of agent is instructed to RUN the full suite — the
+  // gate. This is the pair to #38's narrowing: "implementer does not run it" passes vacuously if the
+  // whole-suite check vanished everywhere, so assert the gate STILL does.
+  //
+  // The loader is excluded deliberately: its job is to DETECT "the command that runs the full test
+  // suite", so it names the phrase without running anything. Detecting the command and running the
+  // suite are different acts; only the second is what amplitude counts.
+  const g = FIXTURES.twoPhasesSequential()
+  const { prompts } = await driveCapturing({ canned: baseCanned(g) })
+  const runsSuite = Object.entries(prompts)
+    .filter(([l]) => l !== 'load-artifacts')
+    .filter(([, p]) => /Full test suite \(`/.test(p) || /run the full (test )?suite/i.test(p))
+    .map(([l]) => l.replace(/:.*/, ''))
+  const kinds = [...new Set(runsSuite)]
+  assert.deepEqual(kinds, ['gate'], `only the gate may be told to RUN the full suite; got: ${runsSuite.join(', ')}`)
+})
+
 test('#29: the regression lens no longer runs the full suite — the gate owns that', async () => {
   const g = FIXTURES.twoPhasesSequential()
   const prompts = {}
