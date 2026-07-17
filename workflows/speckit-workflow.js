@@ -37,7 +37,21 @@ const TASKS_SCHEMA = {
       description:
         'Absolute path to the repo that OWNS this feature — the directory containing .specify/. Every agent must run commands here. It is NOT necessarily the session cwd.',
     },
-    testCommand: { type: 'string', description: 'command that runs the full suite; empty if none detected' },
+    testCommand: { type: 'string', description: 'the command that runs the full suite. Empty unless testCommandStatus is "detected".' },
+    // `""` used to mean BOTH "this project has no tests" and "I could not find them", and every
+    // consumer downstream treated the second as the first — so a detection failure produced a run
+    // that reported N/N clean while verifying nothing. These are different facts and the schema now
+    // forces the loader to say which one it means.
+    testCommandStatus: {
+      type: 'string',
+      enum: ['detected', 'none-exist', 'undetectable'],
+      description:
+        '"detected": you found the command and put it in testCommand. ' +
+        '"none-exist": you looked and this project genuinely has NO automated tests at all. ' +
+        '"undetectable": tests plainly EXIST but you could not determine the command to run them. ' +
+        'Never guess between the last two: "none-exist" makes the run proceed without mechanical ' +
+        'verification, so claiming it about a project that has tests silently disables every gate.',
+    },
     phases: {
       type: 'array',
       items: {
@@ -296,8 +310,22 @@ Resolve projectRoot: the directory that CONTAINS .specify/ (i.e. the feature dir
 feature belongs to and it may NOT be the session's working directory — every later agent
 runs its commands there.
 
-Detect the command that runs the full test suite by looking in projectRoot (package.json
-scripts.test, pytest, cargo test, go test ./...). Return "" if there is none.
+Detect the command that runs the full test suite, by looking in projectRoot for whatever this
+project actually uses — NOT only the obvious ecosystems. Check: package.json scripts.test,
+pytest/tox, cargo test, go test ./..., but ALSO a Makefile target, a shell script under tests/ or
+scripts/, the commands a CI workflow runs, and anything the README or CONTRIBUTING names as the way
+to run tests. A project whose suite is a shell script is a project with tests.
+
+Then report testCommandStatus, and be precise, because the three answers route very differently:
+  - "detected"     — you found it. Put the command in testCommand.
+  - "none-exist"   — you looked properly and this project has NO automated tests at all. The run
+                     will then proceed WITHOUT mechanical verification.
+  - "undetectable" — tests clearly exist but you cannot name the command. The run will HALT and ask
+                     the operator for it.
+
+Do not report "none-exist" because the search was hard. Absence of tests is a strong claim: it turns
+off every verification gate in this workflow. If you can see test files, test directories, or a CI
+job running tests, then tests exist — say "undetectable" and let a human supply the command.
 
 Report tasks in the order they appear. Do not invent, reorder, or merge tasks.`,
   { schema: TASKS_SCHEMA, label: 'load-artifacts' },
@@ -314,8 +342,62 @@ ctx.phases.forEach((p, pi) => p.tasks.forEach((t, ti) => { t._key = keyOf(pi, ti
 
 const pending = ctx.phases.flatMap(p => p.tasks.filter(t => !t.done))
 log(`${ctx.featureDir}: ${pending.length} pending task(s) across ${ctx.phases.length} phase(s)`)
-if (!ctx.testCommand) {
-  log('WARNING: no test command detected. TDD cycles cannot be mechanically confirmed.')
+
+// --- the test command: three states, three fates -------------------------------------------------
+//
+// `""` used to mean both "no tests exist" and "detection failed", and this site WARNED AND PROCEEDED
+// on either. The warning is precisely why nobody noticed: a detection failure sailed past it, the
+// gate was then told to report passed:true for a project with no gate, and the run finished N/N clean
+// having verified nothing. THIS repo was that case — its suite is tests/smoke.sh, and the loader was
+// told to look only for package.json/pytest/cargo/go.
+//
+// An operator-supplied command wins outright: it is a fact, not an inference. Validate it, because
+// `args` can arrive as a JSON blob (see the normalisation above) and a value that is not a usable
+// command must not silently become one — "" must never mean "detected an empty command".
+const argTest = typeof _args?.testCommand === 'string' ? _args.testCommand.trim() : ''
+if (_args?.testCommand !== undefined && !argTest) {
+  log(`ignoring args.testCommand: ${JSON.stringify(_args.testCommand)} is not a usable command`)
+}
+if (argTest) {
+  ctx.testCommand = argTest
+  ctx.testCommandStatus = 'detected'
+  log(`test command supplied by the operator: ${argTest}`)
+}
+
+// The status is model-authored, so check what can be checked. "detected" with no command is
+// self-contradictory; this file already refuses to trust the model-written [P] marker on the same
+// grounds. An unrecognised status is treated as undetectable for the same reason: the safe reading of
+// a value we do not understand is "we do not know", never "everything is fine".
+if (ctx.testCommandStatus === 'detected' && !ctx.testCommand) {
+  ctx.testCommandStatus = 'undetectable'
+}
+if (!['detected', 'none-exist', 'undetectable'].includes(ctx.testCommandStatus)) {
+  ctx.testCommandStatus = 'undetectable'
+}
+
+if (ctx.testCommandStatus === 'undetectable') {
+  // Halt BEFORE spawning anything. Nothing downstream can verify a thing: implementers cannot confirm
+  // RED or GREEN, the task-test lens has no suite to run, and the gate cannot honestly pass. Refusing
+  // costs the operator one re-run with args.testCommand; proceeding costs a full run that reports
+  // clean while checking nothing. A task wrongly refused costs one round; wrongly accepted ships a bug.
+  log('HALTED at Load: tests exist but the command to run them is unknown')
+  return {
+    halted: true,
+    haltedAt: 'Load',
+    reason:
+      `Tests exist in ${ctx.projectRoot} but the loader could not determine the command that runs them, ` +
+      'so nothing in this run could be mechanically verified — every gate would pass vacuously and the ' +
+      'run would report success having checked nothing. Re-run with an explicit command, e.g. ' +
+      'args.testCommand = "tests/smoke.sh".',
+    ...ledger([], ctx),
+  }
+}
+
+if (ctx.testCommandStatus === 'none-exist') {
+  // The carve-out is correct for the case it was written for: halting over a project that never had
+  // tests would be a false alarm. It is only wrong when a DETECTION FAILURE is routed here, which the
+  // status now prevents.
+  log('this project has no automated tests — proceeding without mechanical verification of TDD cycles')
 }
 
 async function implementAndVerify(task) {
@@ -424,13 +506,27 @@ for (const ph of ctx.phases) {
 FIRST: cd ${ctx.projectRoot}. That is the repo under test. It is NOT necessarily your shell's
 starting directory, and running these commands anywhere else tells you nothing.
 
-  1. Full test suite${ctx.testCommand ? ` (\`${ctx.testCommand}\`)` : ''} — must be green.
-  2. Lint / format / typecheck, whichever that project configures.
+${
+      ctx.testCommandStatus === 'none-exist'
+        ? `  1. The loader reported that this project has NO automated test suite, so there is no suite to run.
+     CHECK THAT CLAIM before you accept it. You are standing in the repo and the loader is not; it is
+     a different agent and it may simply have failed to find the tests. Look for test files, a tests/
+     directory, a Makefile test target, a test script, a CI job that runs tests. If you find ANY of
+     them, the claim is false — report passed:false, name what you found, and say the command could
+     not be determined. Do NOT run a suite you discover: reporting the discovery is the job here.
+  2. Lint / format / typecheck, whichever that project configures.`
+        : `  1. Full test suite (\`${ctx.testCommand}\`) — must be green. Run exactly that command.
+  2. Lint / format / typecheck, whichever that project configures.`
+    }
 
 Show real command output. Do not fix anything; only report.
-"passed" means you SAW the suite pass. If the project configures no gate at all, that is an
+"passed" means you SAW the gate pass. If the project configures no gate at all, that is an
 ABSENCE of a gate, not a failure — report passed:true and say so in the summary, because
-halting the run over a project that never had tests would be a false alarm.`,
+halting the run over a project that never had tests would be a false alarm.
+
+That carve-out is about a project that HAS no gate. It is not licence to report passed:true because
+a command was missing, unclear, or inconvenient — if you cannot run what you were asked to run, say
+so and report passed:false.`,
     { label: `gate:${ph.name}`, phase: 'Implement', schema: GATE_SCHEMA },
   )
 
