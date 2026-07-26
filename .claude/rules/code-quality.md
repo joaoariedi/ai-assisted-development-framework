@@ -58,6 +58,58 @@ signal the harness constraint has spread, and it deserves a fresh argument rathe
 - Apply pragmatically: small scripts, prototypes, and one-off utilities are exempt
 - The quality-guardian agent checks for violations in changed code during quality gates
 
+## Clean Code for Agents
+
+Concrete defaults for agent-written code. These are *targets*; where a target and a hard limit
+above differ, the hard limit is the ceiling and this is the aim.
+
+### Functions & naming
+- **Aim for 4–20 lines per function**; prefer to split beyond ~20. The hard ceiling stays 50 (see
+  Complexity Limits) — this narrows the *target*, it does not lower the enforced cap.
+- **One thing per function.** If describing it needs an "and", split it.
+- **Names specific enough to grep.** Prefer a name that returns <5 hits across the codebase; avoid
+  `data`, `handler`, `info`, `process`, `Manager` — they match everything and locate nothing.
+- **Early returns over nested conditionals** — cap nesting at ~2 levels of indentation.
+
+### Types & error messages
+- **Explicit types at boundaries.** No `any`, no bare `Dict`/`object`, no untyped public function —
+  in languages that have a type system.
+- **Exception messages carry the evidence:** the offending value *and* the expected shape, never a bare
+  "invalid input". An error you cannot reproduce from its own message is one you cannot fix — the same
+  discipline the mutation-testing lessons enforce for assertions.
+
+### Comments (agent-specific)
+- **Do not strip existing comments on a refactor.** They carry intent and provenance you did not measure;
+  deleting them is how a fixed defect gets reintroduced. This is the exact rule the
+  `speckit-workflow.js` exemption exists to protect — see Complexity Limits.
+- **Write WHY, not WHAT.** Skip `// increment counter` above `i++`; state the trap, the constraint, or
+  why the obvious thing is wrong.
+- **Anchor a line to its cause.** When a line exists because of a specific bug or upstream constraint,
+  cite the issue number or commit SHA.
+- **Docstring the public surface** — exported functions get intent plus one usage example. Keep internals
+  self-documenting through naming (this refines Documentation Guidelines, it does not contradict
+  "inline docs for complex logic only").
+
+### Tests
+- **Every new function gets a test; every bug fix gets a regression test.**
+- **F.I.R.S.T** — fast, independent, repeatable, self-validating, timely.
+- **Mock external I/O (API, DB, filesystem) with named fake classes, not inline stubs.** A named fake
+  (`FakeClock`, `StubPaymentGateway`) is greppable, reusable, and survives the mutation pass; an inline
+  lambda is none of these. Test commands per language live in `quality-tooling.md`.
+
+### Dependencies & structure
+- **Inject dependencies through the constructor/parameter, not a global or bare import** — the DIP rule
+  above, made concrete.
+- **Wrap third-party libraries behind a thin interface you own**, so a dependency swap touches one file.
+  Exempt small scripts and one-offs, per the SOLID pragmatism note.
+- **Follow the project's existing conventions** (Rails/Django/Next.js/etc.) and predictable paths — do
+  not invent a layout.
+
+### Formatting & logging
+- **Formatting is not a discussion — run the language default** (`cargo fmt`, `gofmt`, `prettier`,
+  `black`/`ruff format`, `rubocop -A`). Commands and tiers: `quality-tooling.md`.
+- **Log structured JSON for observability and debugging; plain text only for user-facing CLI output.**
+
 ## Quality Assurance
 - ALWAYS run available quality tools before completing any task
 - Fix linting and type errors immediately
