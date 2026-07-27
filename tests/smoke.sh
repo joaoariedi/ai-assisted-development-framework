@@ -153,6 +153,46 @@ while read -r cmd; do
   else ok "hook $name exists and is executable"; fi
 done < <(jq -r '.hooks | to_entries[] | .value[] | .hooks[] | .command' "$REPO/hooks/hooks.json")
 
+# --- Tier 1: stop hook (Stop-timeout regression) ------------------------------------
+head_ "Stop hook"
+
+# stop-quality-check.sh once walked the tree and forked `stat` per matched file —
+# ~11.7k forks / ~9s in a monorepo, timing out the 10s Stop hook on 207/248 stops.
+# The fix prunes heavy dirs and lets `find` do the mtime test with -mmin/-print/-quit.
+# Guard the mechanism AND the behaviour so the stat loop cannot return unnoticed.
+SQC="$REPO/hooks/stop-quality-check.sh"
+sqc_src="$(cat "$SQC")"
+if grep -qF -- '-mmin' <<<"$sqc_src" && grep -qF -- '-prune' <<<"$sqc_src" && grep -qF -- '-print -quit' <<<"$sqc_src"; then
+  ok "stop hook uses pruned find with -mmin/-print -quit"
+else
+  bad "stop hook lost its pruned -mmin/-quit find — the O(files) stat loop can reappear"
+fi
+if grep -qF 'stat -c %Y' <<<"$sqc_src"; then
+  bad "stop hook still forks 'stat' per file — the Stop-timeout regression is back"
+else
+  ok "stop hook no longer forks stat per file"
+fi
+
+# Behaviour: a recent edit inside node_modules must NOT fire the reminder (the old,
+# unpruned find did); a recent real source edit MUST. Fresh temp dir → no test stamp.
+sqc_t="$(mktemp -d)"
+mkdir -p "$sqc_t/src" "$sqc_t/node_modules/pkg"
+touch "$sqc_t/node_modules/pkg/recent.js"
+out_junk="$(printf '{"cwd":"%s"}' "$sqc_t" | bash "$SQC" 2>&1)"
+if grep -qi 'tests haven' <<<"$out_junk"; then
+  bad "stop hook false-fires on node_modules churn (prune not applied)"
+else
+  ok "stop hook ignores node_modules churn"
+fi
+touch "$sqc_t/src/new.py"
+out_src="$(printf '{"cwd":"%s"}' "$sqc_t" | bash "$SQC" 2>&1)"
+if grep -qi 'tests haven' <<<"$out_src"; then
+  ok "stop hook still reminds on a recent source edit"
+else
+  bad "stop hook no longer detects a recent source edit"
+fi
+rm -rf "$sqc_t"
+
 # --- Tier 1: the #7 regression guard ------------------------------------------------
 head_ "Command → helper wiring"
 

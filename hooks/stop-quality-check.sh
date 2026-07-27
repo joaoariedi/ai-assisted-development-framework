@@ -13,24 +13,19 @@ if [ "$CWD" = "$HOME" ] || [ "$CWD" = "/" ]; then
   exit 0
 fi
 
-# Check if any source files were recently modified (last 60 seconds)
-# This approximates "did Claude edit code during this turn"
-# Process substitution (not a pipeline) avoids a SIGPIPE race that would
-# otherwise combine with `pipefail` + `set -e` to abort the script silently.
-RECENT_EDITS=""
-NOW=$(date +%s)
-while IFS= read -r f; do
-  if [ -f "$f" ]; then
-    MTIME=$(stat -c %Y "$f" 2>/dev/null || stat -f %m "$f" 2>/dev/null || echo 0)
-    if [ $((NOW - MTIME)) -lt 60 ]; then
-      RECENT_EDITS="$f"
-      break
-    fi
-  fi
-done < <(find "$CWD" -maxdepth 5 \
-  \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
-  -o -name "*.py" -o -name "*.rs" -o -name "*.go" \) \
-  2>/dev/null)
+# Find the first source file modified in the last minute (≈ "did Claude edit
+# code this turn"). Prune heavy dirs (node_modules/.venv/.git/build) so the walk
+# stays cheap in large monorepos, and let `find` do the mtime test and quit on
+# the first hit. The old version forked `stat` per matched file — ~11.7k forks /
+# ~9s in a multi-service repo, which blew the 10s Stop-hook timeout (207/248
+# stops timed out); it also false-fired on node_modules churn, which is not
+# Claude editing code.
+RECENT_EDITS=$(find "$CWD" -maxdepth 5 \
+  \( -type d \( -name node_modules -o -name .venv -o -name venv -o -name .git \
+     -o -name target -o -name dist -o -name build -o -name __pycache__ \) -prune \) \
+  -o \( -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
+     -o -name "*.py" -o -name "*.rs" -o -name "*.go" \) -mmin -1 -print -quit \) \
+  2>/dev/null || true)
 
 if [ -z "$RECENT_EDITS" ]; then
   exit 0
