@@ -36,7 +36,7 @@ claude mcp list          # verify: should report "✔ Connected"
 > is silently inert. Verify with `claude mcp list`; a server that does not appear in that
 > output is not loaded, no matter how correct its JSON looks.
 
-Add security MCP servers only when CLI tools are insufficient — each server adds context overhead. See `mcp-security.md` rule for evaluation criteria.
+Add security MCP servers only when CLI tools are insufficient — each server adds context overhead. See the `mcp-security` skill for evaluation criteria.
 
 ---
 

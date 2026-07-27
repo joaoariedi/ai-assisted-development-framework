@@ -17,13 +17,13 @@ ai-assisted-development-framework/
 ├── agents/                     # 6 agents (5 pipeline + repo-scout one-shot)
 ├── commands/                   # 18 slash commands (5 adf.* + 13 speckit.*)
 ├── hooks/                      # 9 hooks + hooks.json + speckit-helper.sh
-├── skills/                     # 3 skills, each a <name>/SKILL.md directory
+├── skills/                     # 7 skills, each a <name>/SKILL.md directory
 ├── workflows/                  # speckit-workflow.js — the deterministic task-list executor
 ├── tests/                      # smoke.sh — the plugin's own test suite
 ├── docs/                       # this documentation
 ├── .claude/                    # THIS repo's own config — not plugin payload
 │   ├── CLAUDE.md
-│   └── rules/                  # 8 modular policy files
+│   └── rules/                  # 5 modular policy files
 └── reports/                    # 11 research files: the "why" behind the rules
 ```
 

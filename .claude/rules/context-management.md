@@ -25,7 +25,7 @@ session, not 5+.
 
 **Reduce the rate at which you reach 40%.** The fastest way to stay in the Smart Zone
 is to emit less token output per command. Use `rtk` (CLI output compression) when it is
-installed on the user's machine — see `quality-tooling.md` for the detection pattern and
+installed on the user's machine — see the `quality-tooling` skill for the detection pattern and
 high-savings command list. RTK is optional and auto-detected; when absent, commands run
 normally without modification.
 

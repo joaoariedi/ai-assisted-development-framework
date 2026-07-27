@@ -112,6 +112,36 @@ for d in commands agents skills hooks workflows; do
 done
 [ "$shadowed" -eq 0 ] && ok "no plugin payload under .claude/ — nothing shadows the plugin"
 
+# --- Tier 1: skills are well-formed --------------------------------------------------
+head_ "Skills"
+
+# A skill is a directory with SKILL.md carrying name+description frontmatter; a bare .md or a
+# missing field is silently ignored and never loads. Reference guidance migrated out of rules/
+# lives here now (pipeline-security, mcp-security, quality-tooling, agent-collaboration), so a
+# malformed one silently loses that guidance.
+for d in "$REPO"/skills/*/; do
+  [ -d "$d" ] || continue
+  name="$(basename "$d")"
+  if [ ! -f "$d/SKILL.md" ]; then bad "skill $name has no SKILL.md — it will not load"; continue; fi
+  fm="$(sed -n '/^---$/,/^---$/p' "$d/SKILL.md")"
+  if grep -qE '^name:' <<<"$fm" && grep -qE '^description:' <<<"$fm"; then
+    ok "skill $name has name+description frontmatter"
+  else
+    bad "skill $name is missing name or description frontmatter — it will not register"
+  fi
+done
+
+# The rules migrated to skills must be gone from rules/ AND unreferenced as `<name>.md` anywhere
+# outside skills/ — a stale pointer sends a reader to a file that no longer exists. This is the
+# exact cross-cutting-reference failure the migration had to chase down.
+migrated_bad=0
+for r in pipeline-security mcp-security quality-tooling; do
+  [ -e "$REPO/.claude/rules/$r.md" ] && { bad "rules/$r.md still exists — migrated to skills/$r, must be removed"; migrated_bad=$((migrated_bad + 1)); }
+  refs="$(grep -rlF "$r.md" "$REPO/.claude/rules" "$REPO/agents" "$REPO/commands" "$REPO/docs" "$REPO/README.md" 2>/dev/null || true)"
+  if [ -n "$refs" ]; then bad "$r.md still referenced (stale pointer): $(tr '\n' ' ' <<<"$refs")"; migrated_bad=$((migrated_bad + 1)); fi
+done
+[ "$migrated_bad" -eq 0 ] && ok "migrated reference rules are gone and unreferenced as .md files"
+
 # --- Tier 1: built-in name collisions ------------------------------------------------
 head_ "Command names"
 

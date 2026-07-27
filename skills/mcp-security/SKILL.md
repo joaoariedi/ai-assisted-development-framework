@@ -1,3 +1,15 @@
+---
+name: "MCP Server Security"
+description: |
+  Guidelines for evaluating, configuring, and securing Model Context Protocol
+  servers: authentication, input validation and tool-poisoning defense,
+  human-in-the-loop approval, server curation, and recommended security servers.
+  Load when adding, auditing, or hardening an MCP server.
+when_to_use: |
+  "add an MCP server", "audit mcp.json", "MCP auth", "tool poisoning",
+  "is this MCP server safe", curating or securing MCP connections
+---
+
 # MCP Server Security
 
 Guidelines for evaluating, configuring, and securing Model Context Protocol servers.
@@ -52,6 +64,6 @@ Add these only when project needs exceed what CLI tools provide:
 | **SonarQube** | Continuous quality monitoring | Long-lived projects needing technical debt tracking |
 
 **Notes:**
-- CLI equivalents are already covered in `quality-tooling.md` and `pipeline-security.md`
+- CLI equivalents are already covered in the `quality-tooling` and `pipeline-security` skills
 - Only add an MCP server when the real-time context injection provides value beyond periodic CLI scans
 - Each additional server increases session startup time and baseline context consumption

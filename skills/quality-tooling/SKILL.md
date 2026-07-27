@@ -1,3 +1,16 @@
+---
+name: "Quality Tooling by Language"
+description: |
+  Lint, format, type-check, test, and security commands per language
+  (JavaScript/TypeScript, Python, Rust, Go, Java), plus the tiered validation
+  strategy, RTK CLI output compression, and structured pre-commit hooks
+  (Lefthook). Load when running quality checks or choosing a project's
+  lint/format/test commands.
+when_to_use: |
+  "how do I lint/format/typecheck this", "test command for <language>",
+  "pre-commit or CI quality gates", "reduce tool output", "RTK", "Lefthook"
+---
+
 # Quality Tooling by Language
 
 ## Tool Detection

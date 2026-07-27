@@ -6,13 +6,17 @@
 
 A skill is a **directory containing `SKILL.md`**, never a bare `.md` file — a bare `foo.md` is silently ignored and never loads. This plugin ships them at `skills/<name>/SKILL.md`; in your own project they go under `.claude/skills/<name>/SKILL.md`. Verify with the `/` menu: a skill that does not appear there is not registered.
 
-The framework ships only what Claude Code does **not** already do natively:
+The framework ships three action skills plus four **reference skills** promoted from always-loaded rules — moving reference material to on-demand loading (progressive disclosure) so only a one-line description stays resident:
 
 | Skill | Purpose | Auto-invoked? |
 |-------|---------|---------------|
 | 🐛 `systematic-debugging` | 4-phase root cause investigation (read → reproduce → evidence → fix) with Iron Law | Yes — proactively on bugs |
 | 📐 `task-effort-estimation` | Deterministic change sizing — Pfeiffer Contribution Complexity from git metadata, plus AI-native risk flags | Yes — on "how big / how long is this?" |
 | ⚡ `performance-audit` | N+1 queries, blocking I/O, memory leaks, algorithm complexity | No — explicit only |
+| 🔧 `quality-tooling` | Per-language lint/format/type-check/test/security commands, tiered validation, RTK, Lefthook | Yes — on quality-check work |
+| 🔐 `pipeline-security` | SAST/DAST/SCA/secrets/ASPM tooling by team size, budget, and pipeline tier | Yes — when recommending security tools |
+| 🔌 `mcp-security` | MCP server auth, input validation, tool-poisoning defense, curation | Yes — when configuring MCP |
+| 🤝 `agent-collaboration` | Subagents vs teams vs workflows, one-shot design rules, team composition | Yes — when parallelizing work |
 
 **Deliberately NOT reimplemented.** A project skill *overrides* a bundled one of the same name, so shipping a `security-review` skill would shadow Claude Code's own — which is better. Use the built-ins:
 

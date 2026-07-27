@@ -10,11 +10,11 @@
 |---|---------|-------------|
 | 01 | Context engineering fundamentals — WISC, context rot, prompt caching, scaling by project size | `context-management.md` |
 | 02 | CLAUDE.md authoring — tiering, inclusion/exclusion criteria, four production-repo styles | `agent-workflow.md` |
-| 03 | Agent topology — Skills vs Subagents vs Teams, orchestration patterns, memory architectures | `agent-workflow.md` |
-| 04 | AI protocol stack — MCP, A2A, Akashik, AG-UI | `mcp-security.md` (curation only) |
+| 03 | Agent topology — Skills vs Subagents vs Teams, orchestration patterns, memory architectures | the `agent-collaboration` skill |
+| 04 | AI protocol stack — MCP, A2A, Akashik, AG-UI | the `mcp-security` skill (curation only) |
 | 05 | Codebase retrieval at scale — cAST, HCAG | *not yet codified* |
-| 06 | Security & DevSecOps — OWASP LLM Top 10, MCP controls, Policy-as-Code | `llm-security.md`, `mcp-security.md`, `pipeline-security.md` |
-| 07 | Quality gates — lifecycle hooks, pre-commit/pre-push, CI/CD, testing | `quality-tooling.md`, `code-quality.md` |
+| 06 | Security & DevSecOps — OWASP LLM Top 10, MCP controls, Policy-as-Code | `llm-security.md`, the `mcp-security` & `pipeline-security` skills |
+| 07 | Quality gates — lifecycle hooks, pre-commit/pre-push, CI/CD, testing | the `quality-tooling` skill, `code-quality.md` |
 | 08 | Project organization & delivery — release notes, IDEA.md, containerization | *not yet codified* |
 | 09 | Fabric — prompt orchestration, evaluated but **not adopted** | *not yet codified* |
 | 10 | Deterministic effort estimation — Pfeiffer Contribution Complexity, Epoch, LOCOMO | `task-effort-estimation` skill |
