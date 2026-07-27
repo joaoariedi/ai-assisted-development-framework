@@ -64,7 +64,7 @@ an upgrade — see [`docs/install.md`](docs/install.md).
 | 🛠️ `commands/` | The 18 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
 | 🕵️ `agents/` | Six specialist subagents — testing, quality, review, security, PR coordination, recon. |
 | ⚙️ `hooks/` | Nine hooks, plus `speckit-helper.sh` (34 subcommands) that the commands call for live git data. |
-| 🧠 `skills/` | Systematic debugging, effort estimation, performance audit. |
+| 🧠 `skills/` | Systematic debugging, effort estimation, performance audit, plus reference skills promoted from rules (quality tooling, pipeline & MCP security, agent collaboration). |
 | 🔁 `workflows/` | `speckit-workflow.js` — executes a task list as a deterministic Workflow. |
 | 📏 `.claude/rules/` | The rules loaded into every session. **Not shipped by the plugin** — copy them yourself. |
 | 🧪 `tests/` | `smoke.sh` — the plugin's own test suite: 38 checks in CI, 42 with the live and end-to-end tiers. |

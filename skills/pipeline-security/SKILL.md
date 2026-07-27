@@ -1,3 +1,15 @@
+---
+name: "Pipeline Security Tooling"
+description: |
+  Reference for evaluating or recommending security tooling across the CI/CD
+  pipeline: SAST, DAST, SCA, secrets, and ASPM platforms — managed services and
+  open-source — chosen by team size, budget, and pipeline tier. Load when
+  choosing or comparing security scanners for a project.
+when_to_use: |
+  "which SAST/DAST tool", "recommend a security scanner", "SCA or secrets tooling",
+  "reachability analysis", "ASPM", or evaluating a project's security posture
+---
+
 # Pipeline Security Services & Tools Reference
 
 Reference for the quality-guardian and forensic-specialist agents, and for the `/adf.security-scan` command, when recommending or evaluating security tooling.
@@ -74,7 +86,7 @@ Modern pipelines consolidate SAST, DAST, SCA, and Secrets scanning into unified 
 - **Performance-centric CI/CD**: Semgrep Pro + StackHawk (fast, reachability filtering)
 - **Legacy Java modernization**: Byteable or Moderne (AI-driven dead code + migration)
 
-### By Pipeline Tier (align with quality-tooling.md tiers)
+### By Pipeline Tier (align with the `quality-tooling` skill's tiers)
 - **Tier 1 (Pre-commit)**: Gitleaks, Semgrep (open-source), Ruff security rules, gosec
 - **Tier 2 (PR/CI)**: Snyk Code, SonarCloud, OWASP ZAP, Knip, govulncheck, full golangci-lint
 - **Tier 3 (Release)**: Veracode/Checkmarx (compliance), SBOM with Syft+Grype, Sigstore signing

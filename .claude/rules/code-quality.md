@@ -95,7 +95,7 @@ above differ, the hard limit is the ceiling and this is the aim.
 - **F.I.R.S.T** — fast, independent, repeatable, self-validating, timely.
 - **Mock external I/O (API, DB, filesystem) with named fake classes, not inline stubs.** A named fake
   (`FakeClock`, `StubPaymentGateway`) is greppable, reusable, and survives the mutation pass; an inline
-  lambda is none of these. Test commands per language live in `quality-tooling.md`.
+  lambda is none of these. Test commands per language live in the `quality-tooling` skill.
 
 ### Dependencies & structure
 - **Inject dependencies through the constructor/parameter, not a global or bare import** — the DIP rule
@@ -107,7 +107,7 @@ above differ, the hard limit is the ceiling and this is the aim.
 
 ### Formatting & logging
 - **Formatting is not a discussion — run the language default** (`cargo fmt`, `gofmt`, `prettier`,
-  `black`/`ruff format`, `rubocop -A`). Commands and tiers: `quality-tooling.md`.
+  `black`/`ruff format`, `rubocop -A`). Commands and tiers: the `quality-tooling` skill.
 - **Log structured JSON for observability and debugging; plain text only for user-facing CLI output.**
 
 ## Quality Assurance
