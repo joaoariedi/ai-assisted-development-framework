@@ -67,7 +67,7 @@ an upgrade — see [`docs/install.md`](docs/install.md).
 | 🧠 `skills/` | Systematic debugging, effort estimation, performance audit, plus reference skills promoted from rules (quality tooling, pipeline & MCP security, agent collaboration). |
 | 🔁 `workflows/` | `speckit-workflow.js` — executes a task list as a deterministic Workflow. |
 | 📏 `.claude/rules/` | The rules loaded into every session. **Not shipped by the plugin** — copy them yourself. |
-| 🧪 `tests/` | `smoke.sh` — the plugin's own test suite: 38 checks in CI, 42 with the live and end-to-end tiers. |
+| 🧪 `tests/` | `smoke.sh` — the plugin's own behavioral test suite: a structural + regression tier in CI, plus opt-in live and end-to-end tiers (`SMOKE_LIVE=1`). Every guard is mutation-tested. |
 | 📚 `docs/` | Everything below. |
 
 ---
