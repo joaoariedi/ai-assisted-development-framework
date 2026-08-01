@@ -24,6 +24,7 @@ Agent takes actions beyond what the user intended — especially destructive or 
 - Follow Core Rule #1: "Do what has been asked; nothing more, nothing less"
 - Existing safeguard: `block-sensitive-files.sh` blocks writes to `.env`, `.key`, `.pem`, credentials, secrets directories
 - Never run destructive git commands (`push --force`, `reset --hard`, `branch -D`) without explicit user request
+- Enforced: `block-destructive-commands.sh` hard-denies those commands (plus `git clean -f` and recursive `rm` of catastrophic targets) at the PreToolUse layer; when the user explicitly requests one, prefix it with `CLAUDE_ALLOW_DESTRUCTIVE=1` — the bypass stays visible in the transcript
 - Prefer read-only operations during exploration and analysis phases
 - When uncertain about scope, ask the user rather than assuming broader permissions
 - Limit tool permissions to what the current task requires
@@ -62,7 +63,7 @@ The framework uses layered defenses — no single mechanism is sufficient:
 
 | Layer | Mechanism | Example |
 |-------|-----------|---------|
-| **Enforcement** | Hooks (automated, deterministic) | `block-sensitive-files.sh`, `quality-before-commit.sh` |
+| **Enforcement** | Hooks (automated, deterministic) | `block-sensitive-files.sh`, `block-destructive-commands.sh`, `quality-before-commit.sh` |
 | **Guidance** | Rules (context for agent reasoning) | This file, `code-quality.md` |
 | **Analysis** | Skills and agents (deep review) | built-in `/security-review`, `/adf.security-scan` command, `forensic-specialist` agent |
 | **Validation** | Quality gates (pre-integration) | `quality-guardian` agent, `/adf.quality` command |

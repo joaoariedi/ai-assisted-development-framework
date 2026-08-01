@@ -61,7 +61,7 @@ an upgrade — see [`docs/install.md`](docs/install.md).
 
 | Directory | What lives there |
 |---|---|
-| 🛠️ `commands/` | The 18 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
+| 🛠️ `commands/` | The 19 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
 | 🕵️ `agents/` | Six specialist subagents — testing, quality, review, security, PR coordination, recon. |
 | ⚙️ `hooks/` | Nine hooks, plus `speckit-helper.sh` (34 subcommands) that the commands call for live git data. |
 | 🧠 `skills/` | Systematic debugging, effort estimation, performance audit, plus reference skills promoted from rules (quality tooling, pipeline & MCP security, agent collaboration). |
@@ -185,7 +185,7 @@ The hooks ship with the plugin — you do not register them:
 | | |
 |---|---|
 | 📦 [Installing & Configuring](docs/install.md) | Install, the permission rule, verification, updating, what the plugin cannot ship. |
-| 🛠️ [Commands](docs/commands.md) | All 18, with arguments. |
+| 🛠️ [Commands](docs/commands.md) | All 19, with arguments. |
 | 🕵️ [Agents & Parallelism](docs/agents.md) | The six agents; when to use a subagent vs. a team vs. a workflow. |
 | ⚙️ [Hooks & Quality Gates](docs/hooks.md) | Every hook, the Iron Laws, and the security posture. |
 | 🧬 [Spec-Driven Development](docs/spec-kit.md) | The lifecycle in depth, `.specify/` artifacts, task management. |
