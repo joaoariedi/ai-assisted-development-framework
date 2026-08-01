@@ -4,6 +4,7 @@
       {
         "matcher": "Bash",
         "hooks": [
+          { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/block-destructive-commands.sh", "timeout": 10 },
           { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/quality-before-commit.sh", "timeout": 120 }
         ]
       },

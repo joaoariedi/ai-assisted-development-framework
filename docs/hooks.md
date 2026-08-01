@@ -12,6 +12,7 @@ Hooks ship **inside the plugin** (`hooks/hooks.json`), so installing the plugin 
 | ✅ `verify-before-task-complete.sh` | **TaskCompleted** | **Blocks** a task from being marked complete while the test suite fails. Exit 2 is a hard gate. |
 | 🔍 `quality-before-commit.sh` | PreToolUse on `Bash` | Intercepts `git commit` — gitleaks, shell + markdown checks on staged files, then language-specific linters. Blocks on errors. |
 | 🔒 `block-sensitive-files.sh` | PreToolUse on `Edit\|Write` | Blocks writes to `.env*`, `*.key`, `*.pem`, `credentials*`, `.git/*`, `secrets/` |
+| ⛔ `block-destructive-commands.sh` | PreToolUse on `Bash` | Hard-denies `git push --force` (allows `--force-with-lease`), `reset --hard`, `branch -D`, `clean -f`, and recursive `rm` of catastrophic targets. Bypass: `CLAUDE_ALLOW_DESTRUCTIVE=1` prefix, visible in the transcript |
 | 📐 `plan-phase-write-block.sh` | PreToolUse on `Edit\|Write` | Blocks writes outside `.specify/` while `/speckit.plan` is active |
 | 🎨 `format-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-formats edited files (ruff, biome/prettier, gofmt, rustfmt), 10s throttle |
 | 🧪 `run-tests-after-edit.sh` | PostToolUse on `Edit\|Write` | Auto-runs test suite after source edits, 15s throttle, non-blocking |
@@ -56,10 +57,11 @@ It is the enforcement the Verification Iron Law always claimed to have:
 
 ## 🛡️ Automated Quality Gates
 
-Eight hooks enforce quality automatically — and they ship with the plugin, so there is nothing to register:
+Nine hooks enforce quality automatically — and they ship with the plugin, so there is nothing to register:
 
 - 🔍 **Pre-commit** — secrets detection (gitleaks) + language-specific linting blocks the commit on errors
 - 🔒 **File protection** — writes to `.env`, `*.key`, `*.pem`, credentials, and `.git/` internals are blocked
+- ⛔ **Destructive-command denials** — `git push --force`, `reset --hard`, `branch -D`, `clean -f`, and recursive `rm` of catastrophic targets are hard-denied at the PreToolUse layer. The llm-security rule always said "never without explicit user request"; this is the mechanism behind the prose, with a transcript-visible bypass (`CLAUDE_ALLOW_DESTRUCTIVE=1`) for when the user *does* request it
 - 🎨 **Auto-format** — formatters run after every edit (ruff, biome, gofmt, rustfmt)
 - 🧪 **Auto-test** — test suite runs after source file edits (throttled 15s, non-blocking)
 - 📊 **Reminders** — alerts if source files were edited but tests weren't run
@@ -75,7 +77,7 @@ The framework implements layered defenses against OWASP LLM vulnerabilities:
 
 | Layer | Mechanism | Covers |
 |-------|-----------|--------|
-| **Enforcement** | Hooks | Sensitive file blocking, secrets detection, pre-commit quality |
+| **Enforcement** | Hooks | Sensitive file blocking, destructive-command denials, secrets detection, pre-commit quality |
 | **Guidance** | Rules | OWASP LLM Top 10, MCP security, code quality, SOLID principles |
 | **Analysis** | Skills & Agents | Built-in `/security-review`, `/adf.security-scan`, forensic investigation, quality gates |
 | **Efficacy** | Iron Laws | Verification before completion (rule + `TaskCompleted` hook), systematic-debugging |

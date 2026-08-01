@@ -223,6 +223,70 @@ else
 fi
 rm -rf "$sqc_t"
 
+# --- Tier 1: destructive-command denials --------------------------------------------
+head_ "Destructive-command hook"
+
+# block-destructive-commands.sh is the mechanical form of llm-security.md's "never run
+# push --force / reset --hard / branch -D without explicit user request". Guard both
+# directions: the denials (or the guidance is prose again) AND the allows (a false
+# positive on commit messages or --force-with-lease gets the hook disabled, which is
+# worse than never shipping it).
+BDC="$REPO/hooks/block-destructive-commands.sh"
+bdc_case() { # expected-exit command description
+  local exp="$1" cmd="$2" desc="$3" rc=0
+  jq -n --arg c "$cmd" '{tool_input:{command:$c}}' | bash "$BDC" >/dev/null 2>&1 || rc=$?
+  if [ "$rc" = "$exp" ]; then ok "$desc"
+  else bad "$desc (want exit $exp, got $rc)"; fi
+}
+bdc_case 2 'git push --force origin main'        "denies git push --force"
+bdc_case 2 'git reset --hard HEAD~1'             "denies git reset --hard"
+bdc_case 2 'git branch -D feature/x'             "denies git branch -D"
+bdc_case 2 'git clean -fdx'                      "denies git clean -f"
+bdc_case 2 'rm -rf /'                            "denies rm -rf /"
+bdc_case 2 'cd /tmp && rm -rf ~'                 "denies rm -rf ~ behind a compound command"
+bdc_case 0 'git push --force-with-lease origin main' "allows --force-with-lease (the safe variant is not its own prefix's victim)"
+# The denied token must sit MID-message: at message end the closing quote itself breaks
+# the word boundary, and the case passes even with quote-stripping deleted — a guard that
+# survived its own mutation test, which is exactly what this suite exists to prevent.
+bdc_case 0 'git commit -m "docs: never run git reset --hard in scripts"' "allows a commit message that MENTIONS a denied command (data, not command)"
+bdc_case 0 'rm -rf node_modules'                 "allows rm -rf of a named subdirectory"
+# The repo's own commit style is a heredoc message; quote-stripping is line-based and
+# cannot see across lines, so heredoc bodies must be dropped before analysis. This false
+# positive was hit while building the hook — committing the hook tripped the hook.
+bdc_hd="$(printf 'git commit -m "$(cat <<%s\nfeat: deny git reset --hard\nEOF\n)"' "'EOF'")"
+bdc_case 0 "$bdc_hd" "allows a heredoc commit message mentioning a denied command"
+
+# The hook must also be REGISTERED on the Bash matcher — an unregistered hook exists,
+# is executable, passes every case above, and never fires. That is this suite's founding
+# failure mode (validates cleanly, never runs).
+bdc_reg="$(jq -r '.hooks.PreToolUse[] | select(.matcher == "Bash") | .hooks[].command' "$REPO/hooks/hooks.json")"
+if grep -qF 'block-destructive-commands.sh' <<<"$bdc_reg"; then
+  ok "destructive-command hook is registered on the Bash matcher"
+else
+  bad "block-destructive-commands.sh is not registered in hooks.json — it will never fire"
+fi
+
+# --- Tier 1: adf.sync prescribes cp, never mv ---------------------------------------
+head_ "adf.sync stow safety"
+
+# `mv` onto a stow symlink under ~/.claude/ replaces the symlink with a regular file and
+# the dotfiles repo silently stops receiving updates — this bit for real (settings.json).
+# adf.sync exists to FIX drift; it must never prescribe the command that causes it.
+sync_fenced="$(awk '/^```/{f=!f; next} f' "$REPO/commands/adf.sync.md" || true)"
+# `.*` not `[^\n]*` — grep is already line-based, and inside a bracket expression \n is
+# LITERAL backslash+n, so [^\n]* cannot cross any filename containing an 'n'. That version
+# passed its own mutation test's absence and missed a planted `mv new-rules.md ~/.claude/`.
+if grep -qE '(^|[[:space:]])mv[[:space:]].*~/\.claude/' <<<"$sync_fenced"; then
+  bad "adf.sync.md prescribes 'mv' into ~/.claude/ — that replaces a stow symlink with a plain file"
+else
+  ok "adf.sync.md never prescribes mv into ~/.claude/"
+fi
+if grep -qF 'Never `mv`' "$REPO/commands/adf.sync.md"; then
+  ok "adf.sync.md carries the stow-mv trap warning"
+else
+  bad "adf.sync.md lost the stow-mv trap warning — the next editor will prescribe mv"
+fi
+
 # --- Tier 1: the #7 regression guard ------------------------------------------------
 head_ "Command → helper wiring"
 
