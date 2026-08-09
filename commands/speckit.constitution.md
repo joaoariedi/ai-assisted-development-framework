@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Create or update .specify/memory/constitution.md with project governance principles"
 ---
 

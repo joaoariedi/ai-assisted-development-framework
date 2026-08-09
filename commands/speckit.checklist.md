@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Generate requirement quality checklists for pre-implementation validation"
 ---
 

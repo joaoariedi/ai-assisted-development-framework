@@ -1,4 +1,5 @@
 ---
+model: opus
 name: quality-guardian
 description: MUST BE USED before any commit, PR creation, or merge. Use PROACTIVELY after implementation phases complete. Phase 2-3 specialist for linting, type checking, security scans, and performance validation. Examples: <example>Context: Before commit. user: 'Quality validation needed' assistant: 'I'll use quality-guardian for comprehensive checks' <commentary>Quality gate before integration.</commentary></example> <example>Context: Module validation. user: 'Run quality checks for payment module' assistant: 'Let me use quality-guardian for validation' <commentary>Automated QA with reporting.</commentary></example>
 color: red

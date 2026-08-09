@@ -1,4 +1,5 @@
 ---
+model: opus
 description: "Generate PR summary from current branch"
 ---
 

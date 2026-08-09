@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Scan spec for ambiguities and ask targeted clarification questions"
 ---
 

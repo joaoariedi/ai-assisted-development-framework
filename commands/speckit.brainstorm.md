@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Socratic design exploration before specification — refine the idea before committing to requirements"
 argument-hint: "<idea or problem to explore>"
 ---

@@ -1,4 +1,5 @@
 ---
+model: sonnet
 description: "Check the three framework copies (installed plugin, global rules, upstream) are in sync"
 ---
 

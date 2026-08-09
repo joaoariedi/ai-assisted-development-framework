@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Read-only cross-artifact consistency analysis with coverage mapping"
 ---
 

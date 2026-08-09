@@ -1,4 +1,5 @@
 ---
+model: sonnet
 description: "Refresh project context analysis"
 ---
 

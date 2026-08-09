@@ -1,4 +1,5 @@
 ---
+model: opus
 description: "Run comprehensive quality checks"
 ---
 

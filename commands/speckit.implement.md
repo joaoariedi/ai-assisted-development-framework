@@ -1,4 +1,5 @@
 ---
+model: opus
 description: "Execute TDD implementation from spec-kit artifacts with quality gates"
 ---
 

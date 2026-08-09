@@ -1,4 +1,5 @@
 ---
+model: opus
 name: test-specialist
 description: Use PROACTIVELY after implementation to create comprehensive tests. Phase 2 specialist for test creation, validation, and ensuring reasonable coverage following existing test patterns. Examples: <example>Context: After implementation. user: 'I implemented auth and need tests' assistant: 'I'll use test-specialist for comprehensive test coverage' <commentary>Tests follow implementation.</commentary></example> <example>Context: Complex module testing. user: 'Test the payment processing module' assistant: 'Let me use test-specialist for payment tests' <commentary>Handles test design and coverage validation.</commentary></example>
 color: purple

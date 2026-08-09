@@ -34,7 +34,8 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 - **Fast Mode**: Toggle with `/fast` for faster Opus output on quick iterations, bug fixes, and exploration (uses Opus, not a smaller model)
 - **Ultrathink**: Type `ultrathink` in any prompt to bump that turn to high reasoning effort (reverts after response)
 - Effort levels: `max` (via `/model` only) > `high` (ultrathink keyword) > `medium` (default) > `low`
-- Agents default to adaptive model selection — override with `model:` in agent frontmatter only when needed
+- **Model-tier routing (deliberate policy)**: aliases name tiers, not models — `fable` = strategy/judgment (spec pipeline, code review, security forensics, workflow verification), `opus` = execution/generation (implement, fix, tests, PR creation/summaries, quality checks, workflow gates), `sonnet` = mechanical (adf.sync, adf.context, repo-scout). Commands, agents, and workflow spawns pin tiers via alias frontmatter/opts
+- NEVER put a concrete model ID in framework frontmatter or workflow opts — each environment binds the aliases: personal `claude` uses the built-in mappings + the Fable 5 session default; `claude-bedrock()` remaps them via `ANTHROPIC_DEFAULT_{FABLE,OPUS,SONNET,HAIKU}_MODEL` to Bedrock-available models. An alias a backend can't serve silently falls back to the session model — benign by design
 - Use `haiku` for lightweight tasks (search, simple edits); `sonnet` for standard work; `opus` for complex architecture
 
 ## Multi-Environment Workflows

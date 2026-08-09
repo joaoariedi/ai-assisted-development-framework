@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Generate a feature specification with scenarios, requirements, and success criteria"
 argument-hint: "<feature description>"
 ---

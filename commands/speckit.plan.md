@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Generate implementation plan from spec, with research, design, and constitution compliance"
 ---
 
