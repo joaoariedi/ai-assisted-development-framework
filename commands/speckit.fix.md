@@ -1,4 +1,5 @@
 ---
+model: opus
 description: "Quick-fix bypass for trivial changes that skip the full SDD workflow"
 argument-hint: "<description of trivial change>"
 ---

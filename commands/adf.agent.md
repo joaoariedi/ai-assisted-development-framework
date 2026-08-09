@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Coordinate a development task with full workflow"
 argument-hint: "development task description"
 ---

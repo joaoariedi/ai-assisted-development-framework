@@ -1,4 +1,5 @@
 ---
+model: fable
 description: "Read-only plan review gate before task generation"
 ---
 

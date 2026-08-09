@@ -1,4 +1,5 @@
 ---
+model: opus
 description: "Quick security scan of current changes"
 ---
 

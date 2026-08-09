@@ -1,4 +1,5 @@
 ---
+model: opus
 name: review-coordinator
 description: Use when creating PRs or managing review workflows. Phase 3 specialist for pull request creation, review coordination, and merge management. Examples: <example>Context: PR creation. user: 'Quality checks passed, create a PR' assistant: 'I'll use review-coordinator for PR creation' <commentary>PR creation after validation.</commentary></example> <example>Context: Review feedback. user: 'Handle review feedback and merge' assistant: 'Let me use review-coordinator for integration' <commentary>Complete review lifecycle management.</commentary></example>
 color: cyan

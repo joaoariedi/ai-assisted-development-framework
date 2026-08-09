@@ -696,6 +696,10 @@ async function implementAndVerify(task) {
   const impl = await agentTyped(implPrompt(task, ctx, repo), {
     label: `impl:${task.id}`,
     phase: 'Implement',
+    // Tier routing: implementation is generation work — execution tier ('opus'), not the session's
+    // strategy tier. Aliases only; each environment binds them (claude-bedrock() remaps via
+    // ANTHROPIC_DEFAULT_*_MODEL), so no concrete model ID may appear here.
+    model: 'opus',
     schema: IMPL_SCHEMA,
   })
   if (!impl) return { task, accepted: false, reason: 'implementer died or was skipped' }
@@ -717,6 +721,10 @@ async function implementAndVerify(task) {
       agentTyped(verifyPrompt(task, impl, lens, ctx, repo), {
         label: `verify:${task.id}:${lens.key}`,
         phase: 'Verify',
+        // Tier routing: adversarial verification is judgment — strategy tier ('fable'). On backends
+        // without a Fable model the alias resolves via ANTHROPIC_DEFAULT_FABLE_MODEL or falls back
+        // to the session model, both benign.
+        model: 'fable',
         schema: VERDICT_SCHEMA,
       }).then(v => (v ? { ...v, lens: lens.key } : { lens: lens.key, silent: true })),
     ),
@@ -836,6 +844,10 @@ for (const ph of ctx.phases) {
       agentTyped(gatePrompt(repo, ctx), {
         label: `gate:${ph.name}:${repo.path.split('/').pop() || repo.path}`,
         phase: 'Implement',
+        // Tier routing: the gate only runs the suite and reports — mechanical, so execution tier at
+        // low effort. The gate's authority is the suite's exit code, not the agent's reasoning.
+        model: 'opus',
+        effort: 'low',
         schema: GATE_SCHEMA,
       }).then(g => ({ repo, g })),
     ),
