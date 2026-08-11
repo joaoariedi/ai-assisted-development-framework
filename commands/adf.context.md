@@ -7,6 +7,11 @@ Perform a comprehensive project context analysis, combining the methodology belo
 
 ## Analysis Steps
 
+0. **Knowledge graph first** — if `graphify-out/graph.json` exists, orient with it before any raw
+   exploration: `graphify god-nodes` for the architectural hubs, `graphify query "<question>"` for
+   scoped subgraphs, and `graphify-out/GRAPH_REPORT.md` for the community map. A graph answer costs
+   a fraction of the tokens of a file sweep; fall back to the steps below only for what the graph
+   does not cover (or when it is absent).
 1. **Tech Stack Detection** — check for `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `Gemfile`. Identify the framework (React, Vue, Django, FastAPI, Actix, Gin, Rails) and build tools (Webpack, Vite, Poetry, Cargo, Make).
 2. **Architecture Pattern** — read the directory structure for a pattern (MVC, hexagonal, clean architecture); identify service boundaries in monorepos.
 3. **Test Framework** — find `tests/`, `__tests__/`, `spec/`; identify the runner (Jest, pytest, cargo test, go test) and coverage configuration.

@@ -55,3 +55,6 @@ For general tasks, use built-in agents: `Explore` (codebase search), `Plan` (arc
 - For brownfield projects, use `/speckit.baseline` to reverse-engineer specs from existing code
 
 See `.claude/rules/` for detailed policies on code quality, git workflow, agent coordination, and language-specific tooling.
+# graphify
+- **graphify** (`.claude/skills/graphify/SKILL.md`) - any input to knowledge graph. Trigger: `/graphify`
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.

@@ -36,7 +36,11 @@ This command analyzes existing code to generate a spec.md, enabling the SDD work
 
 ### Step 1: Inventory
 
-- Read source files in the target module/directory (or whole project if no argument)
+- If `graphify-out/graph.json` exists, start from the graph: `graphify query`/`explain` for the
+  target module and `graphify affected "<module>"` for its blast radius — the entity and
+  relationship inventory this step needs is exactly what the graph stores, at a fraction of the
+  tokens of raw reads. Read source files only to confirm details the graph does not carry.
+- Otherwise read source files in the target module/directory (or whole project if no argument)
 - Identify: public interfaces, exported functions, API endpoints, data models
 - Map the module structure: which files do what, how they relate
 - Note the tech stack, frameworks, and patterns in use
