@@ -27,7 +27,5 @@
     "./agents/review-coordinator.md",
     "./agents/test-specialist.md"
   ],
-  "hooks": "./hooks/hooks.json",
-  "workflows": "./workflows/",
-  "mcpServers": "./.mcp.json"
+  "workflows": "./workflows/"
 }
