@@ -34,3 +34,10 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Graphify artifacts: graph.json + GRAPH_REPORT.md are tracked (team starts with the map);
+# viewer/cache/cost are regenerable or local-only.
+graphify-out/cache/
+graphify-out/cost.json
+graphify-out/graph.html
+graphify-out/manifest.json

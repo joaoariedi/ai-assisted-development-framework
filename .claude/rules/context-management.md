@@ -29,6 +29,13 @@ installed on the user's machine — see the `quality-tooling` skill for the dete
 high-savings command list. RTK is optional and auto-detected; when absent, commands run
 normally without modification.
 
+The same principle applies to *input*: when a project carries a Graphify knowledge graph
+(`graphify-out/graph.json` present), answer codebase questions with `graphify query` /
+`explain` / `path` before reading raw files — a scoped subgraph is typically an order of
+magnitude fewer tokens than the files it summarizes, with `file:line` sources to jump to
+when a specific read is still needed. Graphify is optional and auto-detected via the
+project's PreToolUse nudge hooks; when absent, explore normally.
+
 ## Document & Clear Pattern
 
 Proactively externalize session state to prevent context degradation on long-running tasks.
