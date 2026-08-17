@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Read-only cross-artifact consistency analysis with coverage mapping"
 ---
 

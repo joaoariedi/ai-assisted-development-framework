@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Reverse-engineer specs from existing code for brownfield projects"
 argument-hint: "<module or directory to baseline>"
 ---

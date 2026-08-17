@@ -1,5 +1,5 @@
 ---
-model: opus
+model: sonnet
 description: "Generate PR summary from current branch"
 ---
 

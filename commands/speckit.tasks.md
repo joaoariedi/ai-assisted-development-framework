@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Generate phased task list from plan and spec, with Claude Code task tracker integration"
 ---
 
