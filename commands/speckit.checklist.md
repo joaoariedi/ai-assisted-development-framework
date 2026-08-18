@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Generate requirement quality checklists for pre-implementation validation"
 ---
 

@@ -1,4 +1,5 @@
 ---
+model: sonnet
 description: "Bootstrap .specify/ directory for spec-kit SDD workflow in current project"
 ---
 

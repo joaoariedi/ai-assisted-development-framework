@@ -721,10 +721,14 @@ async function implementAndVerify(task) {
       agentTyped(verifyPrompt(task, impl, lens, ctx, repo), {
         label: `verify:${task.id}:${lens.key}`,
         phase: 'Verify',
-        // Tier routing: adversarial verification is judgment — strategy tier ('fable'). On backends
-        // without a Fable model the alias resolves via ANTHROPIC_DEFAULT_FABLE_MODEL or falls back
-        // to the session model, both benign.
-        model: 'fable',
+        // Tier routing: execution tier ('opus'), not strategy. This spawns THREE lenses per task, so
+        // a task list of N costs 3N verifier agents — at Fable's 2x rate that was the workflow's
+        // single largest line item. What catches a bad task here is the adversarial STRUCTURE — three
+        // independent lenses, run by agents that did not write the code, with silent lenses recorded
+        // rather than dropped (see the quorum note above) — not the model tier. On backends without an
+        // Opus model the alias resolves via ANTHROPIC_DEFAULT_OPUS_MODEL or falls back to the session
+        // model, both benign.
+        model: 'opus',
         schema: VERDICT_SCHEMA,
       }).then(v => (v ? { ...v, lens: lens.key } : { lens: lens.key, silent: true })),
     ),

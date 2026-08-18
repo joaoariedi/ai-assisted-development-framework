@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Generate implementation plan from spec, with research, design, and constitution compliance"
 ---
 

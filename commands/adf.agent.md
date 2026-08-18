@@ -1,5 +1,5 @@
 ---
-model: fable
+model: opus
 description: "Coordinate a development task with full workflow"
 argument-hint: "development task description"
 ---
