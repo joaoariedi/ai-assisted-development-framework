@@ -22,7 +22,7 @@ The triviality gate ensures only genuinely trivial changes bypass the full pipel
 The full spec-driven development pipeline from idea to implementation:
 
 ```
-/adf.context              → 🧭 orient (detect stack, tools, structure)
+/hef.context              → 🧭 orient (detect stack, tools, structure)
 /speckit.init         → 🏗️ bootstrap (once per project)
 /speckit.constitution → 📜 define principles (once per project)
 /speckit.brainstorm   → 💡 Socratic design exploration (refine the idea) ← NEW
@@ -34,9 +34,9 @@ The full spec-driven development pipeline from idea to implementation:
 /speckit.checklist    → ✅ pre-implementation gate (optional)
 /speckit.analyze      → 🔬 consistency check (optional)
 /speckit.implement    → 🧪 TDD execution (red-green cycle)
-ai-development-framework:speckit-workflow
+hefesto:speckit-workflow
                       → ⚡ same, as a Workflow: parallel + adversarially verified ← NEW
-/adf.quality              → 🛡️ final quality gate
+/hef.quality              → 🛡️ final quality gate
 ```
 
 Specifications live in `.specify/specs/<branch>/` and are committed to version control. A constitution in `.specify/memory/constitution.md` defines project-level governance principles that every plan is validated against.
@@ -67,7 +67,7 @@ Every decision in the framework balances four concerns:
 
 ## ⚡ `speckit-workflow` — deterministic execution of a task list
 
-For a large task list, `ai-development-framework:speckit-workflow` executes `tasks.md` as a
+For a large task list, `hefesto:speckit-workflow` executes `tasks.md` as a
 deterministic Workflow instead of `/speckit.implement`: phase order is enforced in code, independent
 tasks run in parallel, and every task is adversarially verified by three agents that did not write it
 (one reads the test diff for a weakened assertion, one checks the requirement, one runs the task's own

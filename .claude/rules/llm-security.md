@@ -65,10 +65,10 @@ The framework uses layered defenses — no single mechanism is sufficient:
 |-------|-----------|---------|
 | **Enforcement** | Hooks (automated, deterministic) | `block-sensitive-files.sh`, `block-destructive-commands.sh`, `quality-before-commit.sh` |
 | **Guidance** | Rules (context for agent reasoning) | This file, `code-quality.md` |
-| **Analysis** | Skills and agents (deep review) | built-in `/security-review`, `/adf.security-scan` command, `forensic-specialist` agent |
-| **Validation** | Quality gates (pre-integration) | `quality-guardian` agent, `/adf.quality` command |
+| **Analysis** | Skills and agents (deep review) | built-in `/security-review`, `/hef.security-scan` command, `forensic-specialist` agent |
+| **Validation** | Quality gates (pre-integration) | `quality-guardian` agent, `/hef.quality` command |
 
 - Hooks enforce boundaries that the agent cannot bypass
 - Rules guide agent reasoning for decisions hooks cannot cover
 - Treat AI-generated code with the same scrutiny as external contributions
-- When the built-in `/security-review`, the `/adf.security-scan` command, or the `forensic-specialist` agent flags an issue, address it before proceeding
+- When the built-in `/security-review`, the `/hef.security-scan` command, or the `forensic-specialist` agent flags an issue, address it before proceeding

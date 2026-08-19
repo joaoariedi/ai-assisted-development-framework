@@ -1,14 +1,14 @@
 {
-  "name": "ai-development-framework",
-  "displayName": "AI Development Framework",
-  "version": "5.2.0",
+  "name": "hefesto",
+  "displayName": "Hefesto",
+  "version": "6.0.0",
   "description": "Spec-driven development for Claude Code: quality gates, custom agents, security guardrails, and a full specification pipeline. Ships its hooks — including a TaskCompleted gate that mechanically enforces the Verification Iron Law.",
   "author": {
     "name": "joaoariedi",
     "url": "https://github.com/joaoariedi"
   },
-  "homepage": "https://github.com/joaoariedi/ai-assisted-development-framework",
-  "repository": "https://github.com/joaoariedi/ai-assisted-development-framework",
+  "homepage": "https://github.com/joaoariedi/hefesto",
+  "repository": "https://github.com/joaoariedi/hefesto",
   "license": "MIT",
   "keywords": [
     "spec-driven-development",

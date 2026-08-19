@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the AI Development Framework will be documented in this file.
+All notable changes to Hefesto will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
@@ -32,6 +32,31 @@ disagree — that check exists because nothing else would notice a half-bumped r
    drives the plugin end to end).
 7. Tag it: `git tag -a vX.Y.Z && git push origin vX.Y.Z`, then cut a GitHub Release from the
    entry above.
+
+## [6.0.0] - 2026-08-19
+
+### Changed - BREAKING
+
+- **Renamed the project to Hefesto.** The plugin name, and therefore the command and skill
+  namespace, is now `hefesto`. `ai-development-framework:speckit-workflow` becomes
+  `hefesto:speckit-workflow`; the install id becomes `hefesto@hefesto`.
+- **The `adf.*` command prefix is now `hef.*`** — `/adf.agent` becomes `/hef.agent`, and the same
+  for `context`, `pr-summary`, `quality`, `security-scan`, and `sync`. The `speckit.*` pipeline is
+  unchanged.
+- The marketplace id is now `hefesto`.
+
+Major per the versioning policy above: this breaks existing installs. Settings hold literal
+`ai-development-framework@ai-development-framework` and `extraKnownMarketplaces` keys, and after
+the rename they resolve to nothing — the plugin does not error, it silently stops loading.
+Uninstall the old plugin and remove the old marketplace BEFORE pulling, then reinstall under the
+new id. Do it in every config profile, `CLAUDE_CONFIG_DIR` ones included.
+
+### Added
+
+- Brand identity under `docs/brand/`: icon and banner cuts in light, dark, and mono, the brief
+  that generated them, and brand notes.
+- A centred README header carrying the banner, plus badges whose version reads
+  `.claude-plugin/plugin.json` directly rather than being bumped by hand.
 
 ## [5.2.0] - 2026-07-17
 
