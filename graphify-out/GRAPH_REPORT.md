@@ -1,16 +1,16 @@
-# Graph Report - ai-development-framework  (2026-08-11)
+# Graph Report - ai-development-framework  (2026-08-19)
 
 ## Corpus Check
-- 101 files · ~123,857 words
+- 93 files · ~120,015 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1004 nodes · 958 edges · 108 communities (94 shown, 14 thin omitted)
+- 952 nodes · 914 edges · 103 communities (90 shown, 13 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 4 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `61d9f524`
+- Built from commit: `fe450625`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,7 +19,7 @@
 - Development Workflow
 - speckit-workflow.js
 - Parametric Software Effort Estimation in Generative AI-Assisted Workflows
-- What You Must Do When Invoked
+- Quality Checks
 - workflow.test.js
 - Plan: speckit-workflow-resilience
 - Fabric: Prompt Orchestration as a Complementary Layer
@@ -34,7 +34,7 @@
 - Instructions
 - Changelog
 - Context Management
-- 🤖 AI Development Framework v5.2
+- README.md
 - CLAUDE.md Authoring
 - Security & DevSecOps for Agents
 - Spikes (executed 2026-07-16)
@@ -51,15 +51,15 @@
 - Context Engineering Fundamentals
 - The AI Protocol Stack
 - Project Organization & Delivery
-- SETUP — install or update the AI Development Framework on this machine
+- SETUP — install or update the Hefesto on this machine
 - Systematic Debugging Skill
 - repo-scout.md
-- Quality Checks
+- Live Project Data
 - Instructions
 - 🕵️ Agents
-- AI Development Framework v5.2
-- graphify reference: extra exports and benchmark
-- README.md
+- Hefesto v6.0
+- Check Steps
+- commands.md
 - Architecture
 - Pre-Flight
 - Pre-Flight
@@ -71,8 +71,8 @@
 - Tasks: <BRANCH_NAME>
 - code-reviewer.md
 - [Unreleased]
-- Live Project Data
-- Check Steps
+- [3.0.0] - 2025-09-04
+- Live Branch Data
 - Pre-Flight
 - Pre-Flight
 - ⚙️ Hooks
@@ -80,11 +80,11 @@
 - rules.md
 - MCP Server Security
 - [2.1.0] - 2025-01-09
-- [3.0.0] - 2025-09-04
+- Hefesto — logo & brand notes
 - [4.4.0] - 2026-07-12
 - Git Workflow
-- graphify reference: query, path, explain
-- Live Branch Data
+- 🚀 Using it
+- hef.security-scan.md
 - Pre-Flight Checks
 - block-destructive-commands.sh
 - Project Constitution
@@ -94,22 +94,17 @@
 - [4.0.0] - 2026-02-23
 - [4.5.0] - 2026-07-13
 - [5.1.0] - 2026-07-16
-- adf.security-scan.md
+- [6.0.0] - 2026-08-19
 - speckit-helper.sh
 - Performance Audit Skill
 - [5.2.0] - 2026-07-17
-- graphify reference: add a URL and watch a folder
-- graphify reference: commit hook and native CLAUDE.md integration
-- graphify reference: incremental update and cluster-only
+- mcp.md
 - Research Corpus & Acknowledgments
 - Checklist: requirements
 - [4.1.0] - 2026-03-30
 - [4.3.0] - 2026-03-31
-- graphify reference: GitHub clone and cross-repo merge
-- graphify reference: transcribe video and audio
 - Checklist: <TYPE>
 - CLAUDE.md
-- extraction-spec.md
 - block-sensitive-files.sh
 - format-after-edit.sh
 - notify-on-block.sh
@@ -121,16 +116,16 @@
 - .mcp.json
 
 ## God Nodes (most connected - your core abstractions)
-1. `Changelog` - 20 edges
+1. `Changelog` - 21 edges
 2. `Plan: speckit-workflow-resilience` - 15 edges
 3. `Quality Tooling by Language` - 13 edges
-4. `What You Must Do When Invoked` - 12 edges
-5. `Code Quality Standards` - 11 edges
-6. `Forensic Specialist Agent - Cybersecurity Defense & Digital Forensics` - 11 edges
-7. `Claude Code Harness Capabilities` - 11 edges
-8. `Task Effort Estimation Skill` - 11 edges
-9. `/graphify` - 10 edges
-10. `SETUP — install or update the AI Development Framework on this machine` - 10 edges
+4. `Code Quality Standards` - 11 edges
+5. `Forensic Specialist Agent - Cybersecurity Defense & Digital Forensics` - 11 edges
+6. `Claude Code Harness Capabilities` - 11 edges
+7. `Task Effort Estimation Skill` - 11 edges
+8. `SETUP — install or update the Hefesto on this machine` - 10 edges
+9. `Security & DevSecOps for Agents` - 10 edges
+10. `User Scenarios` - 9 edges
 
 ## Surprising Connections (you probably didn't know these)
 - None detected - all connections are within the same source files.
@@ -138,7 +133,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (108 total, 14 thin omitted)
+## Communities (103 total, 13 thin omitted)
 
 ### Community 0 - "Forensic Specialist Agent - Cybersecurity Defense & Digital Forensics"
 Cohesion: 0.06
@@ -156,9 +151,9 @@ Nodes (26): absFile(), accepted, acquire(), agentTyped(), _capArg, GATE_SCHEMA, 
 Cohesion: 0.07
 Nodes (26): Architectural Constraints in Multi-Service Architectures, Ben Boyter's LOCOMO Model, Codebase Volatility and Historical Hotspots, Conversion Notes, Delta Sizing and Code Transformation Impact, Deterministic Metrics of the Codebase Delta, Edge Cases and Non-Fatal Errors, Empirical Evidence on Developer Productivity (+18 more)
 
-### Community 4 - "What You Must Do When Invoked"
-Cohesion: 0.08
-Nodes (24): For /graphify add and --watch, For /graphify query, For the commit hook and native CLAUDE.md integration, For --update and --cluster-only, /graphify, Honesty Rules, Interpreter guard for subcommands, Part A - Structural extraction for code files (+16 more)
+### Community 4 - "Quality Checks"
+Cohesion: 0.20
+Nodes (9): 0. Secrets Detection (Mandatory First), 1. Linting, 2. Type Checking, 3. Formatting, 4. Security & Supply Chain, 5. Tests, 6. Complexity Metrics, Quality Checks (+1 more)
 
 ### Community 5 - "workflow.test.js"
 Cohesion: 0.13
@@ -216,9 +211,9 @@ Nodes (13): [1.0.0] - 2025-09-02, [3.0.0] - 2025-09-04, [4.0.2] - 2026-03-10, [5
 Cohesion: 0.14
 Nodes (13): Compact Context Priorities, Context Management, Context Scaling by Project Size, Document & Clear Pattern, How to Resume from a Progress File, Large Projects (100+ source files, monorepo or multi-service), Medium Projects (10-100 source files, 1-2 languages), Polyglot / Multi-Service Patterns (+5 more)
 
-### Community 19 - "🤖 AI Development Framework v5.2"
-Cohesion: 0.14
-Nodes (14): 🌱 1. A new project, from scratch, ✨ 2. A feature, in a project already set up, 🔧 3. A trivial fix, 🏚️ 4. Brownfield — existing code, no specs, 🤖 AI Development Framework v5.2, 🧰 Also available, any time, 📚 Documentation, 📦 Install (+6 more)
+### Community 19 - "README.md"
+Cohesion: 0.22
+Nodes (7): 📚 Documentation, 📦 Install, 📄 License, 🧩 Requirements, 🗂️ Structure, ⚙️ What happens without you asking, 🎯 What it is
 
 ### Community 20 - "CLAUDE.md Authoring"
 Cohesion: 0.14
@@ -284,9 +279,9 @@ Nodes (10): AG-UI / A2UI, Agent2Agent (A2A) Protocol, Akashik Protocol, Code Exe
 Cohesion: 0.18
 Nodes (10): Actionable Patterns for the Framework, Containerization & Deployment, FrankMD — Docker with Desktop Wrapper, FrankMega — Kamal Deployment, FrankYomik — Multi-Container with Variants, Not Yet Adopted, Project Organization & Delivery, Research Documentation (FrankSherlock) (+2 more)
 
-### Community 36 - "SETUP — install or update the AI Development Framework on this machine"
+### Community 36 - "SETUP — install or update the Hefesto on this machine"
 Cohesion: 0.18
-Nodes (10): Conventions for the agent executing this, Report back, SETUP — install or update the AI Development Framework on this machine, Step 0 — Decide the clone location, Step 1 — Check for a conflicting legacy install, Step 2 — Clone, or pull if already present, Step 3 — Add the marketplace and install the plugin, Step 4 — Add the helper permission rule (required in practice) (+2 more)
+Nodes (10): Conventions for the agent executing this, Report back, SETUP — install or update the Hefesto on this machine, Step 0 — Decide the clone location, Step 1 — Check for a conflicting legacy install, Step 2 — Clone, or pull if already present, Step 3 — Add the marketplace and install the plugin, Step 4 — Add the helper permission rule (required in practice) (+2 more)
 
 ### Community 37 - "Systematic Debugging Skill"
 Cohesion: 0.18
@@ -296,9 +291,9 @@ Nodes (10): Anti-Patterns to Avoid, Defense-in-Depth Pattern, Integration, Iron 
 Cohesion: 0.20
 Nodes (9): Cost Discipline, Hard Rules (Non-Negotiable), Input Contract, Output Contract, Step 1: Resolve the Repo, Step 2: Orient (Lay of the Land), Step 3: Target the Question, Step 4: Compose the Digest (+1 more)
 
-### Community 39 - "Quality Checks"
-Cohesion: 0.20
-Nodes (9): 0. Secrets Detection (Mandatory First), 1. Linting, 2. Type Checking, 3. Formatting, 4. Security & Supply Chain, 5. Tests, 6. Complexity Metrics, Quality Checks (+1 more)
+### Community 39 - "Live Project Data"
+Cohesion: 0.29
+Nodes (6): Active branch, Analysis Steps, Directory structure (top 2 levels), Live Project Data, Output Format, Recent commits
 
 ### Community 40 - "Instructions"
 Cohesion: 0.20
@@ -308,17 +303,13 @@ Nodes (9): Change scope, Current branch, If NOT Trivial (fails the gate), If Tri
 Cohesion: 0.20
 Nodes (9): 🕵️ Agents, Agents & Parallelism, 🔍 code-reviewer, 🔒 forensic-specialist, 🤝 Parallelism: Three Primitives, 🛡️ quality-guardian, 🔭 repo-scout, 📝 review-coordinator (+1 more)
 
-### Community 42 - "AI Development Framework v5.2"
+### Community 42 - "Hefesto v6.0"
 Cohesion: 0.22
-Nodes (8): AI Development Framework v5.2, Core Rules, Custom Agents, graphify, Multi-Environment Workflows, Performance & Model Selection, Task Management API, Tool Usage
+Nodes (8): Core Rules, Custom Agents, graphify, Hefesto v6.0, Multi-Environment Workflows, Performance & Model Selection, Task Management API, Tool Usage
 
-### Community 43 - "graphify reference: extra exports and benchmark"
-Cohesion: 0.22
-Nodes (8): graphify reference: extra exports and benchmark, Step 6b - Wiki (only if --wiki flag), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag), Step 7a - FalkorDB export (only if --falkordb or --falkordb-push flag), Step 7b - SVG export (only if --svg flag), Step 7c - GraphML export (only if --graphml flag), Step 7d - MCP server (only if --mcp flag), Step 8 - Token reduction benchmark (only if total_words > 5000)
-
-### Community 44 - "README.md"
-Cohesion: 0.25
-Nodes (4): Slash Commands, 🛠️ Slash Commands, MCP Integration, 🔌 MCP Integration
+### Community 43 - "Check Steps"
+Cohesion: 0.29
+Nodes (6): 1. Locate the installed clone, 2. Installed clone vs upstream, 3. Global rules vs upstream, Check Steps, Output Format, Remediation Rules
 
 ### Community 45 - "Architecture"
 Cohesion: 0.22
@@ -364,13 +355,13 @@ Nodes (6): Critical Rules, Framework Integration, Review Output Format, Stage 1:
 Cohesion: 0.29
 Nodes (7): Added, Changed, Deprecated, Fixed, Removed, Security, [Unreleased]
 
-### Community 56 - "Live Project Data"
-Cohesion: 0.29
-Nodes (6): Active branch, Analysis Steps, Directory structure (top 2 levels), Live Project Data, Output Format, Recent commits
+### Community 56 - "[3.0.0] - 2025-09-04"
+Cohesion: 0.33
+Nodes (6): [3.0.0] - 2025-09-04, Added, Changed, Enhanced, Fixed, Improved
 
-### Community 57 - "Check Steps"
-Cohesion: 0.29
-Nodes (6): 1. Locate the installed clone, 2. Installed clone vs upstream, 3. Global rules vs upstream, Check Steps, Output Format, Remediation Rules
+### Community 57 - "Live Branch Data"
+Cohesion: 0.33
+Nodes (5): Commits on this branch, Diff stats, Files changed, Live Branch Data, Output Format
 
 ### Community 58 - "Pre-Flight"
 Cohesion: 0.29
@@ -400,9 +391,9 @@ Nodes (6): Authentication & Authorization, Human-in-the-Loop Requirements, Input
 Cohesion: 0.33
 Nodes (6): [2.1.0] - 2025-01-09, Added, Changed, Enhanced, Fixed, Improved
 
-### Community 65 - "[3.0.0] - 2025-09-04"
+### Community 65 - "Hefesto — logo & brand notes"
 Cohesion: 0.33
-Nodes (6): [3.0.0] - 2025-09-04, Added, Changed, Enhanced, Fixed, Improved
+Nodes (5): Files (delivered as SVG, transparent backgrounds, no font deps), Hefesto — logo & brand notes, Palette, README usage, Regenerating
 
 ### Community 66 - "[4.4.0] - 2026-07-12"
 Cohesion: 0.33
@@ -412,13 +403,13 @@ Nodes (6): [4.4.0] - 2026-07-12, Added, Changed, Fixed, Notes, Removed
 Cohesion: 0.33
 Nodes (5): Branch Naming, Commit Message Format, Commit Types, Git Workflow, Staging and Committing
 
-### Community 68 - "graphify reference: query, path, explain"
+### Community 68 - "🚀 Using it"
 Cohesion: 0.33
-Nodes (5): For /graphify explain, For /graphify path, graphify reference: query, path, explain, Step 0 — Constrained query expansion (REQUIRED before traversal), Step 1 — Traversal
+Nodes (6): 🌱 1. A new project, from scratch, ✨ 2. A feature, in a project already set up, 🔧 3. A trivial fix, 🏚️ 4. Brownfield — existing code, no specs, 🧰 Also available, any time, 🚀 Using it
 
-### Community 69 - "Live Branch Data"
-Cohesion: 0.33
-Nodes (5): Commits on this branch, Diff stats, Files changed, Live Branch Data, Output Format
+### Community 69 - "hef.security-scan.md"
+Cohesion: 0.40
+Nodes (4): Automated Tool Checks (if available), Checklist, Report Format, Scope
 
 ### Community 70 - "Pre-Flight Checks"
 Cohesion: 0.33
@@ -456,9 +447,9 @@ Nodes (5): [4.5.0] - 2026-07-13, Added, Changed, Fixed, Known limitation
 Cohesion: 0.40
 Nodes (5): [5.1.0] - 2026-07-16, Added, Changed, Fixed, Known issues
 
-### Community 79 - "adf.security-scan.md"
-Cohesion: 0.40
-Nodes (4): Automated Tool Checks (if available), Checklist, Report Format, Scope
+### Community 79 - "[6.0.0] - 2026-08-19"
+Cohesion: 0.67
+Nodes (3): [6.0.0] - 2026-08-19, Added, Changed - BREAKING
 
 ### Community 80 - "speckit-helper.sh"
 Cohesion: 0.70
@@ -471,18 +462,6 @@ Nodes (4): Analysis Steps, Benchmark Commands, Output Format, Performance Audit 
 ### Community 82 - "[5.2.0] - 2026-07-17"
 Cohesion: 0.50
 Nodes (4): [5.2.0] - 2026-07-17, Added, Changed, Fixed
-
-### Community 83 - "graphify reference: add a URL and watch a folder"
-Cohesion: 0.50
-Nodes (3): For /graphify add, For --watch, graphify reference: add a URL and watch a folder
-
-### Community 84 - "graphify reference: commit hook and native CLAUDE.md integration"
-Cohesion: 0.50
-Nodes (3): For git commit hook, For native CLAUDE.md integration, graphify reference: commit hook and native CLAUDE.md integration
-
-### Community 85 - "graphify reference: incremental update and cluster-only"
-Cohesion: 0.50
-Nodes (3): For --cluster-only, For --update (incremental re-extraction), graphify reference: incremental update and cluster-only
 
 ### Community 86 - "Research Corpus & Acknowledgments"
 Cohesion: 0.50
@@ -501,24 +480,24 @@ Cohesion: 0.67
 Nodes (3): [4.3.0] - 2026-03-31, Added, Enhanced
 
 ## Knowledge Gaps
-- **668 isolated node(s):** `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script`, `notify-on-block.sh script`, `plan-phase-write-block.sh script` (+663 more)
+- **633 isolated node(s):** `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script`, `notify-on-block.sh script`, `plan-phase-write-block.sh script` (+628 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **14 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Changelog` connect `Changelog` to `[2.1.0] - 2025-01-09`, `[3.0.0] - 2025-09-04`, `[4.4.0] - 2026-07-12`, `[2.0.0] - 2025-09-02`, `[3.1.0] - 2025-11-26`, `[4.0.0] - 2026-02-23`, `[4.5.0] - 2026-07-13`, `[5.1.0] - 2026-07-16`, `[5.2.0] - 2026-07-17`, `[Unreleased]`, `[4.1.0] - 2026-03-30`, `[4.3.0] - 2026-03-31`?**
-  _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `🤖 AI Development Framework v5.2` connect `🤖 AI Development Framework v5.2` to `README.md`?**
-  _High betweenness centrality (0.003) - this node is a cross-community bridge._
+- **Why does `Changelog` connect `Changelog` to `[2.1.0] - 2025-01-09`, `[4.4.0] - 2026-07-12`, `[2.0.0] - 2025-09-02`, `[3.1.0] - 2025-11-26`, `[4.0.0] - 2026-02-23`, `[4.5.0] - 2026-07-13`, `[5.1.0] - 2026-07-16`, `[6.0.0] - 2026-08-19`, `[5.2.0] - 2026-07-17`, `[Unreleased]`, `[3.0.0] - 2025-09-04`, `[4.3.0] - 2026-03-31`, `[4.1.0] - 2026-03-30`?**
+  _High betweenness centrality (0.006) - this node is a cross-community bridge._
 - **Why does `Architecture` connect `Architecture` to `README.md`?**
   _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script` to the rest of the system?**
-  _668 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _633 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Forensic Specialist Agent - Cybersecurity Defense & Digital Forensics` be split into smaller, more focused modules?**
   _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
 - **Should `Development Workflow` be split into smaller, more focused modules?**
   _Cohesion score 0.06666666666666667 - nodes in this community are weakly interconnected._
 - **Should `speckit-workflow.js` be split into smaller, more focused modules?**
   _Cohesion score 0.0896551724137931 - nodes in this community are weakly interconnected._
+- **Should `Parametric Software Effort Estimation in Generative AI-Assisted Workflows` be split into smaller, more focused modules?**
+  _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
