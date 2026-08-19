@@ -1,4 +1,4 @@
-# SETUP — install or update the AI Development Framework on this machine
+# SETUP — install or update the Hefesto on this machine
 
 **This file is a runbook for a Claude Code agent.** Hand it to an agent ("follow SETUP.md") and it will install the framework as a plugin, or update an existing install, and report what it did.
 
@@ -44,7 +44,7 @@ ls ~/.claude/commands/speckit.plan.md ~/.claude/agents/quality-guardian.md ~/.cl
 if [ -d "$FRAMEWORK_DIR/.git" ]; then
   git -C "$FRAMEWORK_DIR" pull --ff-only
 else
-  git clone https://github.com/joaoariedi/ai-assisted-development-framework.git "$FRAMEWORK_DIR"
+  git clone https://github.com/joaoariedi/hefesto.git "$FRAMEWORK_DIR"
 fi
 ```
 
@@ -56,13 +56,13 @@ A plugin is installed **from a marketplace**; the repository ships one that list
 
 ```bash
 claude plugin marketplace add "$FRAMEWORK_DIR"
-claude plugin install ai-development-framework@ai-development-framework
+claude plugin install hefesto@hefesto
 ```
 
 If the marketplace is already configured, `add` will say so — that is not an error. In that case refresh it instead:
 
 ```bash
-claude plugin marketplace update ai-development-framework
+claude plugin marketplace update hefesto
 ```
 
 **Check:**
@@ -71,7 +71,7 @@ claude plugin marketplace update ai-development-framework
 claude plugin list
 ```
 
-Expect `ai-development-framework@ai-development-framework` with `Status: ✔ enabled`. This writes `enabledPlugins` into `~/.claude/settings.json`, so the install is persistent and user-scoped: it applies to every project, with no flags.
+Expect `hefesto@hefesto` with `Status: ✔ enabled`. This writes `enabledPlugins` into `~/.claude/settings.json`, so the install is persistent and user-scoped: it applies to every project, with no flags.
 
 ## Step 4 — Add the helper permission rule (required in practice)
 
@@ -140,21 +140,21 @@ Verification is not optional here — this framework's recurring failure mode is
    ```bash
    claude plugin list          # ✔ enabled
    ```
-2. **Loaded:** the `/` menu lists the framework's commands (`/adf.context`, `/adf.quality`, `/speckit.plan`, …). *A component that does not appear here is not loaded.*
-3. **Works:** run `/adf.context` in any git repository. It should print a project summary. **If it prints nothing at all, Step 4 is missing or its path is wrong.**
+2. **Loaded:** the `/` menu lists the framework's commands (`/hef.context`, `/hef.quality`, `/speckit.plan`, …). *A component that does not appear here is not loaded.*
+3. **Works:** run `/hef.context` in any git repository. It should print a project summary. **If it prints nothing at all, Step 4 is missing or its path is wrong.**
 4. **The workflow resolves** — it is the one component that must be called by its full namespaced name:
    ```
-   ai-development-framework:speckit-workflow
+   hefesto:speckit-workflow
    ```
    A bare `speckit-workflow` does not resolve.
 
-**Known quirk — do not chase it:** `claude plugin details ai-development-framework` reports `Agents (0)`. All six agents load correctly regardless; this is a defect in the inventory display, confirmed by dispatching the agents in a live session. Trust the `/` menu and a live dispatch over the inventory.
+**Known quirk — do not chase it:** `claude plugin details hefesto` reports `Agents (0)`. All six agents load correctly regardless; this is a defect in the inventory display, confirmed by dispatching the agents in a live session. Trust the `/` menu and a live dispatch over the inventory.
 
 ## Step 6 — How to update, later
 
 ```bash
 git -C "$FRAMEWORK_DIR" pull
-claude plugin marketplace update ai-development-framework
+claude plugin marketplace update hefesto
 ```
 
 Then restart Claude Code. Read `CHANGELOG.md` in the clone to see what changed. Re-running this whole runbook achieves the same thing.

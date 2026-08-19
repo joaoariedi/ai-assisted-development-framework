@@ -9,13 +9,13 @@ The repository *is* the plugin. The manifests live in `.claude-plugin/`; the pay
 lives at the **repository root**.
 
 ```
-ai-assisted-development-framework/
+hefesto/
 ├── .claude-plugin/
 │   ├── plugin.json             # the plugin manifest — declares every component below
 │   └── marketplace.json        # makes the repo installable (`claude plugin install`)
 ├── .mcp.json                   # GitHub MCP server (project scope)
 ├── agents/                     # 6 agents (5 pipeline + repo-scout one-shot)
-├── commands/                   # 19 slash commands (6 adf.* + 13 speckit.*)
+├── commands/                   # 19 slash commands (6 hef.* + 13 speckit.*)
 ├── hooks/                      # 9 hooks + hooks.json + speckit-helper.sh
 ├── skills/                     # 7 skills, each a <name>/SKILL.md directory
 ├── workflows/                  # speckit-workflow.js — the deterministic task-list executor

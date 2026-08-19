@@ -9,16 +9,16 @@ The framework is a Claude Code plugin. **The hooks ship with it** — you no lon
 A plugin is installed **from a marketplace**, so the framework ships one (`.claude-plugin/marketplace.json`) that lists exactly one plugin: itself. Clone once, then point the marketplace at the clone:
 
 ```bash
-git clone https://github.com/joaoariedi/ai-assisted-development-framework.git ~/.claude-framework
+git clone https://github.com/joaoariedi/hefesto.git ~/.claude-framework
 
 claude plugin marketplace add ~/.claude-framework
-claude plugin install ai-development-framework@ai-development-framework
+claude plugin install hefesto@hefesto
 ```
 
 That is a **persistent, user-scoped** install: it writes `enabledPlugins` to `~/.claude/settings.json` and applies to every project, in every session, with no flags. Confirm it:
 
 ```bash
-claude plugin list          # → ai-development-framework@ai-development-framework  ✔ enabled
+claude plugin list          # → hefesto@hefesto  ✔ enabled
 ```
 
 Because the marketplace source is a **directory**, the plugin is read from your clone in place — nothing is copied. **Updating is therefore just `git pull`** (see *Updating* below), and the install path is stable and predictable, which the permission rule in step 2 depends on.
@@ -43,9 +43,9 @@ Plugin components are **namespaced by plugin name**, but the namespace is only *
 
 | Component | How you invoke it |
 |---|---|
-| **Commands** | `/adf.context`, `/speckit.plan`, `/adf.quality` — the bare name works. The `ai-development-framework:` prefix also works, and disambiguates if another plugin defines the same name. |
-| **Agents** | Dispatched by Claude, or by name — they appear as `ai-development-framework:code-reviewer`. |
-| **The workflow** | **Must be namespaced**: `ai-development-framework:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
+| **Commands** | `/hef.context`, `/speckit.plan`, `/hef.quality` — the bare name works. The `hefesto:` prefix also works, and disambiguates if another plugin defines the same name. |
+| **Agents** | Dispatched by Claude, or by name — they appear as `hefesto:code-reviewer`. |
+| **The workflow** | **Must be namespaced**: `hefesto:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
 
 ### 2️⃣ Optional Configuration
 
@@ -92,9 +92,9 @@ Three checks, in increasing strength:
 
 1. **`claude plugin list`** — the plugin is `✔ enabled`. If it is not here, nothing else matters.
 2. **The `/` menu** — every command should be listed. **A component that does not appear is not loaded**, and its absence is silent. This is the only reliable test.
-3. **Run one** — `/adf.context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
+3. **Run one** — `/hef.context` should print a tech-stack summary. If it prints *nothing*, the pre-flight permission rule in step 2 is missing (see the warning above).
 
-> ⚠️ `claude plugin details ai-development-framework` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
+> ⚠️ `claude plugin details hefesto` prints a component inventory, but it reports **`Agents (0)`** for this plugin even though all six agents load correctly. That is a quirk of the inventory display, not a fault in your install — confirmed by dispatching the agents in a live session. Do not chase it.
 
 ### 4️⃣ Your First Feature (the 60-second tour)
 
@@ -106,13 +106,13 @@ The framework's core loop is **spec first, then code, then a gate you cannot tal
 /speckit.plan                    # → an implementation plan (writes are blocked outside .specify/)
 /speckit.tasks                   # → a phased, dependency-ordered task list
 /speckit.implement               # → TDD execution, red-green, one task at a time
-/adf.quality                         # → lint, types, secrets, SOLID — before you commit
+/hef.quality                         # → lint, types, secrets, SOLID — before you commit
 ```
 
 For a **large** task list, swap the last implementation step for the workflow, which runs independent tasks in parallel and has every task adversarially verified by agents that did not write it:
 
 ```
-ai-development-framework:speckit-workflow
+hefesto:speckit-workflow
 ```
 
 Not every change deserves a spec. For a typo or a config tweak, `/speckit.fix` skips the pipeline. For an existing codebase with no specs, `/speckit.baseline` reverse-engineers them.
@@ -125,7 +125,7 @@ The plugin is read from your clone in place, so updating is a `git pull`:
 
 ```bash
 git -C ~/.claude-framework pull
-claude plugin marketplace update ai-development-framework   # re-read the manifest
+claude plugin marketplace update hefesto   # re-read the manifest
 ```
 
 Restart Claude Code to pick up the new components. To check what changed first, read `CHANGELOG.md` in the clone.

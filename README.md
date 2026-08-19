@@ -1,12 +1,12 @@
 <div align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/brand/hefesto-banner-dark.svg">
-    <img src="docs/brand/hefesto-banner-light.svg" alt="AI Development Framework - spec-driven development for Claude Code" width="800">
+    <img src="docs/brand/hefesto-banner-light.svg" alt="Hefesto - spec-driven development for Claude Code" width="800">
   </picture>
   <p><strong>Spec-driven development for Claude Code: write the spec, then the plan, then the code &mdash; with quality gates enforced by hooks rather than by good intentions.</strong></p>
   <p>
-    <a href="https://github.com/joaoariedi/ai-assisted-development-framework/actions/workflows/smoke.yml"><img alt="smoke suite" src="https://github.com/joaoariedi/ai-assisted-development-framework/actions/workflows/smoke.yml/badge.svg"></a>
-    <img alt="plugin version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoaoariedi%2Fai-assisted-development-framework%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&color=22d3ee">
+    <a href="https://github.com/joaoariedi/hefesto/actions/workflows/smoke.yml"><img alt="smoke suite" src="https://github.com/joaoariedi/hefesto/actions/workflows/smoke.yml/badge.svg"></a>
+    <img alt="plugin version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoaoariedi%2Fhefesto%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&color=22d3ee">
     <img alt="Plugin for Claude Code" src="https://img.shields.io/badge/plugin_for-Claude_Code-2b2f36?logo=anthropic&logoColor=white">
     <img alt="Gates are hook-enforced" src="https://img.shields.io/badge/gates-hook--enforced-f97316">
     <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-64748b">
@@ -46,18 +46,18 @@ installs, configures the permission rule, verifies the result, and tells you wha
 cd ~/some-project && claude
 ```
 
-> Fetch https://raw.githubusercontent.com/joaoariedi/ai-assisted-development-framework/main/SETUP.md
-> and follow it to install the AI Development Framework on this machine.
+> Fetch https://raw.githubusercontent.com/joaoariedi/hefesto/main/SETUP.md
+> and follow it to install the Hefesto on this machine.
 
 Or do it yourself — it is three commands:
 
 ```bash
-git clone https://github.com/joaoariedi/ai-assisted-development-framework.git ~/.claude-framework
+git clone https://github.com/joaoariedi/hefesto.git ~/.claude-framework
 claude plugin marketplace add ~/.claude-framework
-claude plugin install ai-development-framework@ai-development-framework
+claude plugin install hefesto@hefesto
 ```
 
-Then **restart Claude Code** and run `/adf.context` in any git repository. It should print a
+Then **restart Claude Code** and run `/hef.context` in any git repository. It should print a
 project summary. If it prints nothing, the permission rule is missing or wrong — that is the
 single most common failure, and [`docs/install.md`](docs/install.md) explains exactly why.
 
@@ -71,7 +71,7 @@ an upgrade — see [`docs/install.md`](docs/install.md).
 
 | Directory | What lives there |
 |---|---|
-| 🛠️ `commands/` | The 19 slash commands. All namespaced (`adf.*`, `speckit.*`) so no built-in can shadow them. |
+| 🛠️ `commands/` | The 19 slash commands. All namespaced (`hef.*`, `speckit.*`) so no built-in can shadow them. |
 | 🕵️ `agents/` | Six specialist subagents — testing, quality, review, security, PR coordination, recon. |
 | ⚙️ `hooks/` | Nine hooks, plus `speckit-helper.sh` (34 subcommands) that the commands call for live git data. |
 | 🧠 `skills/` | Systematic debugging, effort estimation, performance audit, plus reference skills promoted from rules (quality tooling, pipeline & MCP security, agent collaboration). |
@@ -104,14 +104,14 @@ Full spec-driven development. Every gate, in order.
 /speckit.analyze                     # optional: cross-artifact consistency
 
 /speckit.implement                   # TDD execution, red-green, one task at a time
-/adf.quality                         # lint, types, secrets, SOLID — before you commit
+/hef.quality                         # lint, types, secrets, SOLID — before you commit
 ```
 
 For a **large** task list, swap the implementation step for the workflow, which runs independent
 tasks in parallel and has every task adversarially verified by agents that did not write it:
 
 ```
-ai-development-framework:speckit-workflow          # (full name required)
+hefesto:speckit-workflow          # (full name required)
 ```
 
 It **caps how many run at once** so a big task list does not self-inflict API rate limits
@@ -129,15 +129,15 @@ It must be called by that full name; a bare `speckit-workflow` does not resolve.
 `.specify/` already exists. Skip the bootstrap and the constitution.
 
 ```bash
-/adf.context                         # orient: stack, tools, structure, recent activity
+/hef.context                         # orient: stack, tools, structure, recent activity
 /speckit.specify  <feature>
 /speckit.clarify                     # ← HUMAN GATE
 /speckit.plan
 /speckit.review                      # ← HUMAN GATE
 /speckit.tasks
 /speckit.implement
-/adf.quality
-/adf.pr-summary                      # → PR description from the branch diff
+/hef.quality
+/hef.pr-summary                      # → PR description from the branch diff
 ```
 
 ### 🔧 3. A trivial fix
@@ -146,7 +146,7 @@ A typo, a config tweak, a one-line bug. The pipeline would cost more than the ch
 
 ```bash
 /speckit.fix  <description>          # bypasses spec/plan/tasks entirely
-/adf.quality
+/hef.quality
 ```
 
 The hooks still apply. You cannot commit secrets or skip the tests just because you took the
@@ -157,7 +157,7 @@ short path.
 Reverse-engineer the spec from what is already there, then proceed normally.
 
 ```bash
-/adf.context                         # what is this codebase?
+/hef.context                         # what is this codebase?
 /speckit.init
 /speckit.baseline  <module>          # → spec inferred from existing code
 ```
@@ -169,9 +169,9 @@ one, treat the module as scenario 2.
 
 | | |
 |---|---|
-| 🔒 `/adf.security-scan` | Secrets, SQLi, XSS in the staged changes. |
-| 🤝 `/adf.agent <task>` | Full workflow with planning and task tracking, for open-ended work. |
-| 🛡️ `/adf.quality` | The quality gate. Spawns `quality-guardian`. |
+| 🔒 `/hef.security-scan` | Secrets, SQLi, XSS in the staged changes. |
+| 🤝 `/hef.agent <task>` | Full workflow with planning and task tracking, for open-ended work. |
+| 🛡️ `/hef.quality` | The quality gate. Spawns `quality-guardian`. |
 
 Full reference: [`docs/commands.md`](docs/commands.md).
 
@@ -217,4 +217,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**Framework Version**: 5.2.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-17 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams
+**Framework Version**: 6.0.0 &nbsp;|&nbsp; **Last Updated**: 2026-07-17 &nbsp;|&nbsp; **Compatibility**: Claude Code with sub-agents, hooks, skills (`<name>/SKILL.md`), MCP, spec-kit, Agent Teams

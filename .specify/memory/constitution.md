@@ -15,7 +15,7 @@ They govern *this repo* (the plugin itself); they complement, and do not duplica
    own config; the payload lives at the repository root. `tests/smoke.sh` fails if any payload
    directory reappears under `.claude/`.
 
-2. **Every command is namespaced** (`adf.*`, `speckit.*`) — a plugin command that shares a name with a
+2. **Every command is namespaced** (`hef.*`, `speckit.*`) — a plugin command that shares a name with a
    Claude Code built-in is silently unreachable, and the built-in wins with no warning. No built-in
    contains a dot, so a mandatory dot eliminates the entire class structurally. This replaces a
    hand-maintained list of built-in names, which is a list that goes stale the moment Claude Code ships

@@ -6,12 +6,12 @@
 
 | Command | Args | Description |
 |---------|------|-------------|
-| `/adf.agent` | `<task>` | Start full development workflow with planning and task tracking |
-| `/adf.context` | — | Analyze project tech stack, tools, and structure |
-| `/adf.pr-summary` | — | Generate PR description from current branch diff |
-| `/adf.quality` | — | Run comprehensive quality checks (spawns quality-guardian) |
-| `/adf.security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
-| `/adf.sync` | — | Report drift between the installed plugin clone, the global rules, and upstream |
+| `/hef.agent` | `<task>` | Start full development workflow with planning and task tracking |
+| `/hef.context` | — | Analyze project tech stack, tools, and structure |
+| `/hef.pr-summary` | — | Generate PR description from current branch diff |
+| `/hef.quality` | — | Run comprehensive quality checks (spawns quality-guardian) |
+| `/hef.security-scan` | — | Scan staged changes for secrets, SQLi, XSS |
+| `/hef.sync` | — | Report drift between the installed plugin clone, the global rules, and upstream |
 | `/speckit.init` | — | Bootstrap `.specify/` directory in current project |
 | `/speckit.constitution` | — | Create/update project governance principles |
 | `/speckit.brainstorm` | `<idea>` | Socratic design exploration before specification |
