@@ -1,0 +1,195 @@
+HEFESTO — LOGO BRIEF, DESIGN GUIDELINES & GENERATION PROMPT
+===========================================================
+Target: docs/brand/  (layout mirrors mercury/docs/brand/README.md)
+Drafted: 2026-08-19
+
+
+1. CONCEPT
+----------
+Hephaestus (Gr. Hephaistos / pt. Hefesto) — smith-god of fire, the forge, and
+the fusion of metals. The evolution this brand asserts: THE NEW FIRE IS
+ELECTRICITY. Where the old god shaped bronze with flame and hammer, this one
+shapes machines with current.
+
+The detail that makes the name more than decoration: Hephaestus did not only
+forge objects. In Iliad 18 he forges AUTOMATA — self-moving golden attendants
+"with intelligence in their hearts" — and tripods on wheels that roll to the
+gods' assembly unbidden. He is the first builder of thinking machines in the
+Western canon. A framework that drives AI agents through a forge pipeline
+(spec -> plan -> tasks -> code) carries exactly the right patron.
+
+Brand story, one line:
+    The old fire shaped metal. The new fire shapes machines that think.
+
+Tone: industrial, precise, slightly severe. NOT mystical, NOT a bearded-man
+illustration, NOT a flame cliche. This is a workshop, not a temple.
+
+
+2. CHOSEN MARK — "the struck anvil"
+-----------------------------------
+An anvil silhouette, squarely planted. A lightning bolt descends as the
+hammer-stroke and meets its face. Sparks leave the point of impact as short
+straight ticks. (Revised 2026-08-19 - concentric arcs rejected, see sec. 9.)
+
+Why it works:
+  - The anvil is where raw material becomes a shaped thing through repeated
+    strikes — the pipeline's own metaphor, and it reads as a solid mass at
+    32px where thin illustration would dissolve.
+  - The bolt REPLACES the hammer. That substitution is the whole thesis in one
+    silhouette: same craft, new fire.
+  - The spark ticks are deliberately NOT the sibling mark's nested arcs
+    (mercury: three feed lines in, three broadcast arcs out) - see sec. 9.
+
+Read at a glance: something is being forged, and the thing doing the forging
+is electricity.
+
+
+3. ALTERNATES (if the anvil proves too heavy)
+---------------------------------------------
+  A. "Bolt-hammer" — a smith's hammer in profile whose head is a lightning
+     bolt. Lighter, more dynamic, weaker at small sizes.
+  B. "Arc gap" — two electrode tips facing each other, the negative space
+     between them forming an anvil silhouette; a single arc jumps the gap.
+     Cleverest option, highest risk of reading as nothing at 32px.
+  C. "Circuit forge" — anvil drawn entirely as PCB traces with via-dots at the
+     corners. On-the-nose for a dev tool; may date quickly.
+
+Recommendation: build the chosen mark first, and A as the fallback.
+
+
+4. DELIVERABLES
+---------------
+Delivered as SVG, transparent backgrounds, no font dependencies.
+
+  hefesto-icon-light.svg
+  hefesto-icon-dark.svg
+  hefesto-icon-mono.svg      512x512 icon, must stay legible at 32px
+
+  hefesto-banner-light.svg
+  hefesto-banner-dark.svg    1280x320 README lockup: icon + "Hefesto"
+                             wordmark + tagline
+                             "Spec-driven development for Claude Code"
+
+Wordmark: a grotesque with industrial bones — Montserrat SemiBold matches the
+sibling project; Archivo or Inter Tight are acceptable substitutes. CONVERT ALL
+TEXT TO PATHS. No <text> elements, no @font-face, no external font refs.
+
+
+5. PALETTE
+----------
+Light mode
+  anvil / ink        #2b2f36   graphite (shared with the sibling mark)
+  arc / accent       #06b6d4   electric cyan — the new fire
+  ember (secondary)  #f97316   residual forge heat, sparingly
+  tagline muted      #667085
+
+Dark mode (GitHub canvas #0d1117)
+  anvil / ink        #c9d1d9   silver
+  arc / accent       #38bdf8   lifted cyan
+  ember (secondary)  #fb923c   lifted ember
+  tagline muted      #8b949e
+
+Mono
+  single colour      #2b2f36   recolour freely; the silhouette carries the mark
+
+WARNING ON THE SECOND ACCENT: cyan tells the story, ember is nostalgia. Two
+accents fighting inside a 32px icon reads as noise. Use ember ONLY as one or
+two small spark ticks near the impact point, and DROP IT ENTIRELY from the
+mono cut. If the icon looks busy, ember is what to delete first.
+
+
+6. DESIGN GUIDELINES
+--------------------
+DO
+  - Build from SVG primitives: <path>, <line>, <circle>, <polygon>. The sibling
+    icon is 828 bytes because it uses nothing else. Aim for under 2 KB.
+  - Use stroke-linecap="round" on arcs and strokes; keep stroke-width in the
+    24-32 range on a 512 viewBox so it survives downscaling.
+  - Keep the mark inside a 512x512 viewBox with ~40px optical padding.
+  - Make the bolt a filled polygon, not a stroked zigzag — strokes thin out
+    and vanish at small sizes.
+  - Test at 32x32 before anything else. If the bolt/anvil relationship is not
+    readable there, the mark has failed regardless of how it looks at 512.
+  - Keep light and dark cuts geometrically IDENTICAL; only fill/stroke values
+    differ, so a palette change is one find-and-replace per file.
+
+DON'T
+  - No gradients, no filters, no drop shadows, no blur. They break at small
+    sizes, bloat the file, and render inconsistently in GitHub's sanitiser.
+  - No <text> elements anywhere.
+  - No raster embeds, no base64, no external references of any kind.
+  - No literal flames, no anthropomorphic god, no hammer-and-anvil clip art.
+  - No concentric or nested arcs anywhere in the mark - see section 9.
+    count.
+  - Do not put a background rectangle behind the mark; transparency is required
+    so it sits on both GitHub canvases.
+
+
+7. README USAGE
+---------------
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/brand/hefesto-banner-dark.svg">
+  <img src="docs/brand/hefesto-banner-light.svg" alt="Hefesto" width="800">
+</picture>
+
+
+8. THE PROMPT (copy-paste into an SVG-capable generator)
+--------------------------------------------------------
+Design a minimal, industrial logo mark and deliver it as hand-written, valid
+SVG. No commentary, output the SVG only.
+
+SUBJECT
+An anvil in flat silhouette, planted square and heavy, seen from the side with
+its horn to the left. A lightning bolt descends vertically from the top of the
+frame and strikes the anvil's face, taking the place a hammer would occupy.
+Sparks leave the impact point as two or three SHORT STRAIGHT TICKS at differing
+angles. Do NOT draw concentric or nested curved arcs anywhere in the mark.
+
+MEANING TO ENCODE
+Hephaestus, god of the forge, re-imagined for the age of electricity: the same
+craft, powered by a new fire. The bolt substituting for the hammer is the
+central idea — keep that substitution unmistakable.
+
+STYLE
+Flat vector. Geometric, confident, slightly severe. Industrial, not mystical.
+No illustration, no character, no decorative flourish. Think trade-mark stamped
+into steel, not an emblem painted on a shield.
+
+TECHNICAL REQUIREMENTS (strict)
+- viewBox "0 0 512 512", width and height 512, roughly 40px optical padding.
+- Use only <path>, <polygon>, <line>, <circle>. No <text>, no gradients, no
+  filters, no shadows, no external references, no embedded raster, no
+  background rectangle. Transparent background.
+- The bolt must be a FILLED polygon, not a stroked zigzag.
+- Arcs: stroke, stroke-linecap="round", stroke-width between 24 and 32.
+- Total file under 2 KB. Legible and unambiguous when rendered at 32x32.
+
+COLOUR — produce three separate files
+- LIGHT: anvil #2b2f36, bolt and arcs #06b6d4.
+- DARK:  anvil #c9d1d9, bolt and arcs #38bdf8. Geometry identical to LIGHT.
+- MONO:  everything #2b2f36, single colour, no accent.
+
+THEN produce a 1280x320 banner in light and dark cuts: the icon at the left at
+roughly 200x200 with even vertical centring, the wordmark "Hefesto" to its
+right in a bold industrial grotesque, and beneath the wordmark the tagline
+"Spec-driven development for Claude Code" in a medium weight at the muted
+colour (#667085 light, #8b949e dark). ALL LETTERFORMS MUST BE CONVERTED TO
+<path> OUTLINES — no <text> elements and no font references of any kind.
+
+
+9. TESTED AND REJECTED
+----------------------
+Recorded 2026-08-19 after rendering candidates rather than reasoning about them.
+
+CONCENTRIC ARCS  (was recommended in sections 2, 6 and 8 of the first draft)
+  Three nested arcs radiating from one origin ARE the Wi-Fi / signal-strength
+  glyph. On an anvil they do not read as current; they read as a router. This
+  was confirmed by rendering, not predicted. The shipped mark
+  (hefesto-icon-*.svg) still carries them at radii 36/68/100 above the anvil -
+  deleting those three <path> elements is a three-line change if the collision
+  proves distracting in use.
+
+TWO ACCENTS AT SMALL SIZE
+  The ember dot (#f97316, r=12) becomes an indistinct speck below ~48px while
+  still costing a colour. Cyan carries the concept alone. Drop ember from the
+  icon cuts before the banner.

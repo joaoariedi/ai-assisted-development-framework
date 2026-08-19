@@ -63,7 +63,7 @@ done < <(jq -r '.agents[]?' "$REPO/.claude-plugin/plugin.json")
 # --- Tier 1: version consistency ------------------------------------------------------
 head_ "Version"
 
-# Six places declare the version and every one is bumped BY HAND. A release that updates
+# Five places declare the version and every one is bumped BY HAND. A release that updates
 # plugin.json but forgets marketplace.json ships a plugin whose marketplace advertises the
 # old version — and nothing else notices. (#19)
 v_plugin="$(jq -r '.version' "$REPO/.claude-plugin/plugin.json")"
@@ -82,16 +82,20 @@ for pair in "marketplace.metadata:$v_mkt_meta" "marketplace.plugins[0]:$v_mkt_pl
   fi
 done
 
-# The two titles carry only major.minor.
+# The title carries only major.minor. README dropped out of this loop when its header became the
+# mercury-style centred lockup: the version there is now a shields dynamic/json badge that reads
+# .claude-plugin/plugin.json over raw.githubusercontent, so that surface cannot drift by hand and
+# has nothing left to assert. Re-adding a literal version to the README purely to satisfy this
+# check would reintroduce the exact hand-bumped duplicate #19 exists to eliminate.
 minor="${v_plugin%.*}"
-for f in README.md .claude/CLAUDE.md; do
+for f in .claude/CLAUDE.md; do
   t="$(grep -m1 -oE 'AI Development Framework v[0-9]+\.[0-9]+' "$REPO/$f" | grep -oE '[0-9.]+$')"
   if [ "$t" != "$minor" ]; then
     bad "$f title says v$t but plugin.json says $v_plugin"
     mismatch=$((mismatch + 1))
   fi
 done
-[ "$mismatch" -eq 0 ] && ok "all six version declarations agree ($v_plugin)"
+[ "$mismatch" -eq 0 ] && ok "all five version declarations agree ($v_plugin)"
 
 # --- Tier 1: the #9 regression guard ------------------------------------------------
 head_ "Payload location"
