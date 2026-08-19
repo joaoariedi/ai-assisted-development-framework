@@ -3,7 +3,4 @@
   <polygon fill="#38bdf8" points="228,288 298,288 270,357 308,357 214,466 248,389 210,389"/>
   <polygon fill="#38bdf8" points="240,292 288,292 266,178"/>
   <circle cx="266" cy="160" r="12" fill="#fb923c"/>
-  <path fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round" d="M243 105A36 36 0 0 1 289 105"/>
-  <path fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round" d="M222 80A68 68 0 0 1 310 80"/>
-  <path fill="none" stroke="#38bdf8" stroke-width="18" stroke-linecap="round" d="M202 55A100 100 0 0 1 330 55"/>
 </svg>

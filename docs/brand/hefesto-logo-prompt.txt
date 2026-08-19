@@ -184,10 +184,12 @@ Recorded 2026-08-19 after rendering candidates rather than reasoning about them.
 CONCENTRIC ARCS  (was recommended in sections 2, 6 and 8 of the first draft)
   Three nested arcs radiating from one origin ARE the Wi-Fi / signal-strength
   glyph. On an anvil they do not read as current; they read as a router. This
-  was confirmed by rendering, not predicted. The shipped mark
-  (hefesto-icon-*.svg) still carries them at radii 36/68/100 above the anvil -
-  deleting those three <path> elements is a three-line change if the collision
-  proves distracting in use.
+    was confirmed by rendering, not predicted.
+
+    REMOVED 2026-08-19 from all five cuts (radii 36/68/100 above the anvil).
+    Before/after renders at 200/48/32px confirm the collision is gone and the
+    mark is materially cleaner at small sizes. Do not reintroduce concentric
+    arcs in any variant.
 
 TWO ACCENTS AT SMALL SIZE
   The ember dot (#f97316, r=12) becomes an indistinct speck below ~48px while
