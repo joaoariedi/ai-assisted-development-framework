@@ -698,11 +698,31 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   broken=0
   while read -r invocation; do
     real="${invocation//\$\{CLAUDE_PLUGIN_ROOT\}/$ROOT}"
-    if ! (cd "$SCRATCH" && eval "$real") >/dev/null 2>&1; then
+    err="$( (cd "$SCRATCH" && eval "$real") 2>&1 >/dev/null )"
+    code=$?
+    # A non-zero exit is NOT itself a defect. The helper is REQUIRED to exit non-zero and name
+    # the missing artifact when one is absent - the fetcher contract above asserts exactly that -
+    # and this scratch repo deliberately has no .specify/, so ~8 subcommands correctly report a
+    # miss. Scoring those as failures is what made this tier read 13-red for months (#56) and
+    # buried the real bug underneath the noise. Only two outcomes mean the INVOCATION is broken:
+    #   126/127          - script missing or not executable (the aa32e83 bug shape)
+    #   Unknown command: - the subcommand was renamed or deleted out from under the doc
+    if [ "$code" -eq 127 ] || [ "$code" -eq 126 ] || grep -qF 'Unknown command:' <<<"$err"; then
       bad "command invocation fails as the model would run it: $real"
       broken=$((broken + 1))
     fi
-  done < <(grep -rhoE '\$\{CLAUDE_PLUGIN_ROOT\}[^`]+' "$REPO/commands/" | sort -u)
+  done < <({
+    # Capture the WHOLE fenced span, not just the tail from ${CLAUDE_PLUGIN_ROOT} onward. Anchoring
+    # at the variable silently dropped any command PREFIX: `git -C "${CLAUDE_PLUGIN_ROOT}" status`
+    # extracted as `${CLAUDE_PLUGIN_ROOT}" status`, losing `git -C "` and keeping the stray quote,
+    # so eval tried to execute the plugin path itself. Those five hef.sync invocations could only
+    # ever fail, which means they were never actually validated - the precise blind spot the note
+    # below says this test exists to close (#56).
+    grep -rhoE '`[^`]*\$\{CLAUDE_PLUGIN_ROOT\}[^`]*`' "$REPO/commands/" | sed 's/^`//; s/`$//'
+    # Fenced code blocks carry the invocation bare, with no inline backticks on the line.
+    grep -rh '\${CLAUDE_PLUGIN_ROOT}' "$REPO/commands/" | grep -v '`' | sed -E 's/^[[:space:]]+//'
+  } | grep -vE '<[a-z-]+>' | sort -u)
+  # `<placeholder>` invocations are documentation templates, not runnable commands.
   # NB: match ANY ${CLAUDE_PLUGIN_ROOT} invocation, not just speckit-helper.sh. Hardcoding
   # the script name here creates the exact blind spot this test exists to close: a command
   # pointing at a script that does not exist would never be matched, so never executed, so
