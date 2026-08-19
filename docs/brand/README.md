@@ -53,9 +53,9 @@ copy-paste generation prompt.
 Read **section 9, "Tested and rejected"**, before regenerating. It records what
 rendering disproved rather than what reasoning predicted — most importantly
 that three concentric arcs radiating from one origin read as the Wi-Fi glyph,
-not as current. An earlier draft of the brief recommended them and the shipped
-icon still carries them at radii 36/68/100; deleting those three `<path>`
-elements per icon file is the fix if the collision proves distracting in use.
+An earlier draft of the brief recommended them and the first generated cuts
+carried them at radii 36/68/100; they were removed from all five files on
+2026-08-19. Do not reintroduce them in any variant.
 
 The current cuts were generated in a browser session from that brief, not by a
 script — there is no `gen_*.py` to re-run. Hand-editing the SVGs is practical:

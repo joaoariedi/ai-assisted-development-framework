@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    # Weekly. The live tier rots precisely because nothing runs it: it stayed 13-red for
+    # months behind SMOKE_LIVE=1 while every PR reported green (#56).
+    - cron: '0 6 * * 1'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,9 +22,11 @@ jobs:
         with:
           fetch-depth: 0   # helper subcommands read git history
 
-      # Tier 1 only. The live tier needs an authenticated `claude` CLI, so it cannot run
-      # here — see tests/smoke.sh for what that tier covers and why a plugin's slash
-      # commands cannot be driven headlessly at all.
+      # Tier 1 only on the PR path. The live tier does NOT need an authenticated CLI - its
+      # end-to-end check probes `claude -p` and self-skips on "not logged in" (smoke.sh:767).
+      # What it needs is the `claude` BINARY, and installing it is exactly the install STEP
+      # the zero-install rule below forbids. So it runs in the separate opt-in job instead,
+      # not never (#56).
       - name: Smoke test (structural + regression)
         run: tests/smoke.sh
 
@@ -37,3 +44,24 @@ jobs:
       # exists to avoid.
       - name: Workflow behaviour tests
         run: node --test
+
+  # Not on the PR path: this job installs the claude CLI, which the zero-install rule keeps out
+  # of the job above. It carries no credentials, so the end-to-end check self-skips; everything
+  # else in the tier - the throwaway-config install, `plugin list`, and every command invocation
+  # substituted and executed - runs for real. That is the part that had no CI protection and is
+  # what regressed unnoticed.
+  live:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install the claude CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Smoke test (structural + live)
+        env:
+          SMOKE_LIVE: '1'
+        run: tests/smoke.sh
