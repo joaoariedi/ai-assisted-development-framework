@@ -1,7 +1,17 @@
-# 🤖 AI Development Framework v5.2
-
-> A Claude Code plugin for **spec-driven development**: write the spec, then the plan, then the
-> code — with quality gates that are enforced by hooks rather than by good intentions.
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/brand/hefesto-banner-dark.svg">
+    <img src="docs/brand/hefesto-banner-light.svg" alt="AI Development Framework - spec-driven development for Claude Code" width="800">
+  </picture>
+  <p><strong>Spec-driven development for Claude Code: write the spec, then the plan, then the code &mdash; with quality gates enforced by hooks rather than by good intentions.</strong></p>
+  <p>
+    <a href="https://github.com/joaoariedi/ai-assisted-development-framework/actions/workflows/smoke.yml"><img alt="smoke suite" src="https://github.com/joaoariedi/ai-assisted-development-framework/actions/workflows/smoke.yml/badge.svg"></a>
+    <img alt="plugin version" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fjoaoariedi%2Fai-assisted-development-framework%2Fmain%2F.claude-plugin%2Fplugin.json&query=%24.version&label=version&color=22d3ee">
+    <img alt="Plugin for Claude Code" src="https://img.shields.io/badge/plugin_for-Claude_Code-2b2f36?logo=anthropic&logoColor=white">
+    <img alt="Gates are hook-enforced" src="https://img.shields.io/badge/gates-hook--enforced-f97316">
+    <img alt="License MIT" src="https://img.shields.io/badge/license-MIT-64748b">
+  </p>
+</div>
 
 ---
 
