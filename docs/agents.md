@@ -26,7 +26,7 @@ The quality gate for all code changes. Runs a 7-step validation pipeline:
 
 Enforces both Iron Laws from `rules/code-quality.md`: **verification before completion** (proved with `/verify`) and **no fixes without root-cause investigation** (the `systematic-debugging` skill).
 
-**When to use**: Before any commit, PR, or merge. Spawned automatically by `/adf.quality`.
+**When to use**: Before any commit, PR, or merge. Spawned automatically by `/hef.quality`.
 
 ### 🔍 code-reviewer
 
@@ -71,7 +71,7 @@ They are not interchangeable, and none supersedes the others:
 
 Reach for a **subagent** by default — you want an answer, not a colleague. Reach for an **Agent Team** when workers must *challenge each other*: five teammates trying to disprove each other's hypotheses beat sequential investigation, which anchors on the first plausible theory.
 
-**`speckit-workflow`** (`workflows/speckit-workflow.js`) is the framework's workflow — invoked as `ai-development-framework:speckit-workflow` under a plugin install, since plugin components are namespaced. It is named distinctly from the `/speckit.implement` **command** on purpose: they are two ways to execute `tasks.md`, and a shared name invited picking the wrong one. It executes `tasks.md` with the orchestration moved into code:
+**`speckit-workflow`** (`workflows/speckit-workflow.js`) is the framework's workflow — invoked as `hefesto:speckit-workflow` under a plugin install, since plugin components are namespaced. It is named distinctly from the `/speckit.implement` **command** on purpose: they are two ways to execute `tasks.md`, and a shared name invited picking the wrong one. It executes `tasks.md` with the orchestration moved into code:
 
 - **Phase order is enforced, not trusted.** Spec-kit declares Phase N+1 blocked by Phase N. A script guarantees that barrier; a model can talk itself into skipping ahead.
 - **The implementer never grades its own homework.** Every task is checked by three agents that did not write it, through *different* lenses — one reads the test diff hunting for a weakened assertion, one checks the requirement rather than the test, one runs the full suite itself. Any single refutation blocks the task. This is the Verification Iron Law made structural.

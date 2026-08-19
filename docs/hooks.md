@@ -79,7 +79,7 @@ The framework implements layered defenses against OWASP LLM vulnerabilities:
 |-------|-----------|--------|
 | **Enforcement** | Hooks | Sensitive file blocking, destructive-command denials, secrets detection, pre-commit quality |
 | **Guidance** | Rules | OWASP LLM Top 10, MCP security, code quality, SOLID principles |
-| **Analysis** | Skills & Agents | Built-in `/security-review`, `/adf.security-scan`, forensic investigation, quality gates |
+| **Analysis** | Skills & Agents | Built-in `/security-review`, `/hef.security-scan`, forensic investigation, quality gates |
 | **Efficacy** | Iron Laws | Verification before completion (rule + `TaskCompleted` hook), systematic-debugging |
 
 MCP servers follow strict security posture — OAuth 2.1 for production, least privilege, input validation, and human-in-the-loop for high-impact actions.
