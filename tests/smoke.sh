@@ -89,7 +89,7 @@ done
 # check would reintroduce the exact hand-bumped duplicate #19 exists to eliminate.
 minor="${v_plugin%.*}"
 for f in .claude/CLAUDE.md; do
-  t="$(grep -m1 -oE 'AI Development Framework v[0-9]+\.[0-9]+' "$REPO/$f" | grep -oE '[0-9.]+$')"
+  t="$(grep -m1 -oE 'Hefesto v[0-9]+\.[0-9]+' "$REPO/$f" | grep -oE '[0-9.]+$')"
   if [ "$t" != "$minor" ]; then
     bad "$f title says v$t but plugin.json says $v_plugin"
     mismatch=$((mismatch + 1))
@@ -159,7 +159,7 @@ head_ "Command names"
 # stale list says nothing (#17).
 #
 # So the rule is structural instead. Every command is NAMESPACED — its name contains a `.`
-# (adf.quality, speckit.plan). No built-in slash command contains a dot, so a collision is
+# (hef.quality, speckit.plan). No built-in slash command contains a dot, so a collision is
 # impossible by construction, and there is no list to keep current.
 unnamespaced=0
 for f in "$REPO"/commands/*.md; do
@@ -270,25 +270,25 @@ else
   bad "block-destructive-commands.sh is not registered in hooks.json — it will never fire"
 fi
 
-# --- Tier 1: adf.sync prescribes cp, never mv ---------------------------------------
-head_ "adf.sync stow safety"
+# --- Tier 1: hef.sync prescribes cp, never mv ---------------------------------------
+head_ "hef.sync stow safety"
 
 # `mv` onto a stow symlink under ~/.claude/ replaces the symlink with a regular file and
 # the dotfiles repo silently stops receiving updates — this bit for real (settings.json).
-# adf.sync exists to FIX drift; it must never prescribe the command that causes it.
-sync_fenced="$(awk '/^```/{f=!f; next} f' "$REPO/commands/adf.sync.md" || true)"
+# hef.sync exists to FIX drift; it must never prescribe the command that causes it.
+sync_fenced="$(awk '/^```/{f=!f; next} f' "$REPO/commands/hef.sync.md" || true)"
 # `.*` not `[^\n]*` — grep is already line-based, and inside a bracket expression \n is
 # LITERAL backslash+n, so [^\n]* cannot cross any filename containing an 'n'. That version
 # passed its own mutation test's absence and missed a planted `mv new-rules.md ~/.claude/`.
 if grep -qE '(^|[[:space:]])mv[[:space:]].*~/\.claude/' <<<"$sync_fenced"; then
-  bad "adf.sync.md prescribes 'mv' into ~/.claude/ — that replaces a stow symlink with a plain file"
+  bad "hef.sync.md prescribes 'mv' into ~/.claude/ — that replaces a stow symlink with a plain file"
 else
-  ok "adf.sync.md never prescribes mv into ~/.claude/"
+  ok "hef.sync.md never prescribes mv into ~/.claude/"
 fi
-if grep -qF 'Never `mv`' "$REPO/commands/adf.sync.md"; then
-  ok "adf.sync.md carries the stow-mv trap warning"
+if grep -qF 'Never `mv`' "$REPO/commands/hef.sync.md"; then
+  ok "hef.sync.md carries the stow-mv trap warning"
 else
-  bad "adf.sync.md lost the stow-mv trap warning — the next editor will prescribe mv"
+  bad "hef.sync.md lost the stow-mv trap warning — the next editor will prescribe mv"
 fi
 
 # --- Tier 1: the #7 regression guard ------------------------------------------------
@@ -666,10 +666,10 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
   export CLAUDE_CONFIG_DIR="$CFG"   # never touch the user's real ~/.claude
 
   claude plugin marketplace add "$REPO" >/dev/null 2>&1
-  claude plugin install ai-development-framework@ai-development-framework >/dev/null 2>&1
+  claude plugin install hefesto@hefesto >/dev/null 2>&1
 
   installed="$(claude plugin list 2>/dev/null || true)"
-  if grep -q 'ai-development-framework' <<<"$installed"; then
+  if grep -q 'hefesto' <<<"$installed"; then
     ok "plugin installs into a clean config and reports enabled"
   else
     bad "plugin did not install"
@@ -762,7 +762,7 @@ if [ "${SMOKE_LIVE:-0}" = "1" ]; then
                    '{permissions:{allow:[$a,$b],deny:[]}}')"
 
     run="$(cd "$E2E" && timeout 300 claude -p \
-        "Invoke the skill ai-development-framework:adf.context and follow its instructions." \
+        "Invoke the skill hefesto:hef.context and follow its instructions." \
         --plugin-dir "$REPO" --settings "$rules" --output-format json 2>&1 || true)"
     rm -rf "$E2E"
 
