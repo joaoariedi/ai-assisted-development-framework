@@ -1,15 +1,16 @@
-# Graph Report - .  (2026-08-19)
+# Graph Report - hefesto  (2026-08-25)
 
 ## Corpus Check
-- cluster-only mode — file stats not available
+- 93 files · ~120,303 words
+- Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 952 nodes · 914 edges · 103 communities (90 shown, 13 thin omitted)
+- 953 nodes · 916 edges · 100 communities (88 shown, 12 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 4 edges (avg confidence: 0.5)
-- Token cost: 112,490 input · 1,592 output
+- Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `fe450625`
+- Built from commit: `bc9843ff`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -33,7 +34,7 @@
 - Speckit Brownfield Baseline
 - Release Changelog
 - Context Window Management
-- Documentation & README
+- README.md
 - CLAUDE.md Authoring Patterns
 - Security & DevSecOps Research
 - Workflow Resilience Research Spikes
@@ -50,7 +51,7 @@
 - Context Engineering Fundamentals
 - AI Protocol Stack
 - Project Organization & Delivery
-- Machine Setup Instructions
+- SETUP — install or update the Hefesto on this machine
 - Systematic Debugging Skill
 - Repo Scout Agent
 - Project Context Command
@@ -59,11 +60,9 @@
 - Framework Core Instructions
 - Framework Sync Check
 - Slash Commands Documentation
-- Architecture Documentation
 - Speckit Constitution Command
 - Speckit Specify Command
 - Speckit Tasks Command
-- Plugin Installation Guide
 - Workflow Resilience Task List
 - Plan Template
 - Spec Template
@@ -76,7 +75,7 @@
 - Speckit Clarify Command
 - Hooks & Quality Gates
 - Performance & Reasoning Docs
-- Rules & Quality Standards Docs
+- rules.md
 - MCP Server Security
 - Changelog 2.1.0 Release
 - Brand Assets & Palette
@@ -97,7 +96,6 @@
 - Speckit Helper Script
 - Performance Audit Skill
 - Changelog 5.2.0 Release
-- MCP Integration Docs
 - Research Corpus & Credits
 - Requirements Quality Checklist
 - Changelog 4.1.0 Release
@@ -132,7 +130,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (103 total, 13 thin omitted)
+## Communities (100 total, 12 thin omitted)
 
 ### Community 0 - "Security Forensics Agent"
 Cohesion: 0.06
@@ -210,9 +208,9 @@ Nodes (13): [1.0.0] - 2025-09-02, [3.0.0] - 2025-09-04, [4.0.2] - 2026-03-10, [5
 Cohesion: 0.14
 Nodes (13): Compact Context Priorities, Context Management, Context Scaling by Project Size, Document & Clear Pattern, How to Resume from a Progress File, Large Projects (100+ source files, monorepo or multi-service), Medium Projects (10-100 source files, 1-2 languages), Polyglot / Multi-Service Patterns (+5 more)
 
-### Community 19 - "Documentation & README"
-Cohesion: 0.16
-Nodes (9): Skills, 🧠 Skills, 📚 Documentation, 📦 Install, 📄 License, 🧩 Requirements, 🗂️ Structure, ⚙️ What happens without you asking (+1 more)
+### Community 19 - "README.md"
+Cohesion: 0.18
+Nodes (9): MCP Integration, 🔌 MCP Integration, 📚 Documentation, 📦 Install, 📄 License, 🧩 Requirements, 🗂️ Structure, ⚙️ What happens without you asking (+1 more)
 
 ### Community 20 - "CLAUDE.md Authoring Patterns"
 Cohesion: 0.14
@@ -278,9 +276,9 @@ Nodes (10): AG-UI / A2UI, Agent2Agent (A2A) Protocol, Akashik Protocol, Code Exe
 Cohesion: 0.18
 Nodes (10): Actionable Patterns for the Framework, Containerization & Deployment, FrankMD — Docker with Desktop Wrapper, FrankMega — Kamal Deployment, FrankYomik — Multi-Container with Variants, Not Yet Adopted, Project Organization & Delivery, Research Documentation (FrankSherlock) (+2 more)
 
-### Community 36 - "Machine Setup Instructions"
-Cohesion: 0.18
-Nodes (10): Conventions for the agent executing this, Report back, SETUP — install or update the Hefesto on this machine, Step 0 — Decide the clone location, Step 1 — Check for a conflicting legacy install, Step 2 — Clone, or pull if already present, Step 3 — Add the marketplace and install the plugin, Step 4 — Add the helper permission rule (required in practice) (+2 more)
+### Community 36 - "SETUP — install or update the Hefesto on this machine"
+Cohesion: 0.06
+Nodes (28): Architecture, Currently In Use vs Available, 📁 Package Structure, 🖥️ Reference Deployment, 🔁 Request Flow & Stack Composition, 🛡️ Trust Boundaries, 🔀 Two-Machine Topology, What the flow reveals (+20 more)
 
 ### Community 37 - "Systematic Debugging Skill"
 Cohesion: 0.18
@@ -310,10 +308,6 @@ Nodes (8): Core Rules, Custom Agents, graphify, Hefesto v6.0, Multi-Environment 
 Cohesion: 0.29
 Nodes (6): 1. Locate the installed clone, 2. Installed clone vs upstream, 3. Global rules vs upstream, Check Steps, Output Format, Remediation Rules
 
-### Community 45 - "Architecture Documentation"
-Cohesion: 0.22
-Nodes (9): Architecture, Currently In Use vs Available, 📁 Package Structure, 🖥️ Reference Deployment, 🔁 Request Flow & Stack Composition, 🛡️ Trust Boundaries, 🔀 Two-Machine Topology, What the flow reveals (+1 more)
-
 ### Community 46 - "Speckit Constitution Command"
 Cohesion: 0.25
 Nodes (7): Existing constitution, Existing rules, Instructions, Pre-Flight, Project context, Spec-Kit: Constitution, Tech stack detection
@@ -325,10 +319,6 @@ Nodes (7): Constitution, Existing specs, Git status, Instructions, Pre-Flight, P
 ### Community 48 - "Speckit Tasks Command"
 Cohesion: 0.25
 Nodes (7): Auto-detect spec branch, Current branch, Instructions, Load plan, Load spec, Pre-Flight, Spec-Kit: Tasks
-
-### Community 49 - "Plugin Installation Guide"
-Cohesion: 0.25
-Nodes (8): 1️⃣ Install as a Plugin (recommended), 2️⃣ Optional Configuration, 3️⃣ Verify the Installation, 4️⃣ Your First Feature (the 60-second tour), 5️⃣ Updating, 6️⃣ The two things the plugin cannot ship, Installing & Configuring, What the plugin is called once installed
 
 ### Community 50 - "Workflow Resilience Task List"
 Cohesion: 0.25
@@ -378,9 +368,9 @@ Nodes (6): 🛡️ Automated Quality Gates, ⚙️ Hooks, Hooks & Quality Gates,
 Cohesion: 0.29
 Nodes (6): 📦 Context Management, 🎛️ Model Selection, 🌐 Multi-Environment Workflows, Performance & Reasoning, ⚡ Performance & Reasoning, 🧠 Ultrathink
 
-### Community 62 - "Rules & Quality Standards Docs"
-Cohesion: 0.67
-Nodes (3): 📊 Quality Standards, 📏 Rules, Rules & Quality Standards
+### Community 62 - "rules.md"
+Cohesion: 0.29
+Nodes (5): 📊 Quality Standards, 📏 Rules, Rules & Quality Standards, Skills, 🧠 Skills
 
 ### Community 63 - "MCP Server Security"
 Cohesion: 0.29
@@ -479,19 +469,17 @@ Cohesion: 0.67
 Nodes (3): [4.3.0] - 2026-03-31, Added, Enhanced
 
 ## Knowledge Gaps
-- **633 isolated node(s):** `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script`, `notify-on-block.sh script`, `plan-phase-write-block.sh script` (+628 more)
+- **634 isolated node(s):** `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script`, `notify-on-block.sh script`, `plan-phase-write-block.sh script` (+629 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `Changelog` connect `Release Changelog` to `Changelog 2.1.0 Release`, `Changelog 4.4.0 Release`, `Changelog 2.0.0 Release`, `Changelog 3.1.0 Release`, `Changelog 4.0.0 Release`, `Changelog 4.5.0 Release`, `Changelog 5.1.0 Release`, `Changelog 6.0.0 Release`, `Changelog 5.2.0 Release`, `Unreleased Changelog Section`, `Changelog 3.0.0 Release`, `Changelog 4.3.0 Release`, `Changelog 4.1.0 Release`?**
   _High betweenness centrality (0.006) - this node is a cross-community bridge._
-- **Why does `Architecture` connect `Architecture Documentation` to `Documentation & README`?**
-  _High betweenness centrality (0.001) - this node is a cross-community bridge._
 - **What connects `github`, `block-sensitive-files.sh script`, `format-after-edit.sh script` to the rest of the system?**
-  _633 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _634 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Security Forensics Agent` be split into smaller, more focused modules?**
   _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
 - **Should `Development Workflow Phases` be split into smaller, more focused modules?**
@@ -500,3 +488,5 @@ _Questions this graph is uniquely positioned to answer:_
   _Cohesion score 0.0896551724137931 - nodes in this community are weakly interconnected._
 - **Should `Deterministic Effort Estimation` be split into smaller, more focused modules?**
   _Cohesion score 0.07407407407407407 - nodes in this community are weakly interconnected._
+- **Should `Workflow Test Harness` be split into smaller, more focused modules?**
+  _Cohesion score 0.12666666666666668 - nodes in this community are weakly interconnected._
