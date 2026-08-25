@@ -15,7 +15,7 @@ claude plugin marketplace add ~/.claude-framework
 claude plugin install hefesto@hefesto
 ```
 
-That is a **persistent, user-scoped** install: it writes `enabledPlugins` to `~/.claude/settings.json` and applies to every project, in every session, with no flags. Confirm it:
+That is a **persistent, user-scoped** install: it writes `enabledPlugins` to `~/.claude/settings.json` and applies to every project, in every session, with no flags. (`~/.claude` is the *default* config directory — if you run more than one, see *Installing into more than one profile* below.) Confirm it:
 
 ```bash
 claude plugin list          # → hefesto@hefesto  ✔ enabled
@@ -46,6 +46,24 @@ Plugin components are **namespaced by plugin name**, but the namespace is only *
 | **Commands** | `/hef.context`, `/speckit.plan`, `/hef.quality` — the bare name works. The `hefesto:` prefix also works, and disambiguates if another plugin defines the same name. |
 | **Agents** | Dispatched by Claude, or by name — they appear as `hefesto:code-reviewer`. |
 | **The workflow** | **Must be namespaced**: `hefesto:speckit-workflow`. A bare `speckit-workflow` **does not resolve**. |
+
+#### Installing into more than one profile
+
+`~/.claude` is the **default** config directory, not the only one. Claude Code keys everything it stores to `CLAUDE_CONFIG_DIR`: installed plugins, registered marketplaces, `settings.json`, `.claude.json`, sessions and memory all live *inside* it. So pointing that variable somewhere else — to run a second account, or to keep client work separate from personal — hands you a profile with **no plugin installed**. As in step 3, the absence is silent: the `/` menu simply comes up short.
+
+Install once per profile:
+
+```bash
+export CLAUDE_CONFIG_DIR=~/.claude-work            # whatever that profile uses
+
+claude plugin marketplace add ~/.claude-framework
+claude plugin install hefesto@hefesto
+claude plugin list                                 # → hefesto@hefesto  ✔ enabled
+```
+
+**The clone is shared; only the enablement is per profile.** Because the marketplace source is a *directory* read in place, every profile runs the same working tree — so a single `git pull` updates all of them and you never keep a second copy. What each profile needs is its own one-time `marketplace add` + `install`.
+
+The gap in step 6 is per profile too. `rules/` and `CLAUDE.md` are copied *into a config directory*, so each profile needs its own copy — and its own re-copy after an upgrade.
 
 ### 2️⃣ Optional Configuration
 
@@ -129,6 +147,8 @@ claude plugin marketplace update hefesto   # re-read the manifest
 ```
 
 Restart Claude Code to pick up the new components. To check what changed first, read `CHANGELOG.md` in the clone.
+
+One pull covers **every** profile, since they all read this same clone. Only `claude plugin marketplace update` is per profile, and only for profiles you actually run.
 
 ### 6️⃣ The two things the plugin cannot ship
 
