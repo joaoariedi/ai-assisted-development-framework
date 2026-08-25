@@ -73,6 +73,8 @@ claude plugin list
 
 Expect `hefesto@hefesto` with `Status: ✔ enabled`. This writes `enabledPlugins` into `~/.claude/settings.json`, so the install is persistent and user-scoped: it applies to every project, with no flags.
 
+> **Running more than one profile?** `~/.claude` is the *default* config directory. Plugins, marketplaces and `settings.json` all live inside whatever `CLAUDE_CONFIG_DIR` points at, so each additional profile needs this step run once on its own — `export CLAUDE_CONFIG_DIR=...` first, then the two commands above. The clone is shared, so updates still only need one `git pull`. See [docs/install.md](docs/install.md#installing-into-more-than-one-profile).
+
 ## Step 4 — Add the helper permission rule (required in practice)
 
 Most spec-kit commands gather live project data by running `speckit-helper.sh` with the Bash
